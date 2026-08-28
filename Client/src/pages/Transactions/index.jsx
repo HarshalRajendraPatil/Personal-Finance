@@ -1,0 +1,300 @@
+import { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchTransactions, deleteTransaction } from '../../store/transactionSlice';
+import { fetchAccounts } from '../../store/accountSlice';
+import { fetchCategories } from '../../store/categorySlice';
+import TransactionFormModal from './TransactionFormModal';
+import { Plus, Search, Trash2, Edit2, ArrowUpRight, ArrowDownRight, ArrowRightLeft, SlidersHorizontal, X, Paperclip } from 'lucide-react';
+import { formatCurrency } from '../../utils/formatCurrency';
+
+const formatDate = (dateString) => {
+  return new Date(dateString).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  });
+};
+
+const Transactions = () => {
+  const dispatch = useDispatch();
+  const { transactions, isLoading } = useSelector((state) => state.transactions);
+  const { accounts } = useSelector((state) => state.accounts);
+  const { categories } = useSelector((state) => state.categories);
+  
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [filters, setFilters] = useState({
+    search: '',
+    type: 'All',
+    account: '',
+    category: '',
+    startDate: '',
+    endDate: '',
+    minAmount: '',
+    maxAmount: '',
+  });
+
+  const activeFilterCount = Object.entries(filters).filter(([k, v]) => v && v !== 'All').length;
+
+  useEffect(() => {
+    dispatch(fetchTransactions());
+    dispatch(fetchAccounts());
+    dispatch(fetchCategories());
+  }, [dispatch]);
+
+  const handleEdit = (transaction) => {
+    setEditingTransaction(transaction);
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm('Delete this transaction? This will automatically update your account balances.')) {
+      await dispatch(deleteTransaction(id));
+      dispatch(fetchAccounts()); // Refresh accounts to get updated balances
+    }
+  };
+
+  const handleAddNew = () => {
+    setEditingTransaction(null);
+    setIsModalOpen(true);
+  };
+
+  // Close modal and refresh accounts to reflect balance changes
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+    dispatch(fetchAccounts()); 
+  };
+
+  const filteredTransactions = transactions.filter(t => {
+    const s = filters.search.toLowerCase();
+    const matchesSearch = !s || (
+      t.merchant?.toLowerCase().includes(s) ||
+      t.notes?.toLowerCase().includes(s) ||
+      t.category?.name?.toLowerCase().includes(s)
+    );
+    const matchesType = filters.type === 'All' || t.type === filters.type;
+    const matchesAccount = !filters.account || t.account?._id === filters.account;
+    const matchesCategory = !filters.category || t.category?._id === filters.category;
+    const txDate = new Date(t.date);
+    const matchesStartDate = !filters.startDate || txDate >= new Date(filters.startDate);
+    const matchesEndDate = !filters.endDate || txDate <= new Date(filters.endDate + 'T23:59:59');
+    const matchesMinAmount = !filters.minAmount || t.amount >= parseFloat(filters.minAmount);
+    const matchesMaxAmount = !filters.maxAmount || t.amount <= parseFloat(filters.maxAmount);
+    return matchesSearch && matchesType && matchesAccount && matchesCategory && matchesStartDate && matchesEndDate && matchesMinAmount && matchesMaxAmount;
+  });
+
+  const clearFilters = () => setFilters({ search: '', type: 'All', account: '', category: '', startDate: '', endDate: '', minAmount: '', maxAmount: '' });
+
+  return (
+    <div className="max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Transactions</h1>
+          <p className="mt-1 text-sm text-gray-500">View and manage your transaction history.</p>
+        </div>
+        <button
+          onClick={handleAddNew}
+          className="mt-4 sm:mt-0 flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Add Transaction
+        </button>
+      </div>
+
+      {/* Filter Bar */}
+      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-4">
+        <div className="flex space-x-3">
+          <div className="flex-1 relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-5 w-5 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              placeholder="Search merchants, categories, notes..."
+              value={filters.search}
+              onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
+              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+          <button
+            onClick={() => setFiltersOpen(!filtersOpen)}
+            className={`flex items-center px-3 py-2 text-sm border rounded-md transition ${filtersOpen || activeFilterCount > 0 ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+          >
+            <SlidersHorizontal className="w-4 h-4 mr-1.5" />
+            Filters
+            {activeFilterCount > 0 && <span className="ml-1.5 w-5 h-5 text-xs bg-blue-600 text-white rounded-full flex items-center justify-center">{activeFilterCount}</span>}
+          </button>
+        </div>
+
+        {filtersOpen && (
+          <div className="mt-4 pt-4 border-t border-gray-100">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Type</label>
+                <select value={filters.type} onChange={e => setFilters(f => ({ ...f, type: e.target.value }))}
+                  className="block w-full px-2 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500">
+                  <option value="All">All</option>
+                  <option value="Expense">Expense</option>
+                  <option value="Income">Income</option>
+                  <option value="Transfer">Transfer</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Account</label>
+                <select value={filters.account} onChange={e => setFilters(f => ({ ...f, account: e.target.value }))}
+                  className="block w-full px-2 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500">
+                  <option value="">All Accounts</option>
+                  {accounts.map(a => <option key={a._id} value={a._id}>{a.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Category</label>
+                <select value={filters.category} onChange={e => setFilters(f => ({ ...f, category: e.target.value }))}
+                  className="block w-full px-2 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500">
+                  <option value="">All Categories</option>
+                  {categories.filter(c => !c.parent).map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Date From</label>
+                <input type="date" value={filters.startDate} onChange={e => setFilters(f => ({ ...f, startDate: e.target.value }))}
+                  className="block w-full px-2 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Date To</label>
+                <input type="date" value={filters.endDate} onChange={e => setFilters(f => ({ ...f, endDate: e.target.value }))}
+                  className="block w-full px-2 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Min Amount (₹)</label>
+                <input type="number" value={filters.minAmount} onChange={e => setFilters(f => ({ ...f, minAmount: e.target.value }))} placeholder="0"
+                  className="block w-full px-2 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Max Amount (₹)</label>
+                <input type="number" value={filters.maxAmount} onChange={e => setFilters(f => ({ ...f, maxAmount: e.target.value }))} placeholder="∞"
+                  className="block w-full px-2 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500" />
+              </div>
+              <div className="flex items-end">
+                {activeFilterCount > 0 && (
+                  <button onClick={clearFilters} className="flex items-center text-xs text-red-600 hover:text-red-800">
+                    <X className="w-3.5 h-3.5 mr-1" />Clear all filters
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <p className="text-xs text-gray-400 mb-2">{filteredTransactions.length} of {transactions.length} transactions</p>
+
+      {/* Transaction List */}
+      <div className="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-100">
+        {isLoading && transactions.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent"></div>
+          </div>
+        ) : filteredTransactions.length === 0 ? (
+          <div className="text-center py-16">
+            <p className="text-gray-500">No transactions found.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Account</th>
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                  <th scope="col" className="relative px-6 py-3"><span className="sr-only">Actions</span></th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredTransactions.map((t) => (
+                  <tr key={t._id} className="hover:bg-blue-50/50 transition-colors group">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-medium">
+                      {formatDate(t.date)}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center">
+                        <div className={`flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-xl bg-gray-50 border border-gray-100 ${t.type === 'Income' ? 'bg-green-50 border-green-100' : t.type === 'Expense' ? 'bg-red-50 border-red-100' : 'bg-blue-50 border-blue-100'}`}>
+                          {t.type === 'Income' && <ArrowDownRight className="h-5 w-5 text-green-600" />}
+                          {t.type === 'Expense' && <ArrowUpRight className="h-5 w-5 text-red-600" />}
+                          {t.type === 'Transfer' && <ArrowRightLeft className="h-5 w-5 text-blue-600" />}
+                        </div>
+                        <div className="ml-4">
+                          <div className="text-sm font-semibold text-gray-900">
+                            {t.merchant || (t.type === 'Transfer' ? 'Transfer' : t.category?.name || 'Uncategorized')}
+                          </div>
+                          {t.notes && <div className="text-sm text-gray-500 truncate max-w-[200px] mt-0.5">{t.notes}</div>}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {t.type === 'Transfer' ? (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          Transfer
+                        </span>
+                      ) : (
+                        <div className="flex items-center">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                            {t.category?.name || 'None'}
+                          </span>
+                          {t.subcategory && (
+                            <span className="ml-2 text-xs text-gray-500 hidden md:inline">
+                              → {t.subcategory.name}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {t.type === 'Transfer' ? (
+                        <span>{t.account?.name} → {t.toAccount ? t.toAccount.name : 'Goal / External'}</span>
+                      ) : (
+                        t.account?.name
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium">
+                      <span className={t.type === 'Expense' ? 'text-red-600' : t.type === 'Income' ? 'text-green-600' : 'text-gray-900'}>
+                        {t.type === 'Expense' ? '-' : t.type === 'Income' ? '+' : ''}
+                        {formatCurrency(t.amount, t.account?.currency)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex justify-end space-x-2">
+                        {t.attachmentUrl && (
+                          <a href={t.attachmentUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors" title="View Receipt">
+                            <Paperclip className="h-4 w-4" />
+                          </a>
+                        )}
+                        <button onClick={() => handleEdit(t)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors" title="Edit">
+                          <Edit2 className="h-4 w-4" />
+                        </button>
+                        <button onClick={() => handleDelete(t._id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors" title="Delete">
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      <TransactionFormModal 
+        isOpen={isModalOpen} 
+        onClose={handleModalClose} 
+        transaction={editingTransaction} 
+      />
+    </div>
+  );
+};
+
+export default Transactions;

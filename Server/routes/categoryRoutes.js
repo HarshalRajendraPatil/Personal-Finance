@@ -1,0 +1,23 @@
+import express from 'express';
+import {
+  getCategories,
+  createCategory,
+  updateCategory,
+  deleteCategory,
+  seedDefaultCategories,
+} from '../controllers/categoryController.js';
+import { protect } from '../middleware/authMiddleware.js';
+
+const router = express.Router();
+
+router.route('/')
+  .get(protect, getCategories)
+  .post(protect, createCategory);
+
+router.post('/seed', protect, seedDefaultCategories);
+
+router.route('/:id')
+  .put(protect, updateCategory)
+  .delete(protect, deleteCategory);
+
+export default router;

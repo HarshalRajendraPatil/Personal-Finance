@@ -37,6 +37,18 @@ const accountSchema = new mongoose.Schema({
     type: String,
   },
   // Credit Card specific fields
+  creditLimit: {
+    type: Number,
+    default: null,
+  },
+  issuer: {
+    type: String,
+    default: '',
+  },
+  last4Digits: {
+    type: String,
+    default: '',
+  },
   billingCycleDay: {
     type: Number, // Day of month statement generates (e.g. 15)
     default: null,

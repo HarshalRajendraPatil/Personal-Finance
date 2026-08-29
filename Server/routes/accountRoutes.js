@@ -4,10 +4,15 @@ import {
   createAccount,
   updateAccount,
   deleteAccount,
+  getCreditCardStatement,
+  payCreditCardBill,
 } from '../controllers/accountController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
+
+router.get('/:id/statement', protect, getCreditCardStatement);
+router.post('/:id/pay-bill', protect, payCreditCardBill);
 
 router.route('/')
   .get(protect, getAccounts)

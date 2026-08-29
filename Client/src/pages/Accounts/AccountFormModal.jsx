@@ -12,6 +12,11 @@ const accountSchema = z.object({
   openingBalance: z.coerce.number({ invalid_type_error: "Must be a number" }),
   currency: z.string().min(1, "Currency is required"),
   notes: z.string().optional(),
+  creditLimit: z.preprocess((val) => (val === '' || val === null || val === undefined ? null : Number(val)), z.number().nullable().optional()),
+  issuer: z.string().optional(),
+  last4Digits: z.string().optional(),
+  billingCycleDay: z.preprocess((val) => (val === '' || val === null || val === undefined ? null : Number(val)), z.number().min(1).max(31).nullable().optional()),
+  paymentDueDay: z.preprocess((val) => (val === '' || val === null || val === undefined ? null : Number(val)), z.number().min(1).max(31).nullable().optional()),
 });
 
 const CURRENCIES = [
@@ -31,6 +36,7 @@ const AccountFormModal = ({ isOpen, onClose, account = null }) => {
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(accountSchema),
@@ -40,8 +46,15 @@ const AccountFormModal = ({ isOpen, onClose, account = null }) => {
       openingBalance: 0,
       currency: 'INR',
       notes: '',
+      creditLimit: '',
+      issuer: '',
+      last4Digits: '',
+      billingCycleDay: '',
+      paymentDueDay: '',
     },
   });
+
+  const selectedType = watch('type');
 
   // Reset form when modal opens or account changes
   useEffect(() => {
@@ -52,6 +65,11 @@ const AccountFormModal = ({ isOpen, onClose, account = null }) => {
         openingBalance: account.openingBalance,
         currency: account.currency || 'INR',
         notes: account.notes || '',
+        creditLimit: account.creditLimit !== null && account.creditLimit !== undefined ? account.creditLimit : '',
+        issuer: account.issuer || '',
+        last4Digits: account.last4Digits || '',
+        billingCycleDay: account.billingCycleDay || '',
+        paymentDueDay: account.paymentDueDay || '',
       });
     } else {
       reset({
@@ -60,6 +78,11 @@ const AccountFormModal = ({ isOpen, onClose, account = null }) => {
         openingBalance: 0,
         currency: 'INR',
         notes: '',
+        creditLimit: '',
+        issuer: '',
+        last4Digits: '',
+        billingCycleDay: '',
+        paymentDueDay: '',
       });
     }
   }, [account, reset, isOpen]);
@@ -71,9 +94,9 @@ const AccountFormModal = ({ isOpen, onClose, account = null }) => {
       } else {
         await dispatch(createAccount(data)).unwrap();
       }
-      onClose(); // Close modal on success
+      onClose();
     } catch (err) {
-      // Error is handled by Redux state and displayed below
+      // Error is handled by Redux state
     }
   };
 
@@ -81,7 +104,7 @@ const AccountFormModal = ({ isOpen, onClose, account = null }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto overflow-x-hidden bg-black/50 p-4">
-      <div className="relative w-full max-w-md bg-white rounded-xl shadow-lg p-6">
+      <div className="relative w-full max-w-md bg-white rounded-xl shadow-lg p-6 max-h-[90vh] overflow-y-auto">
         <button 
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition"
@@ -99,7 +122,7 @@ const AccountFormModal = ({ isOpen, onClose, account = null }) => {
             <input
               {...register('name')}
               type="text"
-              placeholder="e.g. HDFC Salary, Travel Credit Card"
+              placeholder="e.g. HDFC Salary, Regalia Credit Card"
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             />
             {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>}
@@ -133,10 +156,75 @@ const AccountFormModal = ({ isOpen, onClose, account = null }) => {
             </div>
           </div>
 
+          {/* Credit Card Specific Fields */}
+          {selectedType === 'Credit Card' && (
+            <div className="p-4 bg-purple-50 rounded-xl space-y-3 border border-purple-100">
+              <p className="text-xs font-bold text-purple-900 uppercase tracking-wider">Credit Card Details</p>
+              
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700">Card Issuer</label>
+                  <input
+                    {...register('issuer')}
+                    type="text"
+                    placeholder="e.g. HDFC, ICICI, SBI"
+                    className="mt-1 block w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md bg-white focus:ring-purple-500 focus:border-purple-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700">Last 4 Digits</label>
+                  <input
+                    {...register('last4Digits')}
+                    type="text"
+                    maxLength={4}
+                    placeholder="e.g. 4321"
+                    className="mt-1 block w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md bg-white focus:ring-purple-500 focus:border-purple-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-700">Total Credit Limit (₹)</label>
+                <input
+                  {...register('creditLimit')}
+                  type="number"
+                  placeholder="e.g. 100000"
+                  className="mt-1 block w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md bg-white focus:ring-purple-500 focus:border-purple-500"
+                />
+                {errors.creditLimit && <p className="mt-1 text-xs text-red-600">{errors.creditLimit.message}</p>}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700">Statement Day (1-31)</label>
+                  <input
+                    {...register('billingCycleDay')}
+                    type="number"
+                    min={1}
+                    max={31}
+                    placeholder="e.g. 15"
+                    className="mt-1 block w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md bg-white focus:ring-purple-500 focus:border-purple-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700">Payment Due Day (1-31)</label>
+                  <input
+                    {...register('paymentDueDay')}
+                    type="number"
+                    min={1}
+                    max={31}
+                    placeholder="e.g. 5"
+                    className="mt-1 block w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md bg-white focus:ring-purple-500 focus:border-purple-500"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
           <div>
             <label className="block text-sm font-medium text-gray-700">
               Opening Balance
-              {register('type').value === 'Credit Card' && ' (Use negative for debt)'}
+              {selectedType === 'Credit Card' ? ' (Negative for existing debt, e.g. -5000)' : ''}
             </label>
             <input
               {...register('openingBalance')}
@@ -162,7 +250,7 @@ const AccountFormModal = ({ isOpen, onClose, account = null }) => {
             </div>
           )}
 
-          <div className="flex justify-end pt-4 space-x-3">
+          <div className="flex justify-end pt-4 space-x-3 border-t border-gray-200">
             <button
               type="button"
               onClick={onClose}

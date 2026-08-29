@@ -19,10 +19,12 @@ import taxRoutes from './routes/taxRoutes.js';
 import calendarRoutes from './routes/calendarRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 import intelligenceRoutes from './routes/intelligenceRoutes.js';
+import { initCronJobs } from './cron/index.js';
 
 dotenv.config();
 
 connectDB();
+initCronJobs();
 
 const app = express();
 

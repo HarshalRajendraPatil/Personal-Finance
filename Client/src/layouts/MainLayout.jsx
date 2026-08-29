@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../store/authSlice';
@@ -8,6 +9,16 @@ const MainLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useSelector((state) => state.auth);
+
+  useEffect(() => {
+    const path = location.pathname;
+    let pageName = 'Dashboard';
+    if (path !== '/' && path.length > 1) {
+      const section = path.split('/')[1];
+      pageName = section.charAt(0).toUpperCase() + section.slice(1);
+    }
+    document.title = `Finora - ${pageName}`;
+  }, [location]);
 
   const isActive = (path) => location.pathname === path;
 
@@ -21,7 +32,10 @@ const MainLayout = () => {
       {/* Sidebar */}
       <aside className="w-64 bg-white border-r border-gray-200 hidden md:flex md:flex-col">
         <div className="h-16 flex items-center px-6 border-b border-gray-200">
-          <h1 className="text-xl font-bold text-gray-900">Finance OS</h1>
+          <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+            <span className="bg-indigo-600 text-white p-1 rounded-lg"><Activity className="w-5 h-5" /></span>
+            Finora
+          </h1>
         </div>
         
         <div className="flex-1 overflow-y-auto py-4">

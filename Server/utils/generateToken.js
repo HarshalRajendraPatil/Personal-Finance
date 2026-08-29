@@ -5,12 +5,16 @@ const generateToken = (res, userId) => {
     expiresIn: '30d',
   });
 
-  res.cookie('jwt', token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV !== 'development', // Use secure cookies in production
-    sameSite: process.env.NODE_ENV !== 'development' ? 'none' : 'strict', // Allow cross-site cookies in prod
-    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-  });
+  if (res) {
+    res.cookie('jwt', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV !== 'development', // Use secure cookies in production
+      sameSite: process.env.NODE_ENV !== 'development' ? 'none' : 'strict', // Allow cross-site cookies in prod
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    });
+  }
+
+  return token;
 };
 
 export default generateToken;

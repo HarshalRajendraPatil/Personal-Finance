@@ -57,5 +57,9 @@ const budgetSchema = new mongoose.Schema({
   timestamps: true,
 });
 
+budgetSchema.index({ user: 1, isActive: 1 });
+budgetSchema.index({ user: 1, category: 1, isActive: 1 });
+
 const Budget = mongoose.model('Budget', budgetSchema);
 export default Budget;
+

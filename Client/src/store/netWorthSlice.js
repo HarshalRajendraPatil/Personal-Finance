@@ -10,6 +10,9 @@ export const fetchHistory = createAsyncThunk('netWorth/fetchHistory', async (_, 
 export const takeSnapshot = createAsyncThunk('netWorth/snapshot', async (data, { rejectWithValue }) => {
   try { return (await svc.takeSnapshot(data)).data; } catch (e) { return rejectWithValue(e.response?.data?.message || e.message); }
 });
+export const triggerAutoSnapshot = createAsyncThunk('netWorth/autoSnapshot', async (data, { rejectWithValue }) => {
+  try { return (await svc.triggerAutoSnapshot(data)).data.snapshot; } catch (e) { return rejectWithValue(e.response?.data?.message || e.message); }
+});
 
 const netWorthSlice = createSlice({
   name: 'netWorth',
@@ -21,6 +24,13 @@ const netWorthSlice = createSlice({
       .addCase(fetchCurrentNetWorth.rejected, (s, a) => { s.isLoading = false; s.error = a.payload; });
     builder.addCase(fetchHistory.fulfilled, (s, a) => { s.history = a.payload; });
     builder.addCase(takeSnapshot.fulfilled, (s, a) => { s.history.push(a.payload); });
+    builder.addCase(triggerAutoSnapshot.fulfilled, (s, a) => {
+      if (a.payload) {
+        const idx = s.history.findIndex(h => h._id === a.payload._id);
+        if (idx >= 0) s.history[idx] = a.payload;
+        else s.history.push(a.payload);
+      }
+    });
   },
 });
 export default netWorthSlice.reducer;

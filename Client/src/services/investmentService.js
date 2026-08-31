@@ -5,3 +5,5 @@ export const createInvestment = (data) => axios.post(API, data, { withCredential
 export const updateInvestment = (id, data) => axios.put(`${API}/${id}`, data, { withCredentials: true });
 export const deleteInvestment = (id) => axios.delete(`${API}/${id}`, { withCredentials: true });
 export const updateCurrentValue = (id, data) => axios.put(`${API}/${id}/value`, data, { withCredentials: true });
+export const syncAllInvestments = () => axios.post(`${API}/sync-all`, {}, { withCredentials: true });
+export const syncInvestmentPrice = (id) => axios.post(`${API}/${id}/sync-price`, {}, { withCredentials: true });

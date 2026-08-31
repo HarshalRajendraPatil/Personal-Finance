@@ -16,7 +16,12 @@ const budgetService = {
   deleteBudget: async (id) => {
     const res = await api.delete(`/budgets/${id}`);
     return res.data;
-  }
+  },
+  getBudgetGuardrails: async () => {
+    const res = await api.get('/budgets/guardrails');
+    return res.data;
+  },
 };
 
 export default budgetService;
+

@@ -5,6 +5,12 @@ import Loan from '../models/Loan.js';
 import RecurringRule from '../models/RecurringRule.js';
 import Investment from '../models/Investment.js';
 import Goal from '../models/Goal.js';
+import {
+  getMonthlyReview as getMonthlyReviewService,
+  computeAndSaveMonthlyReview,
+  listUserMonthlyReviews,
+} from '../services/monthlyReviewService.js';
+
 
 
 export const getHealthScore = async (req, res) => {
@@ -115,135 +121,75 @@ export const getHealthScore = async (req, res) => {
 export const getMonthlyReview = async (req, res) => {
   try {
     const userId = req.user._id;
-    let { month, year } = req.query;
-    
-    if (!month || !year) {
+    let { month, year, refresh } = req.query;
+
+    if (month === undefined || year === undefined) {
       const now = new Date();
-      // Default to previous month if not specified
       now.setMonth(now.getMonth() - 1);
       month = now.getMonth(); // 0-indexed
       year = now.getFullYear();
     } else {
-      month = parseInt(month);
-      year = parseInt(year);
+      month = parseInt(month, 10);
+      year = parseInt(year, 10);
     }
 
-    const startDate = new Date(year, month, 1);
-    const endDate = new Date(year, month + 1, 0, 23, 59, 59, 999);
-
-    // Get 3-month average for anomalies
-    const threeMonthsAgo = new Date(year, month - 3, 1);
-
-    const targetTransactions = await Transaction.find({
-      user: userId,
-      date: { $gte: startDate, $lte: endDate }
-    }).populate('category', 'name color icon');
-
-    const historicalTransactions = await Transaction.find({
-      user: userId,
-      date: { $gte: threeMonthsAgo, $lt: startDate }
-    }).populate('category', 'name color icon');
-
-    let totalIncome = 0;
-    let totalExpense = 0;
-    const categorySpend = {};
-
-    targetTransactions.forEach(t => {
-      if (t.type === 'Income') totalIncome += t.amount;
-      if (t.type === 'Expense') {
-        totalExpense += t.amount;
-        if (t.category) {
-          const catId = t.category._id.toString();
-          if (!categorySpend[catId]) {
-            categorySpend[catId] = { category: t.category, amount: 0, transactions: [] };
-          }
-          categorySpend[catId].amount += t.amount;
-          categorySpend[catId].transactions.push(t);
-        }
-      }
-    });
-
-    const historicalSpend = {};
-    historicalTransactions.forEach(t => {
-      if (t.type === 'Expense' && t.category) {
-        const catId = t.category._id.toString();
-        historicalSpend[catId] = (historicalSpend[catId] || 0) + t.amount;
-      }
-    });
-
-    // Identify top categories
-    const topCategories = Object.values(categorySpend)
-      .sort((a, b) => b.amount - a.amount)
-      .slice(0, 3)
-      .map(c => ({
-        name: c.category.name,
-        color: c.category.color,
-        icon: c.category.icon,
-        amount: c.amount,
-        percentage: totalExpense > 0 ? ((c.amount / totalExpense) * 100).toFixed(1) : 0
-      }));
-
-    // Identify anomalies (spend > 50% above historical average)
-    const anomalies = [];
-    Object.keys(categorySpend).forEach(catId => {
-      const currentSpend = categorySpend[catId].amount;
-      const avgHistorical = (historicalSpend[catId] || 0) / 3;
-      
-      if (avgHistorical > 0 && currentSpend > avgHistorical * 1.5 && currentSpend > 1000) {
-        anomalies.push({
-          category: categorySpend[catId].category.name,
-          current: currentSpend,
-          average: avgHistorical,
-          increase: (((currentSpend - avgHistorical) / avgHistorical) * 100).toFixed(0)
-        });
-      }
-    });
-
-    const netCashFlow = totalIncome - totalExpense;
-    const savingsRate = totalIncome > 0 ? ((netCashFlow / totalIncome) * 100).toFixed(1) : 0;
-
-    // Generate insights
-    const insights = [];
-    if (netCashFlow > 0) {
-      insights.push(`Great job! You saved **₹${netCashFlow.toLocaleString('en-IN')}** this month, representing **${savingsRate}%** of your income.`);
-    } else {
-      insights.push(`You spent **₹${Math.abs(netCashFlow).toLocaleString('en-IN')}** more than you earned this month. Keep an eye on your budget!`);
-    }
-
-    if (topCategories.length > 0) {
-      insights.push(`Your biggest expense area was **${topCategories[0].name}**, making up **${topCategories[0].percentage}%** of your total spending.`);
-    }
-
-    if (anomalies.length > 0) {
-      insights.push(`**Anomaly Detected**: You spent ${anomalies[0].increase}% more on ${anomalies[0].category} than your usual monthly average.`);
-    }
+    const forceRefresh = refresh === 'true' || refresh === true;
+    const digest = await getMonthlyReviewService(userId, year, month, forceRefresh);
 
     res.json({
       period: {
         month,
         year,
-        name: startDate.toLocaleString('default', { month: 'long', year: 'numeric' })
+        name: digest.monthName,
       },
-      summary: {
-        totalIncome,
-        totalExpense,
-        netCashFlow,
-        savingsRate
-      },
-      topCategories,
-      anomalies,
-      insights,
-      transactionCount: targetTransactions.length,
-      largestTransactions: targetTransactions
-        .filter(t => t.type === 'Expense')
-        .sort((a, b) => b.amount - a.amount)
-        .slice(0, 5)
+      summary: digest.summary,
+      financialHealthScore: digest.financialHealthScore,
+      topCategories: digest.topCategories,
+      anomalies: digest.anomalies,
+      budgetPerformance: digest.budgetPerformance,
+      netWorthChange: digest.netWorthChange,
+      largestTransactions: digest.largestTransactions,
+      insights: digest.insights,
+      recommendations: digest.recommendations,
+      transactionCount: digest.transactionCount,
+      isAutomated: digest.isAutomated,
+      createdAt: digest.createdAt,
     });
-
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
+
+export const generateMonthlyReview = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    let { month, year } = req.body;
+
+    if (month === undefined || year === undefined) {
+      const now = new Date();
+      month = now.getMonth();
+      year = now.getFullYear();
+    } else {
+      month = parseInt(month, 10);
+      year = parseInt(year, 10);
+    }
+
+    const digest = await computeAndSaveMonthlyReview(userId, year, month, false);
+    res.json(digest);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const listMonthlyReviews = async (req, res) => {
+  try {
+    const list = await listUserMonthlyReviews(req.user._id);
+    res.json(list);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 
 // ─────────────────────────────────────────────
 // SPENDING INSIGHTS & ANOMALY DETECTION

@@ -5,12 +5,14 @@ import {
   updateBudget,
   deleteBudget,
   getBudgetsWithSpend,
+  getBudgetGuardrails,
 } from '../controllers/budgetController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
 router.get('/with-spend', protect, getBudgetsWithSpend);
+router.get('/guardrails', protect, getBudgetGuardrails);
 
 router.route('/')
   .get(protect, getBudgets)
@@ -21,3 +23,4 @@ router.route('/:id')
   .delete(protect, deleteBudget);
 
 export default router;
+

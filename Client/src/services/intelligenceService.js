@@ -5,11 +5,21 @@ const getHealthScore = async () => {
   return response.data;
 };
 
-const getMonthlyReview = async (month, year) => {
-  const query = (month !== undefined && year !== undefined) ? `?month=${month}&year=${year}` : '';
+const getMonthlyReview = async (month, year, refresh = false) => {
+  const params = new URLSearchParams();
+  if (month !== undefined) params.set('month', month);
+  if (year !== undefined) params.set('year', year);
+  if (refresh) params.set('refresh', 'true');
+  const query = params.toString() ? `?${params.toString()}` : '';
   const response = await api.get(`/intelligence/monthly-review${query}`);
   return response.data;
 };
+
+const generateMonthlyReview = async (month, year) => {
+  const response = await api.post(`/intelligence/generate-review`, { month, year });
+  return response.data;
+};
+
 
 const getSpendingInsights = async () => {
   const response = await api.get('/intelligence/spending-insights');
@@ -36,10 +46,12 @@ const getLongtermProjection = async (params = {}) => {
 const intelligenceService = {
   getHealthScore,
   getMonthlyReview,
+  generateMonthlyReview,
   getSpendingInsights,
   getCashflowForecast,
   getLongtermProjection,
 };
 
 export default intelligenceService;
+
 

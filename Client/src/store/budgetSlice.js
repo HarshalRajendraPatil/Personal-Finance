@@ -40,9 +40,20 @@ export const deleteBudget = createAsyncThunk('budgets/delete', async (id, thunkA
   }
 });
 
+export const fetchBudgetGuardrails = createAsyncThunk('budgets/fetchGuardrails', async (_, thunkAPI) => {
+  try {
+    return await budgetService.getBudgetGuardrails();
+  } catch (error) {
+    return thunkAPI.rejectWithValue(error.response?.data?.message || error.message);
+  }
+});
+
 const budgetSlice = createSlice({
   name: 'budgets',
-  initialState,
+  initialState: {
+    ...initialState,
+    guardrails: null,
+  },
   reducers: {
     clearBudgetError: (state) => { state.error = null; }
   },
@@ -55,7 +66,6 @@ const budgetSlice = createSlice({
       .addCase(createBudget.pending, (state) => { state.isLoading = true; state.error = null; })
       .addCase(createBudget.fulfilled, (state, action) => {
         state.isLoading = false;
-        // After creation, we need a refetch to get spend data — just add with 0 spend for now
         state.budgets.push({ ...action.payload, spent: 0, percentage: 0, remaining: action.payload.limit });
       })
       .addCase(createBudget.rejected, (state, action) => { state.isLoading = false; state.error = action.payload; })
@@ -67,9 +77,14 @@ const budgetSlice = createSlice({
 
       .addCase(deleteBudget.fulfilled, (state, action) => {
         state.budgets = state.budgets.filter(b => b._id !== action.payload);
+      })
+
+      .addCase(fetchBudgetGuardrails.fulfilled, (state, action) => {
+        state.guardrails = action.payload;
       });
   }
 });
 
 export const { clearBudgetError } = budgetSlice.actions;
 export default budgetSlice.reducer;
+

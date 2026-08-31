@@ -63,5 +63,11 @@ const transactionSchema = new mongoose.Schema({
   timestamps: true,
 });
 
+// Compound indexes for fast lookups, analytics, and period rollups
+transactionSchema.index({ user: 1, date: -1 });
+transactionSchema.index({ user: 1, type: 1, date: -1 });
+transactionSchema.index({ user: 1, category: 1, date: -1 });
+transactionSchema.index({ user: 1, account: 1 });
+
 const Transaction = mongoose.model('Transaction', transactionSchema);
 export default Transaction;

@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchGoals, createGoal, updateGoal, deleteGoal, addContribution } from '../../store/goalSlice';
 import { fetchAccounts } from '../../store/accountSlice';
+import Pagination from '../../components/Pagination';
 import * as Icons from 'lucide-react';
 const { Plus, Target, Edit2, Trash2, Sparkles } = Icons;
+
 
 const fmt = (n) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n);
 
@@ -283,10 +285,27 @@ const Goals = () => {
   const openEdit = (g) => { setEditingGoal(g); setModalOpen(true); };
   const openContribute = (g) => { setActiveGoal(g); setContributeOpen(true); };
 
-  const activeGoals = goals.filter(g => !g.isCompleted);
-  const completedGoals = goals.filter(g => g.isCompleted);
+  const [activePage, setActivePage] = useState(1);
+  const [activePageSize, setActivePageSize] = useState(6);
+  const [completedPage, setCompletedPage] = useState(1);
+  const [completedPageSize, setCompletedPageSize] = useState(6);
+
+  const activeGoals = useMemo(() => goals.filter(g => !g.isCompleted), [goals]);
+  const completedGoals = useMemo(() => goals.filter(g => g.isCompleted), [goals]);
   const totalSaved = activeGoals.reduce((s, g) => s + g.currentAmount, 0);
   const totalTarget = activeGoals.reduce((s, g) => s + g.targetAmount, 0);
+
+  const pagedActiveGoals = useMemo(() => {
+    if (activePageSize === 'all') return activeGoals;
+    const start = (activePage - 1) * activePageSize;
+    return activeGoals.slice(start, start + activePageSize);
+  }, [activeGoals, activePage, activePageSize]);
+
+  const pagedCompletedGoals = useMemo(() => {
+    if (completedPageSize === 'all') return completedGoals;
+    const start = (completedPage - 1) * completedPageSize;
+    return completedGoals.slice(start, start + completedPageSize);
+  }, [completedGoals, completedPage, completedPageSize]);
 
   return (
     <div className="max-w-5xl mx-auto py-4 sm:py-8 px-1 sm:px-6 lg:px-8">
@@ -330,61 +349,73 @@ const Goals = () => {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {activeGoals.map(goal => {
-              const pct = Math.min(100, Math.round(((goal.currentAmount || 0) / goal.targetAmount) * 100));
-              const projected = getProjectedDate(goal);
-              return (
-                <div key={goal._id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2 mb-1">
-                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-base" style={{ backgroundColor: `${goal.color}20` }}>
-                          {(() => {
-                            const IconC = Icons[goal.icon] || Icons.Target;
-                            return <IconC className="w-4 h-4" style={{ color: goal.color }} />;
-                          })()}
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {pagedActiveGoals.map(goal => {
+                const pct = Math.min(100, Math.round(((goal.currentAmount || 0) / goal.targetAmount) * 100));
+                const projected = getProjectedDate(goal);
+                return (
+                  <div key={goal._id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-1">
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center text-base" style={{ backgroundColor: `${goal.color}20` }}>
+                            {(() => {
+                              const IconC = Icons[goal.icon] || Icons.Target;
+                              return <IconC className="w-4 h-4" style={{ color: goal.color }} />;
+                            })()}
+                          </div>
+                          <h3 className="text-sm font-semibold text-gray-900">{goal.name}</h3>
                         </div>
-                        <h3 className="text-sm font-semibold text-gray-900">{goal.name}</h3>
+                        {goal.deadline && <p className="text-xs text-gray-400">Deadline: {new Date(goal.deadline).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>}
+                        {projected && <p className="text-xs text-indigo-500">Projected: {projected}</p>}
                       </div>
-                      {goal.deadline && <p className="text-xs text-gray-400">Deadline: {new Date(goal.deadline).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>}
-                      {projected && <p className="text-xs text-indigo-500">Projected: {projected}</p>}
+                      <CircularProgress percentage={pct} color={goal.color || '#3b82f6'} size={80} />
                     </div>
-                    <CircularProgress percentage={pct} color={goal.color || '#3b82f6'} size={80} />
-                  </div>
 
-                  <div className="mt-4">
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="font-bold text-gray-900">{fmt(goal.currentAmount || 0)}</span>
-                      <span className="text-gray-400">of {fmt(goal.targetAmount)}</span>
+                    <div className="mt-4">
+                      <div className="flex justify-between text-sm mb-1">
+                        <span className="font-bold text-gray-900">{fmt(goal.currentAmount || 0)}</span>
+                        <span className="text-gray-400">of {fmt(goal.targetAmount)}</span>
+                      </div>
+                      <div className="w-full bg-gray-100 rounded-full h-2">
+                        <div className="h-2 rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: goal.color || '#3b82f6' }} />
+                      </div>
+                      <p className="text-xs text-gray-400 mt-1">{fmt(Math.max(0, goal.targetAmount - (goal.currentAmount || 0)))} remaining</p>
                     </div>
-                    <div className="w-full bg-gray-100 rounded-full h-2">
-                      <div className="h-2 rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: goal.color || '#3b82f6' }} />
+
+                    {goal.notes && <p className="mt-2 text-xs text-gray-400 italic">"{goal.notes}"</p>}
+
+                    <div className="mt-4 flex space-x-2">
+                      <button onClick={() => openContribute(goal)} className="flex-1 text-xs py-1.5 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 font-medium flex items-center justify-center">
+                        <Plus className="w-3.5 h-3.5 mr-1" />Add Contribution
+                      </button>
+                      <button onClick={() => openEdit(goal)} className="p-1.5 text-gray-400 hover:text-blue-600"><Edit2 className="w-4 h-4" /></button>
+                      <button onClick={() => handleDelete(goal._id)} className="p-1.5 text-gray-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
                     </div>
-                    <p className="text-xs text-gray-400 mt-1">{fmt(Math.max(0, goal.targetAmount - (goal.currentAmount || 0)))} remaining</p>
                   </div>
-
-                  {goal.notes && <p className="mt-2 text-xs text-gray-400 italic">"{goal.notes}"</p>}
-
-                  <div className="mt-4 flex space-x-2">
-                    <button onClick={() => openContribute(goal)} className="flex-1 text-xs py-1.5 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 font-medium flex items-center justify-center">
-                      <Plus className="w-3.5 h-3.5 mr-1" />Add Contribution
-                    </button>
-                    <button onClick={() => openEdit(goal)} className="p-1.5 text-gray-400 hover:text-blue-600"><Edit2 className="w-4 h-4" /></button>
-                    <button onClick={() => handleDelete(goal._id)} className="p-1.5 text-gray-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
+            <Pagination
+              className="rounded-xl border border-gray-100"
+              currentPage={activePage}
+              totalItems={activeGoals.length}
+              pageSize={activePageSize}
+              onPageChange={setActivePage}
+              onPageSizeChange={setActivePageSize}
+              pageSizeOptions={[4, 6, 12, 'all']}
+              itemLabel="active goals"
+            />
           </div>
 
           {completedGoals.length > 0 && (
-            <div className="mt-10">
+            <div className="mt-10 space-y-4">
               <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-4 flex items-center">
                 <Sparkles className="w-4 h-4 mr-2 text-yellow-500" />Completed ({completedGoals.length})
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {completedGoals.map(goal => (
+                {pagedCompletedGoals.map(goal => (
                   <div key={goal._id} className="bg-green-50 rounded-xl border border-green-200 p-4 opacity-80">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
@@ -399,10 +430,21 @@ const Goals = () => {
                   </div>
                 ))}
               </div>
+              <Pagination
+                className="rounded-xl border border-green-200"
+                currentPage={completedPage}
+                totalItems={completedGoals.length}
+                pageSize={completedPageSize}
+                onPageChange={setCompletedPage}
+                onPageSizeChange={setCompletedPageSize}
+                pageSizeOptions={[4, 6, 12, 'all']}
+                itemLabel="completed goals"
+              />
             </div>
           )}
         </>
       )}
+
 
       <GoalFormModal isOpen={modalOpen} onClose={() => setModalOpen(false)} goal={editingGoal} />
       <ContributeModal isOpen={contributeOpen} onClose={() => setContributeOpen(false)} goal={activeGoal} />

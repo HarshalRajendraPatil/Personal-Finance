@@ -2,7 +2,9 @@ import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import compression from 'compression';
 import connectDB from './config/db.js';
+
 import authRoutes from './routes/authRoutes.js';
 import accountRoutes from './routes/accountRoutes.js';
 import categoryRoutes from './routes/categoryRoutes.js';
@@ -28,7 +30,19 @@ initCronJobs();
 
 const app = express();
 
+// ⚡ High-Throughput Response Compression (Gzip / Brotli)
+app.use(
+  compression({
+    filter: (req, res) => {
+      if (req.headers['x-no-compression']) return false;
+      return compression.filter(req, res);
+    },
+    level: 6, // Optimal throughput & compression balance
+  })
+);
+
 app.use(cors({
+
   origin: true, // Allow requests from web client, Expo web, and mobile app
   credentials: true,
 }));

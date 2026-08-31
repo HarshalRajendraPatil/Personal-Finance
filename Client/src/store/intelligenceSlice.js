@@ -9,13 +9,14 @@ export const fetchHealthScore = createAsyncThunk('intelligence/fetchHealthScore'
   }
 });
 
-export const fetchMonthlyReview = createAsyncThunk('intelligence/fetchMonthlyReview', async ({ month, year } = {}, thunkAPI) => {
+export const fetchMonthlyReview = createAsyncThunk('intelligence/fetchMonthlyReview', async ({ month, year, refresh } = {}, thunkAPI) => {
   try {
-    return await intelligenceService.getMonthlyReview(month, year);
+    return await intelligenceService.getMonthlyReview(month, year, refresh);
   } catch (error) {
     return thunkAPI.rejectWithValue(error.response?.data?.message || error.message);
   }
 });
+
 
 export const fetchSpendingInsights = createAsyncThunk('intelligence/fetchSpendingInsights', async (_, thunkAPI) => {
   try {

@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import api from '../../services/api';
+import Pagination from '../../components/Pagination';
+import CSVImporterModal from '../../components/CSVImporterModal';
 import { FileDown, TrendingUp, TrendingDown, Wallet, Percent, Filter } from 'lucide-react';
 
 const fmt = (n) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n || 0);
@@ -10,128 +12,6 @@ const getDefaultRange = () => {
   const start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
   const end = now.toISOString().split('T')[0];
   return { start, end };
-};
-
-// ── CSV Column Mapper ─────────────────────────────────────────────────
-const CSVImporter = ({ onClose }) => {
-  const { accounts } = useSelector(s => s.accounts);
-  const [file, setFile] = useState(null);
-  const [headers, setHeaders] = useState([]);
-  const [rows, setRows] = useState([]);
-  const [mapping, setMapping] = useState({ date: '', amount: '', description: '', type: '' });
-  const [defaultAccount, setDefaultAccount] = useState('');
-  const [defaultType, setDefaultType] = useState('Expense');
-  const [step, setStep] = useState(1); // 1=upload, 2=map, 3=preview
-
-  const handleFile = (e) => {
-    const f = e.target.files[0];
-    if (!f) return;
-    setFile(f);
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const lines = ev.target.result.split('\n').filter(l => l.trim());
-      const hdrs = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-      const data = lines.slice(1).map(l => l.split(',').map(c => c.trim().replace(/"/g, '')));
-      setHeaders(hdrs);
-      setRows(data.slice(0, 5)); // preview first 5
-      setStep(2);
-    };
-    reader.readAsText(f);
-  };
-
-  const buildPreviewRows = () => {
-    return rows.map(row => ({
-      date: mapping.date ? row[headers.indexOf(mapping.date)] : '',
-      amount: mapping.amount ? parseFloat(row[headers.indexOf(mapping.amount)]) || 0 : 0,
-      description: mapping.description ? row[headers.indexOf(mapping.description)] : '',
-      type: mapping.type ? row[headers.indexOf(mapping.type)] : defaultType,
-    }));
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-xl max-h-[90vh] overflow-y-auto">
-        <h2 className="text-xl font-bold text-gray-900 mb-2">Import from CSV</h2>
-        <p className="text-sm text-gray-500 mb-5">Upload any bank statement CSV and map the columns.</p>
-
-        {step === 1 && (
-          <div>
-            <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition">
-              <FileDown className="w-8 h-8 text-gray-400 mb-2" />
-              <span className="text-sm text-gray-500">Click to upload CSV file</span>
-              <input type="file" accept=".csv" className="hidden" onChange={handleFile} />
-            </label>
-          </div>
-        )}
-
-        {step === 2 && (
-          <div className="space-y-4">
-            <p className="text-xs text-gray-500 bg-gray-50 p-3 rounded-lg">Detected columns: <span className="font-medium">{headers.join(', ')}</span></p>
-            <div className="grid grid-cols-2 gap-3">
-              {[['date', 'Date Column'], ['amount', 'Amount Column'], ['description', 'Description Column']].map(([key, label]) => (
-                <div key={key}>
-                  <label className="block text-sm font-medium text-gray-700">{label}</label>
-                  <select value={mapping[key]} onChange={e => setMapping(m => ({ ...m, [key]: e.target.value }))}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm">
-                    <option value="">— Skip —</option>
-                    {headers.map(h => <option key={h} value={h}>{h}</option>)}
-                  </select>
-                </div>
-              ))}
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Default Account</label>
-                <select value={defaultAccount} onChange={e => setDefaultAccount(e.target.value)}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm">
-                  <option value="">— None —</option>
-                  {accounts.filter(a => !a.isArchived).map(a => <option key={a._id} value={a._id}>{a.name}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Default Type</label>
-                <select value={defaultType} onChange={e => setDefaultType(e.target.value)}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm">
-                  <option value="Expense">Expense</option>
-                  <option value="Income">Income</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Preview */}
-            <div>
-              <p className="text-sm font-medium text-gray-700 mb-2">Preview (first 5 rows)</p>
-              <div className="overflow-x-auto rounded-lg border border-gray-200">
-                <table className="min-w-full text-xs">
-                  <thead className="bg-gray-50"><tr>
-                    <th className="px-3 py-2 text-left text-gray-600">Date</th>
-                    <th className="px-3 py-2 text-left text-gray-600">Amount</th>
-                    <th className="px-3 py-2 text-left text-gray-600">Description</th>
-                  </tr></thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {buildPreviewRows().map((r, i) => (
-                      <tr key={i}><td className="px-3 py-2 text-gray-700">{r.date}</td><td className="px-3 py-2 text-gray-700">{r.amount}</td><td className="px-3 py-2 text-gray-500 truncate max-w-xs">{r.description}</td></tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <p className="text-xs text-orange-600 bg-orange-50 p-3 rounded-lg">
-              ⚠️ CSV import creates <strong>draft review entries</strong>. Full bulk-import backend integration requires manual review per transaction for accuracy.
-            </p>
-          </div>
-        )}
-
-        <div className="flex justify-end space-x-3 mt-5 pt-4 border-t">
-          <button onClick={onClose} className="px-4 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Cancel</button>
-          {step === 2 && (
-            <button onClick={onClose} className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700">
-              Import (Coming Soon)
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
 };
 
 // ── Main Reports Page ─────────────────────────────────────────────────
@@ -146,6 +26,17 @@ const Reports = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [csvImportOpen, setCsvImportOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
+  const [catPage, setCatPage] = useState(1);
+  const [catPageSize, setCatPageSize] = useState(8);
+
+  const maxCat = useMemo(() => Math.max(...byCategory.map(c => c.total), 1), [byCategory]);
+
+  const pagedByCategory = useMemo(() => {
+    if (catPageSize === 'all') return byCategory;
+    const start = (catPage - 1) * catPageSize;
+    return byCategory.slice(start, start + catPageSize);
+  }, [byCategory, catPage, catPageSize]);
+
 
   const fetchReports = async (activeFilters = filters) => {
     setIsLoading(true);
@@ -178,8 +69,6 @@ const Reports = () => {
   };
 
   const handlePrint = () => window.print();
-
-  const maxCat = byCategory.length > 0 ? byCategory[0].total : 1;
 
   return (
     <div className="max-w-5xl mx-auto py-4 sm:py-8 px-1 sm:px-6 lg:px-8" id="reports-page">
@@ -267,25 +156,36 @@ const Reports = () => {
         {byCategory.length === 0 ? (
           <p className="text-sm text-gray-400 text-center py-6">No {filters.type.toLowerCase()} data for this period.</p>
         ) : (
-          <div className="space-y-3">
-            {byCategory.slice(0, 10).map((item, i) => (
-              <div key={i}>
-                <div className="flex items-center justify-between mb-1">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-xs font-medium text-gray-700">{item.category?.name || 'Uncategorized'}</span>
-                    <span className="text-xs text-gray-400">({item.count} txns)</span>
+          <div className="space-y-4">
+            <div className="space-y-3">
+              {pagedByCategory.map((item, i) => (
+                <div key={i}>
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xs font-medium text-gray-700">{item.category?.name || 'Uncategorized'}</span>
+                      <span className="text-xs text-gray-400">({item.count} txns)</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xs font-semibold text-gray-900">{fmt(item.total)}</span>
+                      <span className="text-xs text-gray-400">{item.percentage}%</span>
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-xs font-semibold text-gray-900">{fmt(item.total)}</span>
-                    <span className="text-xs text-gray-400">{item.percentage}%</span>
+                  <div className="w-full bg-gray-100 rounded-full h-2">
+                    <div className="h-2 rounded-full transition-all"
+                      style={{ width: `${(item.total / maxCat) * 100}%`, backgroundColor: item.category?.color || '#3b82f6' }} />
                   </div>
                 </div>
-                <div className="w-full bg-gray-100 rounded-full h-2">
-                  <div className="h-2 rounded-full transition-all"
-                    style={{ width: `${(item.total / maxCat) * 100}%`, backgroundColor: item.category?.color || '#3b82f6' }} />
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
+            <Pagination
+              currentPage={catPage}
+              totalItems={byCategory.length}
+              pageSize={catPageSize}
+              onPageChange={setCatPage}
+              onPageSizeChange={setCatPageSize}
+              pageSizeOptions={[5, 8, 12, 'all']}
+              itemLabel="categories"
+            />
           </div>
         )}
       </div>
@@ -323,9 +223,10 @@ const Reports = () => {
       {/* Print styles */}
       <style>{`@media print { button, .no-print { display: none !important; } }`}</style>
 
-      {csvImportOpen && <CSVImporter onClose={() => setCsvImportOpen(false)} />}
+      <CSVImporterModal isOpen={csvImportOpen} onClose={() => { setCsvImportOpen(false); fetchReports(filters); }} />
     </div>
   );
 };
+
 
 export default Reports;

@@ -16,7 +16,11 @@ const netWorthSnapshotSchema = new mongoose.Schema({
   // Final
   netWorth: { type: Number, default: 0 },
   notes: { type: String, default: '' },
+  isAutomated: { type: Boolean, default: false },
 }, { timestamps: true });
+
+// Compound index for fast timeline queries
+netWorthSnapshotSchema.index({ user: 1, date: -1 });
 
 const NetWorthSnapshot = mongoose.model('NetWorthSnapshot', netWorthSnapshotSchema);
 export default NetWorthSnapshot;

@@ -6,12 +6,13 @@ import Transaction from '../models/Transaction.js';
 // @access  Private
 const getAccounts = async (req, res) => {
   try {
-    const accounts = await Account.find({ user: req.user._id }).sort({ createdAt: -1 });
+    const accounts = await Account.find({ user: req.user._id }).sort({ createdAt: -1 }).lean();
     res.json(accounts);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
+
 
 // @desc    Create a new account
 // @route   POST /api/accounts

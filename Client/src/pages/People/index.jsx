@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchLendings, createLending, updateLending, deleteLending, addRepayment, settleLending } from '../../store/lendingSlice';
 import { fetchAccounts } from '../../store/accountSlice';
+import Pagination from '../../components/Pagination';
 import { Plus, HandCoins, TrendingUp, TrendingDown, CheckCircle2, Edit2, Trash2, ChevronDown, ChevronUp, Clock } from 'lucide-react';
+
 
 const fmt = (n) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n);
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
@@ -300,11 +302,36 @@ const People = () => {
   const openEdit = (entry) => { setEditingEntry(entry); setModalOpen(true); };
   const handleDelete = (id) => { if (window.confirm('Delete this entry?')) dispatch(deleteLending(id)); };
 
-  const lentItems = lendings.filter(l => l.type === 'lent' && !l.isSettled);
-  const borrowedItems = lendings.filter(l => l.type === 'borrowed' && !l.isSettled);
-  const settledItems = lendings.filter(l => l.isSettled);
+  const [lentPage, setLentPage] = useState(1);
+  const [lentPageSize, setLentPageSize] = useState(5);
+  const [borrowedPage, setBorrowedPage] = useState(1);
+  const [borrowedPageSize, setBorrowedPageSize] = useState(5);
+  const [settledPage, setSettledPage] = useState(1);
+  const [settledPageSize, setSettledPageSize] = useState(6);
+
+  const lentItems = useMemo(() => lendings.filter(l => l.type === 'lent' && !l.isSettled), [lendings]);
+  const borrowedItems = useMemo(() => lendings.filter(l => l.type === 'borrowed' && !l.isSettled), [lendings]);
+  const settledItems = useMemo(() => lendings.filter(l => l.isSettled), [lendings]);
   const totalOwedToMe = lentItems.reduce((s, l) => s + Math.max(0, l.amount - (l.repayments || []).reduce((a, r) => a + r.amount, 0)), 0);
   const totalIOwe = borrowedItems.reduce((s, l) => s + Math.max(0, l.amount - (l.repayments || []).reduce((a, r) => a + r.amount, 0)), 0);
+
+  const pagedLentItems = useMemo(() => {
+    if (lentPageSize === 'all') return lentItems;
+    const start = (lentPage - 1) * lentPageSize;
+    return lentItems.slice(start, start + lentPageSize);
+  }, [lentItems, lentPage, lentPageSize]);
+
+  const pagedBorrowedItems = useMemo(() => {
+    if (borrowedPageSize === 'all') return borrowedItems;
+    const start = (borrowedPage - 1) * borrowedPageSize;
+    return borrowedItems.slice(start, start + borrowedPageSize);
+  }, [borrowedItems, borrowedPage, borrowedPageSize]);
+
+  const pagedSettledItems = useMemo(() => {
+    if (settledPageSize === 'all') return settledItems;
+    const start = (settledPage - 1) * settledPageSize;
+    return settledItems.slice(start, start + settledPageSize);
+  }, [settledItems, settledPage, settledPageSize]);
 
   return (
     <div className="max-w-5xl mx-auto py-4 sm:py-8 px-1 sm:px-6 lg:px-8">
@@ -343,26 +370,65 @@ const People = () => {
               <span className="w-2.5 h-2.5 rounded-full bg-blue-500 mr-2"></span>Owed to Me ({lentItems.length})
             </h2>
             {lentItems.length === 0 ? <p className="text-sm text-gray-400 text-center py-8 bg-white rounded-xl border border-dashed border-gray-200">No pending lendings.</p>
-              : <div className="space-y-4">{lentItems.map(l => <LendingCard key={l._id} entry={l} onEdit={openEdit} onRepay={openRepay} onSettle={openSettle} onDelete={handleDelete} />)}</div>}
+              : (
+                <div className="space-y-4">
+                  {pagedLentItems.map(l => <LendingCard key={l._id} entry={l} onEdit={openEdit} onRepay={openRepay} onSettle={openSettle} onDelete={handleDelete} />)}
+                  <Pagination
+                    className="rounded-xl border border-gray-100"
+                    currentPage={lentPage}
+                    totalItems={lentItems.length}
+                    pageSize={lentPageSize}
+                    onPageChange={setLentPage}
+                    onPageSizeChange={setLentPageSize}
+                    pageSizeOptions={[5, 10, 'all']}
+                    itemLabel="lent items"
+                  />
+                </div>
+              )}
           </div>
           <div>
             <h2 className="text-base font-semibold text-gray-700 mb-4 flex items-center">
               <span className="w-2.5 h-2.5 rounded-full bg-orange-500 mr-2"></span>I Owe ({borrowedItems.length})
             </h2>
             {borrowedItems.length === 0 ? <p className="text-sm text-gray-400 text-center py-8 bg-white rounded-xl border border-dashed border-gray-200">No pending borrowings.</p>
-              : <div className="space-y-4">{borrowedItems.map(l => <LendingCard key={l._id} entry={l} onEdit={openEdit} onRepay={openRepay} onSettle={openSettle} onDelete={handleDelete} />)}</div>}
+              : (
+                <div className="space-y-4">
+                  {pagedBorrowedItems.map(l => <LendingCard key={l._id} entry={l} onEdit={openEdit} onRepay={openRepay} onSettle={openSettle} onDelete={handleDelete} />)}
+                  <Pagination
+                    className="rounded-xl border border-gray-100"
+                    currentPage={borrowedPage}
+                    totalItems={borrowedItems.length}
+                    pageSize={borrowedPageSize}
+                    onPageChange={setBorrowedPage}
+                    onPageSizeChange={setBorrowedPageSize}
+                    pageSizeOptions={[5, 10, 'all']}
+                    itemLabel="borrowed items"
+                  />
+                </div>
+              )}
           </div>
         </div>
       )}
 
       {settledItems.length > 0 && (
-        <div className="mt-10">
+        <div className="mt-10 space-y-4">
           <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-4">Settled ({settledItems.length})</h2>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {settledItems.map(l => <LendingCard key={l._id} entry={l} onEdit={() => { }} onRepay={() => { }} onSettle={() => { }} onDelete={handleDelete} />)}
+            {pagedSettledItems.map(l => <LendingCard key={l._id} entry={l} onEdit={() => { }} onRepay={() => { }} onSettle={() => { }} onDelete={handleDelete} />)}
           </div>
+          <Pagination
+            className="rounded-xl border border-gray-100"
+            currentPage={settledPage}
+            totalItems={settledItems.length}
+            pageSize={settledPageSize}
+            onPageChange={setSettledPage}
+            onPageSizeChange={setSettledPageSize}
+            pageSizeOptions={[4, 6, 12, 'all']}
+            itemLabel="settled records"
+          />
         </div>
       )}
+
 
       <LendingFormModal isOpen={modalOpen} onClose={() => setModalOpen(false)} entry={editingEntry} />
       <RepayModal isOpen={repayModalOpen} onClose={() => setRepayModalOpen(false)} entry={activeEntry} isSettleMode={settleMode} />

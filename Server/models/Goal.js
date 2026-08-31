@@ -33,5 +33,8 @@ goalSchema.virtual('remaining').get(function () {
 goalSchema.set('toJSON', { virtuals: true });
 goalSchema.set('toObject', { virtuals: true });
 
+goalSchema.index({ user: 1, isCompleted: 1 });
+
 const Goal = mongoose.model('Goal', goalSchema);
 export default Goal;
+

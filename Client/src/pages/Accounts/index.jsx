@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchAccounts, deleteAccount } from '../../store/accountSlice';
 import AccountFormModal from './AccountFormModal';
 import accountService from '../../services/accountService';
+import Pagination from '../../components/Pagination';
+
 import {
   Plus,
   Building2,
@@ -229,11 +231,14 @@ const CreditCardStatementModal = ({ isOpen, onClose, card, onPayClick }) => {
   const [statement, setStatement] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   useEffect(() => {
     if (card && isOpen) {
       setIsLoading(true);
       setError('');
+      setCurrentPage(1);
       accountService
         .getStatement(card._id)
         .then((data) => setStatement(data))
@@ -242,7 +247,15 @@ const CreditCardStatementModal = ({ isOpen, onClose, card, onPayClick }) => {
     }
   }, [card, isOpen]);
 
+  const pagedTransactions = useMemo(() => {
+    if (!statement?.transactions) return [];
+    if (pageSize === 'all') return statement.transactions;
+    const start = (currentPage - 1) * pageSize;
+    return statement.transactions.slice(start, start + pageSize);
+  }, [statement?.transactions, currentPage, pageSize]);
+
   if (!isOpen || !card) return null;
+
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -319,36 +332,47 @@ const CreditCardStatementModal = ({ isOpen, onClose, card, onPayClick }) => {
                   No transactions recorded in this billing cycle yet.
                 </p>
               ) : (
-                <div className="overflow-x-auto rounded-xl border border-gray-200">
-                  <table className="min-w-full text-xs">
-                    <thead className="bg-gray-50 border-b border-gray-200">
-                      <tr>
-                        <th className="px-3.5 py-2.5 text-left font-semibold text-gray-600">Date</th>
-                        <th className="px-3.5 py-2.5 text-left font-semibold text-gray-600">Merchant / Description</th>
-                        <th className="px-3.5 py-2.5 text-left font-semibold text-gray-600">Category</th>
-                        <th className="px-3.5 py-2.5 text-right font-semibold text-gray-600">Amount</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100 bg-white">
-                      {statement.transactions.map((t) => (
-                        <tr key={t._id} className="hover:bg-gray-50">
-                          <td className="px-3.5 py-2 text-gray-600">
-                            {new Date(t.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
-                          </td>
-                          <td className="px-3.5 py-2 font-medium text-gray-900">{t.merchant || t.notes || '—'}</td>
-                          <td className="px-3.5 py-2 text-gray-500">{t.category?.name || 'Transfer / Other'}</td>
-                          <td
-                            className={`px-3.5 py-2 text-right font-bold ${
-                              t.type === 'Expense' ? 'text-red-600' : 'text-green-600'
-                            }`}
-                          >
-                            {t.type === 'Expense' ? '-' : '+'}
-                            {formatCurrency(t.amount, card.currency)}
-                          </td>
+                <div className="overflow-hidden rounded-xl border border-gray-200">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full text-xs">
+                      <thead className="bg-gray-50 border-b border-gray-200">
+                        <tr>
+                          <th className="px-3.5 py-2.5 text-left font-semibold text-gray-600">Date</th>
+                          <th className="px-3.5 py-2.5 text-left font-semibold text-gray-600">Merchant / Description</th>
+                          <th className="px-3.5 py-2.5 text-left font-semibold text-gray-600">Category</th>
+                          <th className="px-3.5 py-2.5 text-right font-semibold text-gray-600">Amount</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 bg-white">
+                        {pagedTransactions.map((t) => (
+                          <tr key={t._id} className="hover:bg-gray-50">
+                            <td className="px-3.5 py-2 text-gray-600">
+                              {new Date(t.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                            </td>
+                            <td className="px-3.5 py-2 font-medium text-gray-900">{t.merchant || t.notes || '—'}</td>
+                            <td className="px-3.5 py-2 text-gray-500">{t.category?.name || 'Transfer / Other'}</td>
+                            <td
+                              className={`px-3.5 py-2 text-right font-bold ${
+                                t.type === 'Expense' ? 'text-red-600' : 'text-green-600'
+                              }`}
+                            >
+                              {t.type === 'Expense' ? '-' : '+'}
+                              {formatCurrency(t.amount, card.currency)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <Pagination
+                    currentPage={currentPage}
+                    totalItems={statement.transactions.length}
+                    pageSize={pageSize}
+                    onPageChange={setCurrentPage}
+                    onPageSizeChange={setPageSize}
+                    pageSizeOptions={[5, 10, 25, 'all']}
+                    itemLabel="transactions"
+                  />
                 </div>
               )}
             </div>
@@ -428,6 +452,33 @@ const Accounts = () => {
   const creditCardAccounts = activeAccounts.filter((a) => a.type === 'Credit Card');
   const otherAccounts = activeAccounts.filter((a) => a.type !== 'Credit Card');
 
+  // Pagination states
+  const [cardsPage, setCardsPage] = useState(1);
+  const [cardsPageSize, setCardsPageSize] = useState(4);
+  const [bankPage, setBankPage] = useState(1);
+  const [bankPageSize, setBankPageSize] = useState(6);
+  const [archivedPage, setArchivedPage] = useState(1);
+  const [archivedPageSize, setArchivedPageSize] = useState(5);
+
+  const pagedCreditCards = useMemo(() => {
+    if (cardsPageSize === 'all') return creditCardAccounts;
+    const start = (cardsPage - 1) * cardsPageSize;
+    return creditCardAccounts.slice(start, start + cardsPageSize);
+  }, [creditCardAccounts, cardsPage, cardsPageSize]);
+
+  const pagedOtherAccounts = useMemo(() => {
+    if (bankPageSize === 'all') return otherAccounts;
+    const start = (bankPage - 1) * bankPageSize;
+    return otherAccounts.slice(start, start + bankPageSize);
+  }, [otherAccounts, bankPage, bankPageSize]);
+
+  const pagedArchivedAccounts = useMemo(() => {
+    if (archivedPageSize === 'all') return archivedAccounts;
+    const start = (archivedPage - 1) * archivedPageSize;
+    return archivedAccounts.slice(start, start + archivedPageSize);
+  }, [archivedAccounts, archivedPage, archivedPageSize]);
+
+
   return (
     <div className="max-w-6xl mx-auto py-4 sm:py-8 px-1 sm:px-6 lg:px-8">
       {/* Header & Quick Stats */}
@@ -477,7 +528,7 @@ const Accounts = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {creditCardAccounts.map((card) => {
+            {pagedCreditCards.map((card) => {
               const outstanding = Math.abs(Math.min(0, card.currentBalance));
               const limit = card.creditLimit || 0;
               const available = limit > 0 ? Math.max(0, limit - outstanding) : 0;
@@ -585,6 +636,16 @@ const Accounts = () => {
               );
             })}
           </div>
+          <Pagination
+            className="mt-3 rounded-xl border border-purple-100"
+            currentPage={cardsPage}
+            totalItems={creditCardAccounts.length}
+            pageSize={cardsPageSize}
+            onPageChange={setCardsPage}
+            onPageSizeChange={setCardsPageSize}
+            pageSizeOptions={[2, 4, 8, 'all']}
+            itemLabel="credit cards"
+          />
         </div>
       )}
 
@@ -608,7 +669,7 @@ const Accounts = () => {
         ) : (
           <div className="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-100">
             <ul className="divide-y divide-gray-100">
-              {otherAccounts.map((account) => (
+              {pagedOtherAccounts.map((account) => (
                 <li key={account._id} className="p-6 hover:bg-gray-50 transition duration-150">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
@@ -658,6 +719,15 @@ const Accounts = () => {
                 </li>
               ))}
             </ul>
+            <Pagination
+              currentPage={bankPage}
+              totalItems={otherAccounts.length}
+              pageSize={bankPageSize}
+              onPageChange={setBankPage}
+              onPageSizeChange={setBankPageSize}
+              pageSizeOptions={[4, 6, 12, 'all']}
+              itemLabel="accounts"
+            />
           </div>
         )}
       </div>
@@ -667,11 +737,11 @@ const Accounts = () => {
         <div className="mt-12">
           <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
             <Archive className="w-5 h-5 mr-2 text-gray-500" />
-            Archived Accounts
+            Archived Accounts ({archivedAccounts.length})
           </h3>
           <div className="bg-gray-50 shadow-sm rounded-xl overflow-hidden border border-gray-200">
             <ul className="divide-y divide-gray-200">
-              {archivedAccounts.map((account) => (
+              {pagedArchivedAccounts.map((account) => (
                 <li key={account._id} className="p-4 opacity-75">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
@@ -698,9 +768,19 @@ const Accounts = () => {
                 </li>
               ))}
             </ul>
+            <Pagination
+              currentPage={archivedPage}
+              totalItems={archivedAccounts.length}
+              pageSize={archivedPageSize}
+              onPageChange={setArchivedPage}
+              onPageSizeChange={setArchivedPageSize}
+              pageSizeOptions={[5, 10, 'all']}
+              itemLabel="archived accounts"
+            />
           </div>
         </div>
       )}
+
 
       {/* Modals */}
       <AccountFormModal

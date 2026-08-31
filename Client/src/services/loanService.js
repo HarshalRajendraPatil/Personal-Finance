@@ -6,3 +6,4 @@ export const updateLoan = (id, data) => axios.put(`${API}/${id}`, data, { withCr
 export const deleteLoan = (id) => axios.delete(`${API}/${id}`, { withCredentials: true });
 export const getLoanSchedule = (id) => axios.get(`${API}/${id}/schedule`, { withCredentials: true });
 export const addPayment = (id, data) => axios.post(`${API}/${id}/pay`, data, { withCredentials: true });
+export const syncLoanEmis = () => axios.post(`${API}/sync-emis`, {}, { withCredentials: true });

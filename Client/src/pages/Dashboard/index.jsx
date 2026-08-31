@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchDashboardData } from '../../store/dashboardSlice';
 import { fetchHealthScore } from '../../store/intelligenceSlice';
@@ -50,6 +50,37 @@ const Dashboard = () => {
     }));
   }, [dispatch, timeRange]);
 
+  const { snapshot, period, charts, upcoming, budgets, goals, recentTransactions } = data || {};
+
+  // ⚡ Memoize Expensive MUI Chart Datasets
+  const barChartSeries = useMemo(() => {
+    if (!charts?.cashFlow) return [];
+    return [
+      { data: charts.cashFlow.map(c => c.Income), label: 'Income', color: '#10b981' },
+      { data: charts.cashFlow.map(c => c.Expense), label: 'Expense', color: '#ef4444' }
+    ];
+  }, [charts?.cashFlow]);
+
+  const barChartXAxis = useMemo(() => {
+    if (!charts?.cashFlow) return [{ scaleType: 'band', data: [] }];
+    return [{
+      scaleType: 'band',
+      data: charts.cashFlow.map(c => c.date.slice(5))
+    }];
+  }, [charts?.cashFlow]);
+
+  const pieChartData = useMemo(() => {
+    if (!charts?.expenseCategories) return [];
+    return charts.expenseCategories.map((c, i) => ({
+      id: i, value: c.total, label: c.name, color: c.color || '#94a3b8'
+    }));
+  }, [charts?.expenseCategories]);
+
+  const sparklineData = useMemo(() => {
+    if (!snapshot?.netWorthTrend) return [];
+    return snapshot.netWorthTrend.map(t => t.value);
+  }, [snapshot?.netWorthTrend]);
+
   if (isLoading && !data) {
     return <div className="p-8 text-center text-gray-500 flex justify-center items-center h-64">Loading Dashboard...</div>;
   }
@@ -58,23 +89,6 @@ const Dashboard = () => {
   }
   if (!data) return null;
 
-  const { snapshot, period, charts, upcoming, budgets, goals, recentTransactions } = data;
-
-  const barChartSeries = [
-    { data: charts.cashFlow.map(c => c.Income), label: 'Income', color: '#10b981' },
-    { data: charts.cashFlow.map(c => c.Expense), label: 'Expense', color: '#ef4444' }
-  ];
-  const barChartXAxis = [{
-    scaleType: 'band',
-    data: charts.cashFlow.map(c => c.date.slice(5))
-  }];
-
-  const pieChartData = charts.expenseCategories.map((c, i) => ({
-    id: i, value: c.total, label: c.name, color: c.color || '#94a3b8'
-  }));
-
-  // Sparkline data
-  const sparklineData = snapshot.netWorthTrend ? snapshot.netWorthTrend.map(t => t.value) : [];
 
   const KpiCard = ({ title, amount, icon: Icon, colorClass, subtitle, trend, sparkline }) => (
     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-between relative overflow-hidden group hover:shadow-md transition-shadow">

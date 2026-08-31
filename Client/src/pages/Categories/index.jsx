@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchCategories, seedCategories, deleteCategory } from '../../store/categorySlice';
 import CategoryFormModal from './CategoryFormModal';
+import Pagination from '../../components/Pagination';
 import { Plus, Trash2, Edit2, ChevronDown, ChevronRight, Wand2 } from 'lucide-react';
 import * as Icons from 'lucide-react';
 
@@ -9,6 +10,104 @@ const CategoryIcon = ({ name, color, size = 20 }) => {
   const IconComponent = Icons[name] || Icons['Tag'];
   return <IconComponent size={size} color={color} />;
 };
+
+const CategoryTreeSection = ({ typeList, typeName, expandedParents, toggleExpand, handleAddNew, handleEdit, handleDelete }) => {
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5);
+
+  const parents = useMemo(() => typeList.filter(c => !c.parent), [typeList]);
+
+  const pagedParents = useMemo(() => {
+    if (pageSize === 'all') return parents;
+    const start = (page - 1) * pageSize;
+    return parents.slice(start, start + pageSize);
+  }, [parents, page, pageSize]);
+
+  if (parents.length === 0) {
+    return (
+      <div className="text-center py-8 text-gray-500 bg-white rounded-xl border border-gray-100 border-dashed">
+        No {typeName.toLowerCase()} categories found.
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <ul className="divide-y divide-gray-100">
+        {pagedParents.map(parent => {
+          const children = typeList.filter(c => c.parent === parent._id);
+          const isExpanded = expandedParents[parent._id] !== false; // Default to true
+          
+          return (
+            <li key={parent._id} className="block">
+              <div className="flex items-center justify-between p-4 hover:bg-gray-50 transition">
+                <div className="flex items-center space-x-3 flex-1 cursor-pointer" onClick={() => toggleExpand(parent._id)}>
+                  <button className="text-gray-400 focus:outline-none">
+                    {children.length > 0 ? (
+                      isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />
+                    ) : (
+                      <div className="w-4 h-4" /> // placeholder
+                    )}
+                  </button>
+                  <div className="p-2 rounded-lg bg-gray-50 border border-gray-100">
+                    <CategoryIcon name={parent.icon} color={parent.color} />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-900">{parent.name}</h4>
+                    {children.length > 0 && <p className="text-xs text-gray-500">{children.length} subcategories</p>}
+                  </div>
+                </div>
+                
+                <div className="flex space-x-2">
+                  <button onClick={() => handleAddNew(parent.type, parent._id)} className="p-1 text-gray-400 hover:text-green-600" title="Add Subcategory">
+                    <Plus className="w-4 h-4" />
+                  </button>
+                  <button onClick={() => handleEdit(parent)} className="p-1 text-gray-400 hover:text-blue-600" title="Edit">
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                  <button onClick={() => handleDelete(parent._id)} className="p-1 text-gray-400 hover:text-red-600" title="Delete">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {isExpanded && children.length > 0 && (
+                <ul className="bg-gray-50 border-t border-gray-50 divide-y divide-gray-100">
+                  {children.map(child => (
+                    <li key={child._id} className="flex items-center justify-between py-3 pl-14 pr-4 hover:bg-gray-100 transition">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: child.color }} />
+                        <span className="text-sm text-gray-700">{child.name}</span>
+                      </div>
+                      <div className="flex space-x-2">
+                        <button onClick={() => handleEdit(child)} className="p-1 text-gray-400 hover:text-blue-600">
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button onClick={() => handleDelete(child._id)} className="p-1 text-gray-400 hover:text-red-600">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+      <Pagination
+        currentPage={page}
+        totalItems={parents.length}
+        pageSize={pageSize}
+        onPageChange={setPage}
+        onPageSizeChange={setPageSize}
+        pageSizeOptions={[5, 10, 'all']}
+        itemLabel={`${typeName.toLowerCase()} categories`}
+      />
+    </div>
+  );
+};
+
 
 const Categories = () => {
   const dispatch = useDispatch();
@@ -53,87 +152,8 @@ const Categories = () => {
   };
 
   // Group by type and parent
-  const expenses = categories.filter(c => c.type === 'Expense');
-  const incomes = categories.filter(c => c.type === 'Income');
-
-  const renderCategoryTree = (typeList, typeName) => {
-    const parents = typeList.filter(c => !c.parent);
-
-    if (parents.length === 0) {
-      return (
-        <div className="text-center py-8 text-gray-500 bg-white rounded-xl border border-gray-100 border-dashed">
-          No {typeName.toLowerCase()} categories found.
-        </div>
-      );
-    }
-
-    return (
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <ul className="divide-y divide-gray-100">
-          {parents.map(parent => {
-            const children = typeList.filter(c => c.parent === parent._id);
-            const isExpanded = expandedParents[parent._id] !== false; // Default to true
-            
-            return (
-              <li key={parent._id} className="block">
-                <div className="flex items-center justify-between p-4 hover:bg-gray-50 transition">
-                  <div className="flex items-center space-x-3 flex-1 cursor-pointer" onClick={() => toggleExpand(parent._id)}>
-                    <button className="text-gray-400 focus:outline-none">
-                      {children.length > 0 ? (
-                        isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />
-                      ) : (
-                        <div className="w-4 h-4" /> // placeholder
-                      )}
-                    </button>
-                    <div className="p-2 rounded-lg bg-gray-50 border border-gray-100">
-                      <CategoryIcon name={parent.icon} color={parent.color} />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-900">{parent.name}</h4>
-                      {children.length > 0 && <p className="text-xs text-gray-500">{children.length} subcategories</p>}
-                    </div>
-                  </div>
-                  
-                  <div className="flex space-x-2">
-                    <button onClick={() => handleAddNew(parent.type, parent._id)} className="p-1 text-gray-400 hover:text-green-600" title="Add Subcategory">
-                      <Plus className="w-4 h-4" />
-                    </button>
-                    <button onClick={() => handleEdit(parent)} className="p-1 text-gray-400 hover:text-blue-600" title="Edit">
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                    <button onClick={() => handleDelete(parent._id)} className="p-1 text-gray-400 hover:text-red-600" title="Delete">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-
-                {isExpanded && children.length > 0 && (
-                  <ul className="bg-gray-50 border-t border-gray-50 divide-y divide-gray-100">
-                    {children.map(child => (
-                      <li key={child._id} className="flex items-center justify-between py-3 pl-14 pr-4 hover:bg-gray-100 transition">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: child.color }} />
-                          <span className="text-sm text-gray-700">{child.name}</span>
-                        </div>
-                        <div className="flex space-x-2">
-                          <button onClick={() => handleEdit(child)} className="p-1 text-gray-400 hover:text-blue-600">
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-                          <button onClick={() => handleDelete(child._id)} className="p-1 text-gray-400 hover:text-red-600">
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      </div>
-    );
-  };
+  const expenses = useMemo(() => categories.filter(c => c.type === 'Expense'), [categories]);
+  const incomes = useMemo(() => categories.filter(c => c.type === 'Income'), [categories]);
 
   return (
     <div className="max-w-6xl mx-auto py-4 sm:py-8 px-1 sm:px-6 lg:px-8">
@@ -188,7 +208,15 @@ const Categories = () => {
                 + New Expense
               </button>
             </div>
-            {renderCategoryTree(expenses, 'Expense')}
+            <CategoryTreeSection
+              typeList={expenses}
+              typeName="Expense"
+              expandedParents={expandedParents}
+              toggleExpand={toggleExpand}
+              handleAddNew={handleAddNew}
+              handleEdit={handleEdit}
+              handleDelete={handleDelete}
+            />
           </div>
 
           <div>
@@ -204,10 +232,19 @@ const Categories = () => {
                 + New Income
               </button>
             </div>
-            {renderCategoryTree(incomes, 'Income')}
+            <CategoryTreeSection
+              typeList={incomes}
+              typeName="Income"
+              expandedParents={expandedParents}
+              toggleExpand={toggleExpand}
+              handleAddNew={handleAddNew}
+              handleEdit={handleEdit}
+              handleDelete={handleDelete}
+            />
           </div>
         </div>
       )}
+
 
       <CategoryFormModal 
         isOpen={isModalOpen} 

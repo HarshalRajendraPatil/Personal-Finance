@@ -61,5 +61,9 @@ const accountSchema = new mongoose.Schema({
   timestamps: true,
 });
 
+accountSchema.index({ user: 1, isArchived: 1 });
+accountSchema.index({ user: 1, type: 1 });
+
 const Account = mongoose.model('Account', accountSchema);
 export default Account;
+

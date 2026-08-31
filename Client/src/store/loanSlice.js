@@ -21,11 +21,16 @@ export const deleteLoan = createAsyncThunk('loans/delete', async (id, { rejectWi
 export const addPayment = createAsyncThunk('loans/addPayment', async ({ id, data }, { rejectWithValue }) => {
   try { return (await svc.addPayment(id, data)).data.loan; } catch (e) { return rejectWithValue(e.response?.data?.message || e.message); }
 });
+export const syncLoanEmis = createAsyncThunk('loans/syncEmis', async (_, { rejectWithValue }) => {
+  try { return (await svc.syncLoanEmis()).data; } catch (e) { return rejectWithValue(e.response?.data?.message || e.message); }
+});
 
 const loanSlice = createSlice({
   name: 'loans',
-  initialState: { loans: [], isLoading: false, error: null },
-  reducers: {},
+  initialState: { loans: [], isLoading: false, isSyncing: false, error: null, syncMessage: null },
+  reducers: {
+    clearSyncMessage: (s) => { s.syncMessage = null; },
+  },
   extraReducers: (builder) => {
     handle(builder, fetchLoans);
     builder.addCase(fetchLoans.fulfilled, (s, a) => { s.isLoading = false; s.loans = a.payload; });
@@ -37,6 +42,14 @@ const loanSlice = createSlice({
     builder.addCase(deleteLoan.fulfilled, (s, a) => { s.isLoading = false; s.loans = s.loans.filter(l => l._id !== a.payload); });
     handle(builder, addPayment);
     builder.addCase(addPayment.fulfilled, (s, a) => { s.isLoading = false; s.loans = s.loans.map(l => l._id === a.payload._id ? a.payload : l); });
+    builder.addCase(syncLoanEmis.pending, (s) => { s.isSyncing = true; s.syncMessage = null; });
+    builder.addCase(syncLoanEmis.fulfilled, (s, a) => {
+      s.isSyncing = false;
+      s.loans = a.payload.loans || s.loans;
+      s.syncMessage = a.payload.message;
+    });
+    builder.addCase(syncLoanEmis.rejected, (s, a) => { s.isSyncing = false; s.error = a.payload; });
   },
 });
+export const { clearSyncMessage } = loanSlice.actions;
 export default loanSlice.reducer;

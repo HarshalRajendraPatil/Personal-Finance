@@ -40,5 +40,9 @@ lendingSchema.virtual('outstanding').get(function () {
 lendingSchema.set('toJSON', { virtuals: true });
 lendingSchema.set('toObject', { virtuals: true });
 
+lendingSchema.index({ user: 1, isSettled: 1 });
+lendingSchema.index({ user: 1, type: 1, isSettled: 1 });
+
 const Lending = mongoose.model('Lending', lendingSchema);
 export default Lending;
+

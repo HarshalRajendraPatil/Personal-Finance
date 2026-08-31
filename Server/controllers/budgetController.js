@@ -130,3 +130,17 @@ export const getBudgetsWithSpend = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+/**
+ * ⚡ Returns active budget guardrails and threshold alerts across all user budgets
+ */
+export const getBudgetGuardrails = async (req, res) => {
+  try {
+    const { getAllBudgetGuardrails } = await import('../services/budgetGuardrailService.js');
+    const result = await getAllBudgetGuardrails(req.user._id);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+

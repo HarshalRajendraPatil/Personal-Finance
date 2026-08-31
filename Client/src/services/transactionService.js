@@ -16,7 +16,21 @@ const transactionService = {
   deleteTransaction: async (id) => {
     const response = await api.delete(`/transactions/${id}`);
     return response.data;
-  }
+  },
+  previewCSV: async (data) => {
+    const response = await api.post('/transactions/preview-csv', data);
+    return response.data;
+  },
+  importCSV: async (data) => {
+    const response = await api.post('/transactions/import-csv', data);
+    return response.data;
+  },
+  scanReceipt: async (data) => {
+    const response = await api.post('/transactions/scan-receipt', data);
+    return response.data;
+  },
 };
 
 export default transactionService;
+
+

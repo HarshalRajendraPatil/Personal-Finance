@@ -24,10 +24,18 @@ const loanSchema = new mongoose.Schema({
   startDate: { type: Date, required: true },
   emiAmount: { type: Number, default: 0 },   // stored for quick display
   account: { type: mongoose.Schema.Types.ObjectId, ref: 'Account', default: null },
+  debitAccount: { type: mongoose.Schema.Types.ObjectId, ref: 'Account', default: null },
+  autoDebit: { type: Boolean, default: false },
+  debitDay: { type: Number, default: 1, min: 1, max: 31 },
+  nextEmiDate: { type: Date, default: null },
   notes: { type: String, default: '' },
   isActive: { type: Boolean, default: true },
   payments: [paymentSchema],
 }, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } });
+
+// Indexes for high performance query scanning & cron execution
+loanSchema.index({ user: 1, isActive: 1 });
+loanSchema.index({ user: 1, autoDebit: 1, nextEmiDate: 1 });
 
 // Virtual: total principal paid
 loanSchema.virtual('paidPrincipal').get(function () {

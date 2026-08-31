@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchRecurringRules, deleteRecurringRule, payBill, updateRecurringRule } from '../../store/recurringSlice';
 import { fetchAccounts } from '../../store/accountSlice';
 import { fetchCategories } from '../../store/categorySlice';
 import RecurringFormModal from './RecurringFormModal';
+import Pagination from '../../components/Pagination';
 import {
   Plus, Edit2, Trash2, CheckCircle2, Pause, Play,
   ArrowRightLeft, TrendingDown, TrendingUp, Calendar, AlertCircle
@@ -36,6 +37,12 @@ const Bills = () => {
   const [editingRule, setEditingRule] = useState(null);
   const [filterType, setFilterType] = useState('All');
 
+  // Pagination states
+  const [activePage, setActivePage] = useState(1);
+  const [activePageSize, setActivePageSize] = useState(6);
+  const [pausedPage, setPausedPage] = useState(1);
+  const [pausedPageSize, setPausedPageSize] = useState(6);
+
   useEffect(() => {
     dispatch(fetchRecurringRules());
     dispatch(fetchAccounts());
@@ -65,9 +72,34 @@ const Bills = () => {
     }
   };
 
-  const filtered = filterType === 'All' ? rules : rules.filter(r => r.type === filterType);
-  const active = filtered.filter(r => r.isActive);
-  const paused = filtered.filter(r => !r.isActive);
+  const filtered = useMemo(() => {
+    return filterType === 'All' ? rules : rules.filter(r => r.type === filterType);
+  }, [rules, filterType]);
+
+  const active = useMemo(() => {
+    return filtered
+      .filter(r => r.isActive)
+      .sort((a, b) => getDaysUntilDue(a.nextRunDate) - getDaysUntilDue(b.nextRunDate));
+  }, [filtered]);
+  const sortedActive = active;
+
+
+  const paused = useMemo(() => {
+    return filtered.filter(r => !r.isActive);
+  }, [filtered]);
+
+  const pagedActive = useMemo(() => {
+    if (activePageSize === 'all') return sortedActive;
+    const start = (activePage - 1) * activePageSize;
+    return sortedActive.slice(start, start + activePageSize);
+  }, [sortedActive, activePage, activePageSize]);
+
+  const pagedPaused = useMemo(() => {
+    if (pausedPageSize === 'all') return paused;
+    const start = (pausedPage - 1) * pausedPageSize;
+    return paused.slice(start, start + pausedPageSize);
+  }, [paused, pausedPage, pausedPageSize]);
+
 
   // Summary stats
   const totalMonthlyExpenses = rules
@@ -172,7 +204,7 @@ const Bills = () => {
                 <h3 className="text-xs sm:text-sm font-semibold text-gray-700 uppercase tracking-wide">Active Rules & Bills ({active.length})</h3>
               </div>
               <ul className="divide-y divide-gray-100">
-                {active.sort((a, b) => getDaysUntilDue(a.nextRunDate) - getDaysUntilDue(b.nextRunDate)).map((rule) => {
+                {pagedActive.map((rule) => {
                   const daysLeft = getDaysUntilDue(rule.nextRunDate);
                   return (
                     <li key={rule._id} className="p-4 sm:p-5 hover:bg-gray-50 transition">
@@ -222,6 +254,15 @@ const Bills = () => {
                   );
                 })}
               </ul>
+              <Pagination
+                currentPage={activePage}
+                totalItems={sortedActive.length}
+                pageSize={activePageSize}
+                onPageChange={setActivePage}
+                onPageSizeChange={setActivePageSize}
+                pageSizeOptions={[4, 6, 12, 'all']}
+                itemLabel="active rules"
+              />
             </div>
           )}
 
@@ -232,7 +273,7 @@ const Bills = () => {
                 <h3 className="text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wide">Paused Rules ({paused.length})</h3>
               </div>
               <ul className="divide-y divide-gray-200">
-                {paused.map((rule) => (
+                {pagedPaused.map((rule) => (
                   <li key={rule._id} className="p-4 sm:p-5">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="flex items-start sm:items-center space-x-3 sm:space-x-4">
@@ -261,8 +302,18 @@ const Bills = () => {
                   </li>
                 ))}
               </ul>
+              <Pagination
+                currentPage={pausedPage}
+                totalItems={paused.length}
+                pageSize={pausedPageSize}
+                onPageChange={setPausedPage}
+                onPageSizeChange={setPausedPageSize}
+                pageSizeOptions={[4, 6, 12, 'all']}
+                itemLabel="paused rules"
+              />
             </div>
           )}
+
         </>
       )}
 

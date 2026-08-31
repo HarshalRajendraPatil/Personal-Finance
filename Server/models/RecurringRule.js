@@ -77,5 +77,8 @@ const recurringRuleSchema = new mongoose.Schema({
   timestamps: true,
 });
 
+recurringRuleSchema.index({ user: 1, isActive: 1, nextRunDate: 1 });
+
 const RecurringRule = mongoose.model('RecurringRule', recurringRuleSchema);
 export default RecurringRule;
+

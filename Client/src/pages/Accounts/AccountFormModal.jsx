@@ -105,7 +105,7 @@ const AccountFormModal = ({ isOpen, onClose, account = null }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto overflow-x-hidden bg-black/50 p-4">
       <div className="relative w-full max-w-md bg-white rounded-xl shadow-lg p-6 max-h-[90vh] overflow-y-auto">
-        <button 
+        <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition"
         >
@@ -160,7 +160,7 @@ const AccountFormModal = ({ isOpen, onClose, account = null }) => {
           {selectedType === 'Credit Card' && (
             <div className="p-4 bg-purple-50 rounded-xl space-y-3 border border-purple-100">
               <p className="text-xs font-bold text-purple-900 uppercase tracking-wider">Credit Card Details</p>
-              
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-gray-700">Card Issuer</label>

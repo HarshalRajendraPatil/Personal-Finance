@@ -23,11 +23,12 @@ const getCashflowForecast = async (affordAmount) => {
 };
 
 const getLongtermProjection = async (params = {}) => {
-  const { salaryGrowthRate, investmentReturnRate, inflationRate } = params;
+  const { salaryGrowthRate, investmentReturnRate, inflationRate, monthlySavingsBoost } = params;
   const query = new URLSearchParams();
   if (salaryGrowthRate !== undefined) query.set('salaryGrowthRate', salaryGrowthRate);
   if (investmentReturnRate !== undefined) query.set('investmentReturnRate', investmentReturnRate);
   if (inflationRate !== undefined) query.set('inflationRate', inflationRate);
+  if (monthlySavingsBoost !== undefined) query.set('monthlySavingsBoost', monthlySavingsBoost);
   const response = await api.get(`/intelligence/longterm-projection${query.toString() ? '?' + query.toString() : ''}`);
   return response.data;
 };

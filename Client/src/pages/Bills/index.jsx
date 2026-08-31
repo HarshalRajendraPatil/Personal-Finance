@@ -141,12 +141,12 @@ const Bills = () => {
       </div>
 
       {/* Filter */}
-      <div className="flex space-x-2 mb-6">
+      <div className="flex space-x-2 mb-6 overflow-x-auto pb-2 -mx-1 px-1">
         {['All', 'Expense', 'Income', 'Transfer'].map(t => (
           <button
             key={t}
             onClick={() => setFilterType(t)}
-            className={`px-4 py-1.5 rounded-full text-sm font-medium transition ${filterType === t ? 'bg-blue-600 text-white' : 'bg-white border border-gray-300 text-gray-600 hover:bg-gray-50'}`}
+            className={`px-4 py-1.5 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-colors flex-shrink-0 ${filterType === t ? 'bg-indigo-600 text-white shadow-xs' : 'bg-white border border-gray-300 text-gray-600 hover:bg-gray-50'}`}
           >
             {t}
           </button>
@@ -155,64 +155,64 @@ const Bills = () => {
 
       {isLoading && rules.length === 0 ? (
         <div className="text-center py-12">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent"></div>
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-500 border-t-transparent"></div>
         </div>
       ) : active.length === 0 && paused.length === 0 ? (
         <div className="text-center bg-white rounded-xl border border-gray-200 border-dashed py-16">
           <Calendar className="mx-auto h-12 w-12 text-gray-400" />
           <h3 className="mt-2 text-sm font-medium text-gray-900">No recurring rules</h3>
-          <p className="mt-1 text-sm text-gray-500">Add salary, rent, EMIs, or subscriptions to track them.</p>
+          <p className="mt-1 text-xs sm:text-sm text-gray-500">Add salary, rent, EMIs, or subscriptions to track them.</p>
         </div>
       ) : (
         <>
           {/* Active Rules */}
           {active.length > 0 && (
-            <div className="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-100 mb-6">
-              <div className="px-6 py-3 bg-gray-50 border-b border-gray-100">
-                <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Active ({active.length})</h3>
+            <div className="bg-white shadow-xs rounded-xl overflow-hidden border border-gray-100 mb-6">
+              <div className="px-4 sm:px-6 py-3 bg-gray-50 border-b border-gray-100">
+                <h3 className="text-xs sm:text-sm font-semibold text-gray-700 uppercase tracking-wide">Active Rules & Bills ({active.length})</h3>
               </div>
               <ul className="divide-y divide-gray-100">
                 {active.sort((a, b) => getDaysUntilDue(a.nextRunDate) - getDaysUntilDue(b.nextRunDate)).map((rule) => {
                   const daysLeft = getDaysUntilDue(rule.nextRunDate);
                   return (
-                    <li key={rule._id} className="p-5 hover:bg-gray-50 transition">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-4">
+                    <li key={rule._id} className="p-4 sm:p-5 hover:bg-gray-50 transition">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex items-start sm:items-center space-x-3 sm:space-x-4">
                           <div className={`flex-shrink-0 p-2.5 rounded-xl ${rule.type === 'Income' ? 'bg-green-50' : rule.type === 'Transfer' ? 'bg-blue-50' : 'bg-red-50'}`}>
                             {rule.type === 'Income' ? <TrendingUp className="w-5 h-5 text-green-500" /> : rule.type === 'Transfer' ? <ArrowRightLeft className="w-5 h-5 text-blue-500" /> : <TrendingDown className="w-5 h-5 text-red-500" />}
                           </div>
-                          <div>
-                            <div className="flex items-center space-x-2">
-                              <span className="text-sm font-semibold text-gray-900">{rule.name}</span>
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                              <span className="text-sm font-semibold text-gray-900 truncate">{rule.name}</span>
                               <DueBadge daysLeft={daysLeft} />
                             </div>
-                            <div className="flex items-center space-x-2 mt-0.5 text-xs text-gray-500">
+                            <div className="flex flex-wrap items-center gap-1 mt-0.5 text-xs text-gray-500">
                               <span>{FREQ_LABELS[rule.frequency]}</span>
                               {rule.category && <><span>·</span><span>{rule.category.name}</span></>}
                               {rule.merchant && <><span>·</span><span>{rule.merchant}</span></>}
-                              {rule.account && <><span>·</span><span>{rule.account.name}</span></>}
+                              {rule.account && <><span>·</span><span className="truncate max-w-[120px]">{rule.account.name}</span></>}
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center space-x-4">
+                        <div className="flex items-center justify-between sm:justify-end space-x-4 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100">
                           <span className={`text-base font-bold ${rule.type === 'Income' ? 'text-green-600' : rule.type === 'Expense' ? 'text-red-600' : 'text-gray-900'}`}>
                             {formatCurrency(rule.amount)}
                           </span>
-                          <div className="flex items-center space-x-1.5">
+                          <div className="flex items-center space-x-1 sm:space-x-1.5">
                             <button
                               onClick={() => handlePayNow(rule)}
                               title="Mark as Paid"
-                              className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-md transition"
+                              className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition"
                             >
                               <CheckCircle2 className="w-4 h-4" />
                             </button>
-                            <button onClick={() => handleToggleActive(rule)} title="Pause" className="p-1.5 text-gray-400 hover:text-yellow-600 hover:bg-yellow-50 rounded-md transition">
+                            <button onClick={() => handleToggleActive(rule)} title="Pause" className="p-1.5 text-gray-400 hover:text-yellow-600 hover:bg-yellow-50 rounded-lg transition">
                               <Pause className="w-4 h-4" />
                             </button>
-                            <button onClick={() => handleEdit(rule)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition">
+                            <button onClick={() => handleEdit(rule)} title="Edit" className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition">
                               <Edit2 className="w-4 h-4" />
                             </button>
-                            <button onClick={() => handleDelete(rule._id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition">
+                            <button onClick={() => handleDelete(rule._id)} title="Delete" className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition">
                               <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
@@ -227,30 +227,35 @@ const Bills = () => {
 
           {/* Paused Rules */}
           {paused.length > 0 && (
-            <div className="bg-gray-50 shadow-sm rounded-xl overflow-hidden border border-gray-200 opacity-75">
-              <div className="px-6 py-3 border-b border-gray-200">
-                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Paused ({paused.length})</h3>
+            <div className="bg-gray-50 shadow-xs rounded-xl overflow-hidden border border-gray-200 opacity-75">
+              <div className="px-4 sm:px-6 py-3 border-b border-gray-200">
+                <h3 className="text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wide">Paused Rules ({paused.length})</h3>
               </div>
               <ul className="divide-y divide-gray-200">
                 {paused.map((rule) => (
-                  <li key={rule._id} className="p-5">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
+                  <li key={rule._id} className="p-4 sm:p-5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-start sm:items-center space-x-3 sm:space-x-4">
                         <div className="flex-shrink-0 p-2.5 rounded-xl bg-gray-100">
                           {rule.type === 'Income' ? <TrendingUp className="w-5 h-5 text-gray-400" /> : <TrendingDown className="w-5 h-5 text-gray-400" />}
                         </div>
-                        <div>
-                          <span className="text-sm font-medium text-gray-600">{rule.name}</span>
+                        <div className="min-w-0">
+                          <span className="text-sm font-medium text-gray-600 truncate block">{rule.name}</span>
                           <p className="text-xs text-gray-400">{FREQ_LABELS[rule.frequency]} · {formatCurrency(rule.amount)}</p>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <button onClick={() => handleToggleActive(rule)} title="Resume" className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-md transition">
-                          <Play className="w-4 h-4" />
-                        </button>
-                        <button onClick={() => handleDelete(rule._id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                      <div className="flex items-center justify-between sm:justify-end space-x-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-200">
+                        <span className="text-sm font-semibold text-gray-500 sm:hidden">
+                          {formatCurrency(rule.amount)}
+                        </span>
+                        <div className="flex items-center space-x-2">
+                          <button onClick={() => handleToggleActive(rule)} title="Resume" className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition">
+                            <Play className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => handleDelete(rule._id)} title="Delete" className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </li>

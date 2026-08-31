@@ -258,11 +258,18 @@ export const getSpendingInsights = async (req, res) => {
     const prevStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const prevEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
     const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+    const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
 
-    const [currentTxns, prevTxns, historicalTxns] = await Promise.all([
-      Transaction.find({ user: userId, date: { $gte: periodStart, $lte: periodEnd } }).populate('category', 'name color icon'),
-      Transaction.find({ user: userId, date: { $gte: prevStart, $lte: prevEnd } }).populate('category', 'name color icon'),
+    const [currentTxns, prevTxns, historicalTxns, sixMonthsTxns] = await Promise.all([
+      Transaction.find({ user: userId, date: { $gte: periodStart, $lte: periodEnd } })
+        .populate('category', 'name color icon')
+        .populate('account', 'name type'),
+      Transaction.find({ user: userId, date: { $gte: prevStart, $lte: prevEnd } })
+        .populate('category', 'name color icon')
+        .populate('account', 'name type'),
       Transaction.find({ user: userId, date: { $gte: threeMonthsAgo, $lt: periodStart }, type: 'Expense' }),
+      Transaction.find({ user: userId, date: { $gte: sixMonthsAgo } })
+        .populate('category', 'name color icon'),
     ]);
 
     const currentExpenses = currentTxns.filter(t => t.type === 'Expense');
@@ -360,7 +367,7 @@ export const getSpendingInsights = async (req, res) => {
     const hist3mTotal = historicalTxns.reduce((s, t) => s + t.amount, 0);
     const historicalDailyBurn = hist3mTotal / 90;
 
-    // ── 8. Time-of-Day Analysis (NEW) ──
+    // ── 8. Time-of-Day Analysis ──
     const timeSlots = { morning: 0, afternoon: 0, evening: 0, night: 0 };
     const timeSlotCounts = { morning: 0, afternoon: 0, evening: 0, night: 0 };
     currentExpenses.forEach(t => {
@@ -378,7 +385,7 @@ export const getSpendingInsights = async (req, res) => {
       label: slot.charAt(0).toUpperCase() + slot.slice(1),
     }));
 
-    // ── 9. Essential vs Discretionary (NEW) ──
+    // ── 9. Essential vs Discretionary ──
     const essentialCategories = new Set(['rent', 'groceries', 'utilities', 'bills', 'insurance', 'emi', 'healthcare', 'medical', 'education', 'fuel', 'transport']);
     let essentialTotal = 0, discretionaryTotal = 0;
     currentExpenses.forEach(t => {
@@ -393,7 +400,7 @@ export const getSpendingInsights = async (req, res) => {
       discretionaryPct: totalCurrentExpense > 0 ? Math.round((discretionaryTotal / totalCurrentExpense) * 100) : 0,
     };
 
-    // ── 10. Month-end projection (NEW) ──
+    // ── 10. Month-end projection ──
     const totalDaysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
     const daysElapsedInMonth = Math.max(1, now.getDate());
     const daysRemainingInMonth = totalDaysInMonth - daysElapsedInMonth;
@@ -406,7 +413,7 @@ export const getSpendingInsights = async (req, res) => {
       daysRemaining: daysRemainingInMonth,
     };
 
-    // ── 11. Top 5 Largest Transactions (NEW) ──
+    // ── 11. Top 5 Largest Transactions ──
     const topTransactions = currentExpenses
       .sort((a, b) => b.amount - a.amount).slice(0, 5)
       .map(t => ({
@@ -416,11 +423,10 @@ export const getSpendingInsights = async (req, res) => {
         color: t.category?.color || '#94a3b8',
       }));
 
-    // ── 12. Category Concentration Index (NEW) ──
+    // ── 12. Category Concentration Index ──
     const catTotals = Object.values(currentCatMap).map(c => c.total).sort((a, b) => b - a);
     const totalCatSpend = catTotals.reduce((s, v) => s + v, 0) || 1;
     const hhi = catTotals.reduce((sum, val) => sum + Math.pow(val / totalCatSpend, 2), 0);
-    // Top 2 categories as % of total
     const top2Share = catTotals.length >= 2
       ? Math.round(((catTotals[0] + catTotals[1]) / totalCatSpend) * 100) : 100;
     const categoryConcentration = {
@@ -430,7 +436,172 @@ export const getSpendingInsights = async (req, res) => {
       isDiversified: hhi < 0.25,
     };
 
-    // ── 13. Behavioral insights ──
+    // ── 13. Multi-Month 6-Month Spending History (NEW) ──
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthlyHistoryMap = {};
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      monthlyHistoryMap[key] = {
+        key,
+        label: `${monthNames[d.getMonth()]} ${d.getFullYear().toString().slice(2)}`,
+        expense: 0,
+        income: 0,
+        net: 0,
+      };
+    }
+    sixMonthsTxns.forEach(t => {
+      const d = new Date(t.date);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      if (monthlyHistoryMap[key]) {
+        if (t.type === 'Expense') monthlyHistoryMap[key].expense += t.amount;
+        if (t.type === 'Income') monthlyHistoryMap[key].income += t.amount;
+      }
+    });
+    const monthlySpendingHistory = Object.values(monthlyHistoryMap).map((m, idx, arr) => {
+      m.net = m.income - m.expense;
+      const prev = idx > 0 ? arr[idx - 1].expense : null;
+      const momPct = prev && prev > 0 ? (((m.expense - prev) / prev) * 100).toFixed(1) : null;
+      return {
+        ...m,
+        expense: Math.round(m.expense),
+        income: Math.round(m.income),
+        net: Math.round(m.net),
+        momPct: momPct !== null ? parseFloat(momPct) : null,
+      };
+    });
+    const sixMonthAvgExpense = monthlySpendingHistory.reduce((s, m) => s + m.expense, 0) / Math.max(1, monthlySpendingHistory.length);
+
+    // ── 14. Week-of-Month (Payday Cycle) Breakdown (NEW) ──
+    const weekBuckets = [
+      { week: 'Week 1 (1-7)', spend: 0, count: 0, desc: 'Salary & Bills Week' },
+      { week: 'Week 2 (8-14)', spend: 0, count: 0, desc: 'Mid-Month Steady' },
+      { week: 'Week 3 (15-21)', spend: 0, count: 0, desc: 'Discretionary Phase' },
+      { week: 'Week 4 (22+)', spend: 0, count: 0, desc: 'Month-End Run' },
+    ];
+    currentExpenses.forEach(t => {
+      const dayNum = new Date(t.date).getDate();
+      let bIndex = 0;
+      if (dayNum <= 7) bIndex = 0;
+      else if (dayNum <= 14) bIndex = 1;
+      else if (dayNum <= 21) bIndex = 2;
+      else bIndex = 3;
+      weekBuckets[bIndex].spend += t.amount;
+      weekBuckets[bIndex].count++;
+    });
+    const weekOfMonthBreakdown = weekBuckets.map(b => ({
+      ...b,
+      spend: Math.round(b.spend),
+      pct: totalCurrentExpense > 0 ? Math.round((b.spend / totalCurrentExpense) * 100) : 0,
+    }));
+    const isFrontLoaded = weekOfMonthBreakdown[0].pct >= 38;
+
+    // ── 15. Payment Outflow Channel Breakdown (NEW) ──
+    const paymentMap = {
+      'Credit Card': { type: 'Credit Card', total: 0, count: 0, color: '#f43f5e' },
+      'Bank Account': { type: 'Bank Account', total: 0, count: 0, color: '#3b82f6' },
+      'UPI / Wallet': { type: 'UPI / Wallet', total: 0, count: 0, color: '#8b5cf6' },
+      'Cash': { type: 'Cash', total: 0, count: 0, color: '#10b981' },
+      'Other': { type: 'Other', total: 0, count: 0, color: '#64748b' },
+    };
+    currentExpenses.forEach(t => {
+      const accType = t.account?.type;
+      let key = 'Other';
+      if (accType === 'Credit Card') key = 'Credit Card';
+      else if (accType === 'Bank') key = 'Bank Account';
+      else if (accType === 'UPI' || accType === 'Wallet') key = 'UPI / Wallet';
+      else if (accType === 'Cash') key = 'Cash';
+      paymentMap[key].total += t.amount;
+      paymentMap[key].count++;
+    });
+    const paymentMethodBreakdown = Object.values(paymentMap)
+      .filter(p => p.total > 0 || p.count > 0)
+      .map(p => ({
+        ...p,
+        total: Math.round(p.total),
+        pct: totalCurrentExpense > 0 ? Math.round((p.total / totalCurrentExpense) * 100) : 0,
+      }))
+      .sort((a, b) => b.total - a.total);
+
+    // ── 16. Micro-Transactions / Impulse Tracker (NEW) ──
+    let microTotal = 0, microCount = 0;
+    let mediumTotal = 0, mediumCount = 0;
+    let largeTotal = 0, largeCount = 0;
+    currentExpenses.forEach(t => {
+      if (t.amount < 500) { microTotal += t.amount; microCount++; }
+      else if (t.amount <= 5000) { mediumTotal += t.amount; mediumCount++; }
+      else { largeTotal += t.amount; largeCount++; }
+    });
+    const microTransactions = {
+      micro: { total: Math.round(microTotal), count: microCount, pct: totalCurrentExpense > 0 ? Math.round((microTotal / totalCurrentExpense) * 100) : 0 },
+      medium: { total: Math.round(mediumTotal), count: mediumCount, pct: totalCurrentExpense > 0 ? Math.round((mediumTotal / totalCurrentExpense) * 100) : 0 },
+      large: { total: Math.round(largeTotal), count: largeCount, pct: totalCurrentExpense > 0 ? Math.round((largeTotal / totalCurrentExpense) * 100) : 0 },
+      estimatedAnnualMicro: Math.round(microTotal * 12),
+    };
+
+    // ── 17. Actionable Smart Recommendations Engine (NEW) ──
+    const recommendations = [];
+    if (weekendSpend > 0 && weekendAvg > weekdayAvg * 1.25) {
+      const potSave = Math.round(weekendSpend * 0.20 * 12);
+      recommendations.push({
+        id: 'rec-weekend',
+        title: 'Trim Weekend Velocity',
+        description: `Weekend spending runs ${((weekendAvg / weekdayAvg - 1) * 100).toFixed(0)}% higher than weekdays. Capping discretionary weekend dining/entertainment by 20% saves money rapidly.`,
+        potentialAnnualSavings: potSave,
+        difficulty: 'Easy',
+        category: 'Lifestyle',
+        icon: 'calendar',
+      });
+    }
+    if (microTransactions.micro.total > 2000) {
+      const potSave = Math.round(microTransactions.micro.total * 0.35 * 12);
+      recommendations.push({
+        id: 'rec-micro',
+        title: 'Audit Micro-Transactions (< ₹500)',
+        description: `You had ${microTransactions.micro.count} micro-purchases totaling ₹${microTransactions.micro.total.toLocaleString('en-IN')}. Frequent small taps create hidden budget leaks.`,
+        potentialAnnualSavings: potSave,
+        difficulty: 'Medium',
+        category: 'Habits',
+        icon: 'coffee',
+      });
+    }
+    if (essentialVsDiscretionary.discretionaryPct > 50) {
+      const potSave = Math.round(discretionaryTotal * 0.15 * 12);
+      recommendations.push({
+        id: 'rec-discretionary',
+        title: 'Optimize Discretionary Allocation',
+        description: `Discretionary spend accounts for ${essentialVsDiscretionary.discretionaryPct}% of total outflow. Allocating 10-15% into auto-investments creates long-term wealth.`,
+        potentialAnnualSavings: potSave,
+        difficulty: 'Medium',
+        category: 'Wealth',
+        icon: 'trending-up',
+      });
+    }
+    if (subscriptionCandidates.length > 0) {
+      const totalSub = subscriptionCandidates.reduce((s, c) => s + c.amount, 0);
+      recommendations.push({
+        id: 'rec-subs',
+        title: 'Review Recurring Subscriptions',
+        description: `Identified ${subscriptionCandidates.length} potential recurring charges totaling ₹${totalSub.toLocaleString('en-IN')}/mo. Cancel unused memberships.`,
+        potentialAnnualSavings: totalSub * 12,
+        difficulty: 'Easy',
+        category: 'Subscriptions',
+        icon: 'repeat',
+      });
+    }
+    if (isFrontLoaded) {
+      recommendations.push({
+        id: 'rec-payday',
+        title: 'Smooth Out Payday Surge',
+        description: `Over ${weekOfMonthBreakdown[0].pct}% of spending occurs in Week 1. Consider setting weekly envelope limits to avoid month-end cash crunches.`,
+        potentialAnnualSavings: 0,
+        difficulty: 'Easy',
+        category: 'Cashflow',
+        icon: 'clock',
+      });
+    }
+
+    // ── 18. Behavioral insights ──
     const insights = [];
     if (weekendAvg > weekdayAvg * 1.3) {
       insights.push({ icon: 'calendar', text: `You spend **${((weekendAvg / weekdayAvg - 1) * 100).toFixed(0)}% more on weekends** (₹${Math.round(weekendAvg).toLocaleString('en-IN')}/day) compared to weekdays (₹${Math.round(weekdayAvg).toLocaleString('en-IN')}/day).` });
@@ -468,6 +639,12 @@ export const getSpendingInsights = async (req, res) => {
       spendingProjection,
       topTransactions,
       categoryConcentration,
+      monthlySpendingHistory,
+      sixMonthAvgExpense: Math.round(sixMonthAvgExpense),
+      weekOfMonthBreakdown,
+      paymentMethodBreakdown,
+      microTransactions,
+      recommendations,
       insights,
     });
   } catch (error) {
@@ -569,7 +746,15 @@ export const getCashflowForecast = async (req, res) => {
         ...m, income: Math.round(m.income), expense: Math.round(m.expense),
       }));
 
-      return { dailyForecast: forecast, monthlyProjections: monthly, riskMonths: monthly.filter(m => m.projectedEndBalance < 0) };
+      const minBalance = Math.min(...forecast.map(f => f.balance));
+
+      return {
+        dailyForecast: forecast,
+        monthlyProjections: monthly,
+        riskMonths: monthly.filter(m => m.projectedEndBalance < 0),
+        minBalance,
+        endBalance: forecast[forecast.length - 1]?.balance || 0,
+      };
     };
 
     const baseline = buildForecast(1.0);
@@ -596,14 +781,76 @@ export const getCashflowForecast = async (req, res) => {
       };
     }
 
+    // ── Emergency Survival Runway Calculator (NEW) ──
+    const monthlyEssentialBurn = Math.max(1, avgDailyExpense * 30 * 0.6); // 60% essential heuristic
+    const monthlyTotalBurn = Math.max(1, avgDailyExpense * 30);
+    const essentialRunwayMonths = parseFloat((startingBalance / monthlyEssentialBurn).toFixed(1));
+    const totalRunwayMonths = parseFloat((startingBalance / monthlyTotalBurn).toFixed(1));
+    let runwayStatus = 'Critical';
+    if (essentialRunwayMonths >= 6) runwayStatus = 'Exceptional';
+    else if (essentialRunwayMonths >= 3) runwayStatus = 'Healthy';
+    else if (essentialRunwayMonths >= 1.5) runwayStatus = 'Moderate';
+
+    const emergencyRunway = {
+      liquidBalance: Math.round(startingBalance),
+      essentialMonthlyBurn: Math.round(monthlyEssentialBurn),
+      totalMonthlyBurn: Math.round(monthlyTotalBurn),
+      essentialRunwayMonths,
+      totalRunwayMonths,
+      runwayStatus,
+    };
+
+    // ── 6-Month Cash Flow Bridge (Past 3 Months Actual + Next 3 Months Projected) (NEW) ──
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const threeMonthsAgoDate = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+    const pastTxns = await Transaction.find({
+      user: userId,
+      date: { $gte: threeMonthsAgoDate, $lt: now },
+    });
+    const pastMonthlyMap = {};
+    for (let i = 3; i >= 1; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      pastMonthlyMap[key] = { label: `${monthNames[d.getMonth()]}`, income: 0, expense: 0, type: 'actual' };
+    }
+    pastTxns.forEach(t => {
+      const d = new Date(t.date);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      if (pastMonthlyMap[key]) {
+        if (t.type === 'Income') pastMonthlyMap[key].income += t.amount;
+        if (t.type === 'Expense') pastMonthlyMap[key].expense += t.amount;
+      }
+    });
+
+    const cashflowBridge = [
+      ...Object.values(pastMonthlyMap).map(m => ({
+        ...m,
+        income: Math.round(m.income),
+        expense: Math.round(m.expense),
+        net: Math.round(m.income - m.expense),
+      })),
+      ...baseline.monthlyProjections.slice(0, 3).map(m => {
+        const [yr, mo] = m.label.split('-');
+        const monthIndex = parseInt(mo) - 1;
+        return {
+          label: `${monthNames[monthIndex]} (Proj)`,
+          income: m.income,
+          expense: m.expense,
+          net: m.income - m.expense,
+          type: 'projected',
+        };
+      }),
+    ];
+
     res.json({
       startingBalance: Math.round(startingBalance),
       scenarios: { baseline, optimistic, pessimistic },
-      // Keep flat fields for backward compatibility
       dailyForecast: baseline.dailyForecast,
       monthlyProjections: baseline.monthlyProjections,
       riskMonths: baseline.riskMonths,
       affordability,
+      emergencyRunway,
+      cashflowBridge,
       assumptions: {
         avgDailyExpense: Math.round(avgDailyExpense),
         recurringRulesUsed: recurringRules.length,
@@ -624,6 +871,7 @@ export const getLongtermProjection = async (req, res) => {
     const salaryGrowthRate = parseFloat(req.query.salaryGrowthRate) || 10;
     const investmentReturnRate = parseFloat(req.query.investmentReturnRate) || 12;
     const inflationRate = parseFloat(req.query.inflationRate) || 6;
+    const monthlySavingsBoost = parseFloat(req.query.monthlySavingsBoost) || 0;
 
     const [accounts, investments, loans, goals] = await Promise.all([
       Account.find({ user: userId, isArchived: false }),
@@ -650,62 +898,83 @@ export const getLongtermProjection = async (req, res) => {
     const monthlyExpense = totalExpense6m / 6 || 0;
     const monthlySavings = Math.max(0, monthlyIncome - monthlyExpense);
 
-    // Project over 5 years
-    const projections = [];
-    let projectedCash = totalCash;
-    let projectedInvestments = totalInvestments;
-    let projectedDebt = totalDebt;
-    let currentMonthlyIncome = monthlyIncome;
-    let currentMonthlySavings = monthlySavings;
+    // Helper to calculate 5-year trajectory
+    const runProjection = (extraMonthlySavings = 0) => {
+      const proj = [];
+      let pCash = totalCash;
+      let pInvest = totalInvestments;
+      let pDebt = totalDebt;
+      let mIncome = monthlyIncome;
+      let mSavings = monthlySavings + extraMonthlySavings;
+      const milestoneThresholds = [100000, 500000, 1000000, 2500000, 5000000, 10000000];
+      const mList = [];
 
-    // Milestone detection
-    const milestoneThresholds = [100000, 500000, 1000000, 2500000, 5000000, 10000000];
-    const milestones = [];
+      for (let year = 0; year <= 5; year++) {
+        const nw = pCash + pInvest - pDebt;
+        proj.push({
+          year: new Date().getFullYear() + year,
+          label: `${new Date().getFullYear() + year}`,
+          netWorth: Math.round(nw),
+          assets: Math.round(pCash + pInvest),
+          liabilities: Math.round(pDebt),
+          cash: Math.round(pCash),
+          investments: Math.round(pInvest),
+          monthlyIncome: Math.round(mIncome),
+          monthlySavings: Math.round(mSavings),
+        });
 
-    for (let year = 0; year <= 5; year++) {
-      const netWorth = projectedCash + projectedInvestments - projectedDebt;
-      projections.push({
-        year: new Date().getFullYear() + year,
-        label: `${new Date().getFullYear() + year}`,
-        netWorth: Math.round(netWorth),
-        assets: Math.round(projectedCash + projectedInvestments),
-        liabilities: Math.round(projectedDebt),
-        cash: Math.round(projectedCash),
-        investments: Math.round(projectedInvestments),
-        monthlyIncome: Math.round(currentMonthlyIncome),
-        monthlySavings: Math.round(currentMonthlySavings),
-      });
-
-      // Check milestones
-      milestoneThresholds.forEach(threshold => {
-        if (year > 0) {
-          const prevNW = projections[year - 1].netWorth;
-          if (prevNW < threshold && netWorth >= threshold) {
-            const labels = { 100000: '₹1L', 500000: '₹5L', 1000000: '₹10L', 2500000: '₹25L', 5000000: '₹50L', 10000000: '₹1Cr' };
-            milestones.push({ year: new Date().getFullYear() + year, threshold, label: labels[threshold] || `₹${threshold}` });
+        milestoneThresholds.forEach(threshold => {
+          if (year > 0) {
+            const prevNW = proj[year - 1].netWorth;
+            if (prevNW < threshold && nw >= threshold) {
+              const labels = { 100000: '₹1L', 500000: '₹5L', 1000000: '₹10L', 2500000: '₹25L', 5000000: '₹50L', 10000000: '₹1Cr' };
+              mList.push({ year: new Date().getFullYear() + year, threshold, label: labels[threshold] || `₹${threshold}` });
+            }
           }
+        });
+
+        if (year < 5) {
+          const incomeGrowthFactor = 1 + salaryGrowthRate / 100;
+          const investReturnFactor = 1 + investmentReturnRate / 100;
+          const inflationFactor = 1 + inflationRate / 100;
+
+          const annualInvestmentContribution = mSavings * 0.5 * 12;
+          pInvest = pInvest * investReturnFactor + annualInvestmentContribution;
+          pCash += mSavings * 0.5 * 12;
+          pDebt = Math.max(0, pDebt * 0.75);
+          mIncome *= incomeGrowthFactor;
+          const newMonthlyExpense = monthlyExpense * Math.pow(inflationFactor, year + 1);
+          mSavings = Math.max(0, mIncome - newMonthlyExpense) + extraMonthlySavings;
         }
-      });
-
-      if (year < 5) {
-        const incomeGrowthFactor = 1 + salaryGrowthRate / 100;
-        const investReturnFactor = 1 + investmentReturnRate / 100;
-        const inflationFactor = 1 + inflationRate / 100;
-
-        const annualInvestmentContribution = currentMonthlySavings * 0.5 * 12;
-        projectedInvestments = projectedInvestments * investReturnFactor + annualInvestmentContribution;
-        projectedCash += currentMonthlySavings * 0.5 * 12;
-        projectedDebt = Math.max(0, projectedDebt * 0.75);
-        currentMonthlyIncome *= incomeGrowthFactor;
-        const newMonthlyExpense = monthlyExpense * Math.pow(inflationFactor, year + 1);
-        currentMonthlySavings = Math.max(0, currentMonthlyIncome - newMonthlyExpense);
       }
-    }
+      return { proj, mList };
+    };
+
+    const { proj: projections, mList: milestones } = runProjection(0);
+    const { proj: boostedProjections, mList: boostedMilestones } = monthlySavingsBoost > 0
+      ? runProjection(monthlySavingsBoost)
+      : { proj: projections, mList: milestones };
+
+    // Compare baseline vs boosted
+    const finalBaselineNW = projections[projections.length - 1].netWorth;
+    const finalBoostedNW = boostedProjections[boostedProjections.length - 1].netWorth;
+    const totalExtraDeposited = monthlySavingsBoost * 12 * 5;
+    const extraWealthCreated = Math.max(0, finalBoostedNW - finalBaselineNW);
+
+    const boostComparison = {
+      monthlySavingsBoost,
+      totalExtraDeposited,
+      baseline5YrNetWorth: finalBaselineNW,
+      boosted5YrNetWorth: finalBoostedNW,
+      extraWealthCreated,
+      compoundGain: Math.max(0, extraWealthCreated - totalExtraDeposited),
+    };
 
     // Goal timeline — when will each goal be reached at current savings rate?
+    const effectiveSavings = monthlySavings + monthlySavingsBoost;
     const goalTimeline = goals.map(g => {
       const remaining = Math.max(0, g.targetAmount - (g.currentAmount || 0));
-      const monthsToGoal = monthlySavings > 0 ? Math.ceil(remaining / monthlySavings) : null;
+      const monthsToGoal = effectiveSavings > 0 ? Math.ceil(remaining / effectiveSavings) : null;
       const targetDate = monthsToGoal !== null
         ? new Date(new Date().getFullYear(), new Date().getMonth() + monthsToGoal, 1).toISOString().split('T')[0]
         : null;
@@ -720,10 +989,13 @@ export const getLongtermProjection = async (req, res) => {
     res.json({
       currentNetWorth: Math.round(currentNetWorth),
       projections,
+      boostedProjections: monthlySavingsBoost > 0 ? boostedProjections : undefined,
       milestones,
+      boostedMilestones: monthlySavingsBoost > 0 ? boostedMilestones : undefined,
+      boostComparison,
       goalTimeline,
       assumptions: {
-        salaryGrowthRate, investmentReturnRate, inflationRate,
+        salaryGrowthRate, investmentReturnRate, inflationRate, monthlySavingsBoost,
         baseMonthlySavings: Math.round(monthlySavings),
         baseMonthlyIncome: Math.round(monthlyIncome),
       }

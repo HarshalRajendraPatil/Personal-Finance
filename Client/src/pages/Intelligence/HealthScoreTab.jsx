@@ -121,24 +121,24 @@ const HealthScoreTab = () => {
       </div>
 
       {/* Underlying Metrics Summary */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <h3 className="text-lg font-bold text-gray-900 mb-4">Underlying Metrics (Last 6 Months Avg)</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="p-4 bg-gray-50 rounded-lg">
-            <p className="text-xs text-gray-500 font-medium uppercase tracking-wider mb-1">Avg Monthly Income</p>
-            <p className="text-lg font-bold text-gray-900">{formatCurrency(metrics.monthlyIncome)}</p>
+      <div className="bg-white rounded-xl shadow-xs border border-gray-100 p-4 sm:p-6">
+        <h3 className="text-sm sm:text-base font-bold text-gray-900 mb-3 sm:mb-4">Underlying Metrics (Last 6 Months Avg)</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+          <div className="p-3.5 sm:p-4 bg-gray-50 rounded-xl">
+            <p className="text-[11px] sm:text-xs text-gray-500 font-medium uppercase tracking-wider mb-1">Avg Monthly Income</p>
+            <p className="text-base sm:text-lg font-bold text-gray-900">{formatCurrency(metrics.monthlyIncome)}</p>
           </div>
-          <div className="p-4 bg-gray-50 rounded-lg">
-            <p className="text-xs text-gray-500 font-medium uppercase tracking-wider mb-1">Avg Monthly Expense</p>
-            <p className="text-lg font-bold text-gray-900">{formatCurrency(metrics.monthlyExpense)}</p>
+          <div className="p-3.5 sm:p-4 bg-gray-50 rounded-xl">
+            <p className="text-[11px] sm:text-xs text-gray-500 font-medium uppercase tracking-wider mb-1">Avg Monthly Expense</p>
+            <p className="text-base sm:text-lg font-bold text-gray-900">{formatCurrency(metrics.monthlyExpense)}</p>
           </div>
-          <div className="p-4 bg-gray-50 rounded-lg">
-            <p className="text-xs text-gray-500 font-medium uppercase tracking-wider mb-1">Liquid Cash</p>
-            <p className="text-lg font-bold text-blue-600">{formatCurrency(metrics.liquidCash)}</p>
+          <div className="p-3.5 sm:p-4 bg-gray-50 rounded-xl">
+            <p className="text-[11px] sm:text-xs text-gray-500 font-medium uppercase tracking-wider mb-1">Liquid Cash</p>
+            <p className="text-base sm:text-lg font-bold text-blue-600">{formatCurrency(metrics.liquidCash)}</p>
           </div>
-          <div className="p-4 bg-gray-50 rounded-lg">
-            <p className="text-xs text-gray-500 font-medium uppercase tracking-wider mb-1">Total Debt Remaining</p>
-            <p className="text-lg font-bold text-rose-600">{formatCurrency(metrics.totalDebtRemaining)}</p>
+          <div className="p-3.5 sm:p-4 bg-gray-50 rounded-xl">
+            <p className="text-[11px] sm:text-xs text-gray-500 font-medium uppercase tracking-wider mb-1">Total Debt Remaining</p>
+            <p className="text-base sm:text-lg font-bold text-rose-600">{formatCurrency(metrics.totalDebtRemaining)}</p>
           </div>
         </div>
       </div>

@@ -142,34 +142,34 @@ const Budgets = () => {
                 className={`bg-white rounded-xl shadow-sm border p-5 transition ${budget.isOverBudget ? 'border-red-200' : budget.isNearLimit ? 'border-orange-200' : 'border-gray-100'}`}
               >
                 {/* Budget Header */}
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center space-x-3">
+                <div className="flex items-start justify-between gap-2 mb-4">
+                  <div className="flex items-center space-x-3 min-w-0">
                     <div
                       className="p-2.5 rounded-xl flex-shrink-0"
                       style={{ backgroundColor: `${budget.category?.color || '#3b82f6'}20` }}
                     >
                       <IconComponent className="w-5 h-5" style={{ color: budget.category?.color || '#3b82f6' }} />
                     </div>
-                    <div>
-                      <h3 className="text-sm font-semibold text-gray-900">{budget.name}</h3>
-                      <p className="text-xs text-gray-500">{PERIOD_LABELS[budget.period]} · {budget.category?.name}</p>
+                    <div className="min-w-0">
+                      <h3 className="text-sm font-semibold text-gray-900 truncate">{budget.name}</h3>
+                      <p className="text-xs text-gray-500 truncate">{PERIOD_LABELS[budget.period]} · {budget.category?.name}</p>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-1">
+                  <div className="flex items-center space-x-1 flex-shrink-0">
                     {budget.isOverBudget && (
-                      <span className="text-xs font-medium text-red-700 bg-red-100 px-2 py-0.5 rounded-full flex items-center">
+                      <span className="text-[11px] sm:text-xs font-semibold text-red-700 bg-red-100 px-2 py-0.5 rounded-full flex items-center">
                         <AlertTriangle className="w-3 h-3 mr-1" />Over
                       </span>
                     )}
                     {budget.isNearLimit && !budget.isOverBudget && (
-                      <span className="text-xs font-medium text-orange-700 bg-orange-100 px-2 py-0.5 rounded-full">
+                      <span className="text-[11px] sm:text-xs font-semibold text-orange-700 bg-orange-100 px-2 py-0.5 rounded-full">
                         {pct}% used
                       </span>
                     )}
-                    <button onClick={() => handleEdit(budget)} className="p-1 text-gray-400 hover:text-blue-600 transition">
+                    <button onClick={() => handleEdit(budget)} title="Edit" className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-gray-50 rounded-lg transition-colors">
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
-                    <button onClick={() => handleDelete(budget._id)} className="p-1 text-gray-400 hover:text-red-600 transition">
+                    <button onClick={() => handleDelete(budget._id)} title="Delete" className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-gray-50 rounded-lg transition-colors">
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -179,21 +179,21 @@ const Budgets = () => {
                 <ProgressBar percentage={pct} isOverBudget={budget.isOverBudget} isNearLimit={budget.isNearLimit} />
 
                 {/* Spend Info */}
-                <div className="mt-3 flex items-center justify-between">
-                  <div>
-                    <span className={`text-base font-bold ${budget.isOverBudget ? 'text-red-600' : 'text-gray-900'}`}>
+                <div className="mt-3 flex items-baseline justify-between gap-2">
+                  <div className="min-w-0">
+                    <span className={`text-sm sm:text-base font-bold ${budget.isOverBudget ? 'text-red-600' : 'text-gray-900'}`}>
                       {formatCurrency(budget.spent || 0)}
                     </span>
-                    <span className="text-sm text-gray-400"> / {formatCurrency(budget.limit)}</span>
+                    <span className="text-xs sm:text-sm text-gray-400"> / {formatCurrency(budget.limit)}</span>
                   </div>
-                  <div className="text-right">
-                    <span className={`text-sm font-medium ${budget.isOverBudget ? 'text-red-600' : 'text-emerald-600'}`}>
+                  <div className="text-right flex-shrink-0">
+                    <span className={`text-xs sm:text-sm font-semibold block ${budget.isOverBudget ? 'text-red-600' : 'text-emerald-600'}`}>
                       {budget.isOverBudget
                         ? `${formatCurrency((budget.spent || 0) - budget.limit)} over`
                         : `${formatCurrency(budget.remaining || 0)} left`
                       }
                     </span>
-                    <p className="text-xs text-gray-400">{pct}% used</p>
+                    <p className="text-[11px] sm:text-xs text-gray-400">{pct}% used</p>
                   </div>
                 </div>
               </div>

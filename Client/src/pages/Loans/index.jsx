@@ -220,35 +220,37 @@ const ScheduleModal = ({ isOpen, onClose, loan }) => {
           </div>
           <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100"><X className="w-5 h-5" /></button>
         </div>
-        <div className="overflow-y-auto flex-1 p-4">
+        <div className="overflow-y-auto flex-1 p-4 sm:p-6">
           {loading ? (
-            <div className="text-center py-8"><div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent" /></div>
+            <div className="text-center py-8"><div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-500 border-t-transparent" /></div>
           ) : (
-            <table className="w-full text-sm">
-              <thead className="sticky top-0 bg-gray-50">
-                <tr>
-                  <th className="text-left px-3 py-2 text-gray-500 font-medium">#</th>
-                  <th className="text-left px-3 py-2 text-gray-500 font-medium">Due Date</th>
-                  <th className="text-right px-3 py-2 text-gray-500 font-medium">EMI</th>
-                  <th className="text-right px-3 py-2 text-gray-500 font-medium">Principal</th>
-                  <th className="text-right px-3 py-2 text-gray-500 font-medium">Interest</th>
-                  <th className="text-right px-3 py-2 text-gray-500 font-medium">Balance</th>
-                </tr>
-              </thead>
-              <tbody>
-                {schedule.map((row, idx) => (
-                  <tr key={row.installment} className={`border-t ${idx < paidCount ? 'opacity-50 bg-gray-50' : ''}`}>
-                    <td className="px-3 py-2 text-gray-500">{row.installment}</td>
-                    <td className="px-3 py-2 text-gray-700">{fmtDate(row.dueDate)}</td>
-                    <td className="px-3 py-2 text-right font-mono text-gray-800">{fmt(row.emi)}</td>
-                    <td className="px-3 py-2 text-right font-mono text-blue-700">{fmt(row.principal)}</td>
-                    <td className="px-3 py-2 text-right font-mono text-orange-600">{fmt(row.interest)}</td>
-                    <td className="px-3 py-2 text-right font-mono text-gray-900 font-medium">{fmt(row.balance)}</td>
-                    {idx < paidCount && <td className="px-3 py-2"><span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded">Paid</span></td>}
+            <div className="overflow-x-auto -mx-2 sm:mx-0">
+              <table className="w-full text-xs sm:text-sm min-w-[520px]">
+                <thead className="sticky top-0 bg-gray-50">
+                  <tr>
+                    <th className="text-left px-3 py-2 text-gray-500 font-medium">#</th>
+                    <th className="text-left px-3 py-2 text-gray-500 font-medium">Due Date</th>
+                    <th className="text-right px-3 py-2 text-gray-500 font-medium">EMI</th>
+                    <th className="text-right px-3 py-2 text-gray-500 font-medium">Principal</th>
+                    <th className="text-right px-3 py-2 text-gray-500 font-medium">Interest</th>
+                    <th className="text-right px-3 py-2 text-gray-500 font-medium">Balance</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {schedule.map((row, idx) => (
+                    <tr key={row.installment} className={`border-t border-gray-100 ${idx < paidCount ? 'opacity-50 bg-gray-50' : ''}`}>
+                      <td className="px-3 py-2 text-gray-500">{row.installment}</td>
+                      <td className="px-3 py-2 text-gray-700">{fmtDate(row.dueDate)}</td>
+                      <td className="px-3 py-2 text-right font-mono text-gray-800">{fmt(row.emi)}</td>
+                      <td className="px-3 py-2 text-right font-mono text-blue-700">{fmt(row.principal)}</td>
+                      <td className="px-3 py-2 text-right font-mono text-orange-600">{fmt(row.interest)}</td>
+                      <td className="px-3 py-2 text-right font-mono text-gray-900 font-medium">{fmt(row.balance)}</td>
+                      {idx < paidCount && <td className="px-3 py-2"><span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded">Paid</span></td>}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </div>
@@ -328,73 +330,75 @@ const Loans = () => {
             const isExpanded = expanded === loan._id;
 
             return (
-              <div key={loan._id} className={`bg-white rounded-xl shadow-sm border ${!loan.isActive ? 'border-green-200 opacity-75' : 'border-gray-100'}`}>
-                <div className="p-5">
-                  <div className="flex items-start justify-between">
+              <div key={loan._id} className={`bg-white rounded-xl shadow-xs border ${!loan.isActive ? 'border-green-200 opacity-75' : 'border-gray-100'}`}>
+                <div className="p-4 sm:p-5">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: `${TYPE_COLORS[loan.type] || '#64748b'}15` }}>
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${TYPE_COLORS[loan.type] || '#64748b'}15` }}>
                         <CreditCard className="w-5 h-5" style={{ color: TYPE_COLORS[loan.type] || '#64748b' }} />
                       </div>
-                      <div>
-                        <div className="flex items-center space-x-2">
-                          <h3 className="font-semibold text-gray-900">{loan.name}</h3>
-                          <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: `${TYPE_COLORS[loan.type]}15`, color: TYPE_COLORS[loan.type] }}>{loan.type}</span>
-                          {!loan.isActive && <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700">✓ Paid Off</span>}
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                          <h3 className="font-semibold text-gray-900 text-sm sm:text-base truncate">{loan.name}</h3>
+                          <span className="text-[11px] sm:text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: `${TYPE_COLORS[loan.type]}15`, color: TYPE_COLORS[loan.type] }}>{loan.type}</span>
+                          {!loan.isActive && <span className="text-[11px] sm:text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">✓ Paid Off</span>}
                         </div>
-                        {loan.lender && <p className="text-xs text-gray-400">{loan.lender}</p>}
+                        {loan.lender && <p className="text-xs text-gray-400 mt-0.5">{loan.lender}</p>}
                       </div>
                     </div>
-                    <div className="flex items-center space-x-1">
+                    <div className="flex items-center justify-between sm:justify-end gap-1.5 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100">
                       {loan.isActive && (
-                        <>
-                          <button onClick={() => { setActiveLoan(loan); setPayModalOpen(true); }} className="px-3 py-1.5 text-xs font-medium bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100">Pay EMI</button>
-                          <button onClick={() => { setActiveLoan(loan); setScheduleOpen(true); }} className="px-3 py-1.5 text-xs font-medium bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100">Schedule</button>
-                        </>
+                        <div className="flex items-center gap-1.5">
+                          <button onClick={() => { setActiveLoan(loan); setPayModalOpen(true); }} className="px-2.5 sm:px-3 py-1.5 text-xs font-semibold bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100 transition-colors">Pay EMI</button>
+                          <button onClick={() => { setActiveLoan(loan); setScheduleOpen(true); }} className="px-2.5 sm:px-3 py-1.5 text-xs font-semibold bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors">Schedule</button>
+                        </div>
                       )}
-                      <button onClick={() => { setEditingLoan(loan); setModalOpen(true); }} className="p-1.5 text-gray-400 hover:text-blue-600 rounded"><Edit2 className="w-3.5 h-3.5" /></button>
-                      <button onClick={() => handleDelete(loan._id)} className="p-1.5 text-gray-400 hover:text-red-600 rounded"><Trash2 className="w-3.5 h-3.5" /></button>
-                      <button onClick={() => setExpanded(isExpanded ? null : loan._id)} className="p-1.5 text-gray-400 hover:text-gray-700 rounded">
-                        {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => { setEditingLoan(loan); setModalOpen(true); }} title="Edit" className="p-1.5 text-gray-400 hover:text-blue-600 rounded-lg hover:bg-gray-100 transition-colors"><Edit2 className="w-4 h-4" /></button>
+                        <button onClick={() => handleDelete(loan._id)} title="Delete" className="p-1.5 text-gray-400 hover:text-red-600 rounded-lg hover:bg-gray-100 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                        <button onClick={() => setExpanded(isExpanded ? null : loan._id)} title={isExpanded ? "Collapse" : "Expand"} className="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors">
+                          {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                        </button>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                    <div><p className="text-gray-400 text-xs">Principal</p><p className="font-semibold text-gray-900">{fmt(loan.principal)}</p></div>
-                    <div><p className="text-gray-400 text-xs">Outstanding</p><p className="font-semibold text-orange-600">{fmt(remaining)}</p></div>
-                    <div><p className="text-gray-400 text-xs">EMI</p><p className="font-semibold text-gray-900">{fmt(loan.emiAmount)}/mo</p></div>
-                    <div><p className="text-gray-400 text-xs">Rate</p><p className="font-semibold text-gray-900">{loan.interestRate}% p.a.</p></div>
+                  <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 text-xs sm:text-sm">
+                    <div className="bg-gray-50 p-2.5 rounded-lg sm:bg-transparent sm:p-0"><p className="text-gray-400 text-xs">Principal</p><p className="font-bold sm:font-semibold text-gray-900 mt-0.5">{fmt(loan.principal)}</p></div>
+                    <div className="bg-orange-50/50 p-2.5 rounded-lg sm:bg-transparent sm:p-0"><p className="text-gray-400 text-xs">Outstanding</p><p className="font-bold sm:font-semibold text-orange-600 mt-0.5">{fmt(remaining)}</p></div>
+                    <div className="bg-gray-50 p-2.5 rounded-lg sm:bg-transparent sm:p-0"><p className="text-gray-400 text-xs">EMI</p><p className="font-bold sm:font-semibold text-gray-900 mt-0.5">{fmt(loan.emiAmount)}/mo</p></div>
+                    <div className="bg-gray-50 p-2.5 rounded-lg sm:bg-transparent sm:p-0"><p className="text-gray-400 text-xs">Rate</p><p className="font-bold sm:font-semibold text-gray-900 mt-0.5">{loan.interestRate}% p.a.</p></div>
                   </div>
 
-                  <div className="mt-3">
-                    <div className="flex justify-between text-xs text-gray-400 mb-1">
+                  <div className="mt-3.5">
+                    <div className="flex justify-between text-xs text-gray-500 mb-1">
                       <span>{loan.payments?.length || 0} EMIs paid</span>
-                      <span>{paidPct}% paid off</span>
+                      <span className="font-semibold text-gray-700">{paidPct}% paid off</span>
                     </div>
-                    <div className="w-full bg-gray-100 rounded-full h-2">
-                      <div className="h-2 rounded-full bg-emerald-500 transition-all" style={{ width: `${paidPct}%` }} />
+                    <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                      <div className="h-2 rounded-full bg-emerald-500 transition-all duration-500" style={{ width: `${paidPct}%` }} />
                     </div>
                   </div>
                 </div>
 
                 {isExpanded && (
-                  <div className="border-t p-5 bg-gray-50 rounded-b-xl">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-4">
-                      <div><p className="text-gray-400 text-xs">Start Date</p><p className="font-medium text-gray-800">{fmtDate(loan.startDate)}</p></div>
-                      <div><p className="text-gray-400 text-xs">Tenure</p><p className="font-medium text-gray-800">{loan.tenureMonths} months</p></div>
-                      <div><p className="text-gray-400 text-xs">Principal Paid</p><p className="font-medium text-blue-700">{fmt(paidP)}</p></div>
-                      <div><p className="text-gray-400 text-xs">Interest Paid</p><p className="font-medium text-orange-600">{fmt(paidI)}</p></div>
+                  <div className="border-t border-gray-100 p-4 sm:p-5 bg-gray-50/80 rounded-b-xl">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 text-xs sm:text-sm mb-4">
+                      <div><p className="text-gray-400 text-xs">Start Date</p><p className="font-medium text-gray-800 mt-0.5">{fmtDate(loan.startDate)}</p></div>
+                      <div><p className="text-gray-400 text-xs">Tenure</p><p className="font-medium text-gray-800 mt-0.5">{loan.tenureMonths} months</p></div>
+                      <div><p className="text-gray-400 text-xs">Principal Paid</p><p className="font-medium text-blue-700 mt-0.5">{fmt(paidP)}</p></div>
+                      <div><p className="text-gray-400 text-xs">Interest Paid</p><p className="font-medium text-orange-600 mt-0.5">{fmt(paidI)}</p></div>
                     </div>
                     {loan.payments?.length > 0 && (
                       <div>
-                        <p className="text-xs font-semibold text-gray-500 mb-2">Recent Payments</p>
-                        <div className="space-y-1">
+                        <p className="text-xs font-semibold text-gray-600 mb-2">Recent Payments</p>
+                        <div className="space-y-1.5 overflow-x-auto">
                           {[...loan.payments].reverse().slice(0, 5).map((p, i) => (
-                            <div key={i} className="flex justify-between text-xs text-gray-600 bg-white rounded px-3 py-1.5">
-                              <span>{fmtDate(p.date)}</span>
-                              <span>{fmt(p.amount)}</span>
-                              <span className="text-blue-600">P: {fmt(p.principal)}</span>
-                              <span className="text-orange-500">I: {fmt(p.interest)}</span>
+                            <div key={i} className="flex items-center justify-between text-xs text-gray-600 bg-white rounded-lg px-3 py-2 border border-gray-100 shadow-2xs min-w-[280px]">
+                              <span className="font-medium text-gray-800">{fmtDate(p.date)}</span>
+                              <span className="font-bold">{fmt(p.amount)}</span>
+                              <span className="text-blue-600 font-medium">P: {fmt(p.principal)}</span>
+                              <span className="text-orange-500 font-medium">I: {fmt(p.interest)}</span>
                             </div>
                           ))}
                         </div>

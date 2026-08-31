@@ -123,19 +123,19 @@ const Dashboard = () => {
   return (
     <div className="space-y-6 pb-12">
       {/* Header & Controls */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Financial Command Center</h1>
-          <p className="text-gray-500">Your comprehensive financial snapshot.</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Financial Command Center</h1>
+          <p className="text-xs sm:text-sm text-gray-500">Your comprehensive financial snapshot.</p>
         </div>
-        <div className="flex gap-2">
-          <Link to="/transactions" className="hidden sm:flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors">
-            <Plus className="w-4 h-4" /> Add Transaction
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Link to="/transactions" className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-indigo-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors shadow-xs">
+            <Plus className="w-4 h-4" /> <span>Add Transaction</span>
           </Link>
           <select
             value={timeRange}
             onChange={(e) => setTimeRange(e.target.value)}
-            className="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5 shadow-sm"
+            className="flex-1 sm:flex-none bg-white border border-gray-300 text-gray-900 text-xs sm:text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2 sm:p-2.5 shadow-xs"
           >
             <option value="thisWeek">This Week</option>
             <option value="thisMonth">This Month</option>
@@ -147,7 +147,7 @@ const Dashboard = () => {
       </div>
 
       {/* Point-in-Time Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <KpiCard title="Net Worth" amount={snapshot.netWorth} icon={Landmark} colorClass="bg-indigo-100" />
         <KpiCard title="Cash Available" amount={snapshot.cashAvailable} icon={Wallet} colorClass="bg-emerald-100" />
         <KpiCard title="Total Debt" amount={snapshot.totalDebt} icon={CreditCard} colorClass="bg-rose-100" />

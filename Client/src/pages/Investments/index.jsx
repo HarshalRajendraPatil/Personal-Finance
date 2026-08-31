@@ -212,22 +212,22 @@ const Investments = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <div className="max-w-6xl mx-auto py-4 sm:py-8 px-1 sm:px-6 lg:px-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Investments</h1>
-          <p className="mt-1 text-sm text-gray-500">Track your portfolio — stocks, mutual funds, FDs, gold, and more.</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Investments</h1>
+          <p className="mt-0.5 text-xs sm:text-sm text-gray-500">Track your portfolio — stocks, mutual funds, FDs, gold, and more.</p>
         </div>
-        <button onClick={() => { setEditingInv(null); setModalOpen(true); }} className="mt-4 sm:mt-0 flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
+        <button onClick={() => { setEditingInv(null); setModalOpen(true); }} className="w-full sm:w-auto flex items-center justify-center px-4 py-2 border border-transparent rounded-lg shadow-xs text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 transition-colors">
           <Plus className="w-4 h-4 mr-2" /> Add Investment
         </button>
       </div>
 
       {/* Summary Banner */}
       {investments.length > 0 && (
-        <div className="bg-gradient-to-r from-violet-600 to-indigo-600 rounded-xl p-6 text-white mb-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-gradient-to-r from-violet-600 to-indigo-600 rounded-xl p-4 sm:p-6 text-white mb-6 sm:mb-8 shadow-xs">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
             <div>
               <p className="text-violet-200 text-xs uppercase tracking-wider">Total Invested</p>
               <p className="text-2xl font-bold mt-1">{fmt(totalInvested)}</p>

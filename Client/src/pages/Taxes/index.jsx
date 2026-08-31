@@ -69,18 +69,17 @@ const Taxes = () => {
   const taxDue = taxLiability - taxPaid;
 
   return (
-    <div className="max-w-5xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
+    <div className="max-w-5xl mx-auto py-4 sm:py-8 px-1 sm:px-6 lg:px-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Tax Tracking</h1>
-          <p className="mt-1 text-sm text-gray-500">Estimate your tax liability (New Regime) and track TDS.</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Tax Tracking</h1>
+          <p className="mt-0.5 text-xs sm:text-sm text-gray-500">Estimate your tax liability (New Regime) and track TDS.</p>
         </div>
-        <div className="mt-4 sm:mt-0 flex items-center space-x-3">
-          <select value={year} onChange={e => setYear(e.target.value)} className="block w-40 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 font-medium">
+        <div className="flex flex-col sm:flex-row w-full sm:w-auto gap-2">
+          <select value={year} onChange={e => setYear(e.target.value)} className="w-full sm:w-40 px-3 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white">
             {FY_OPTIONS.map(y => <option key={y} value={y}>FY {y}</option>)}
           </select>
-          <button onClick={handleSave} disabled={isLoading} className="flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50">
+          <button onClick={handleSave} disabled={isLoading} className="w-full sm:w-auto flex items-center justify-center px-4 py-2 text-xs sm:text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors shadow-xs">
             <Save className="w-4 h-4 mr-2" /> {isLoading ? 'Saving...' : 'Save & Calculate'}
           </button>
         </div>

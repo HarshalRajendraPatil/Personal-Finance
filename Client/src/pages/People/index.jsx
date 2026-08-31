@@ -307,19 +307,19 @@ const People = () => {
   const totalIOwe = borrowedItems.reduce((s, l) => s + Math.max(0, l.amount - (l.repayments || []).reduce((a, r) => a + r.amount, 0)), 0);
 
   return (
-    <div className="max-w-5xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
+    <div className="max-w-5xl mx-auto py-4 sm:py-8 px-1 sm:px-6 lg:px-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">People</h1>
-          <p className="mt-1 text-sm text-gray-500">Track money you've lent out and money you owe.</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">People</h1>
+          <p className="mt-0.5 text-xs sm:text-sm text-gray-500">Track money you've lent out and money you owe.</p>
         </div>
-        <button onClick={() => { setEditingEntry(null); setModalOpen(true); }} className="mt-4 sm:mt-0 flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
+        <button onClick={() => { setEditingEntry(null); setModalOpen(true); }} className="w-full sm:w-auto flex items-center justify-center px-4 py-2 border border-transparent rounded-lg shadow-xs text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 transition-colors">
           <Plus className="w-4 h-4 mr-2" />New Entry
         </button>
       </div>
 
       {/* Summary */}
-      <div className="grid grid-cols-2 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6 mb-8">
         <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
           <div className="flex items-center justify-between">
             <div><p className="text-sm text-gray-500">Owed to Me</p><p className="text-2xl font-bold text-blue-600">{fmt(totalOwedToMe)}</p></div>

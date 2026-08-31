@@ -136,18 +136,18 @@ const Categories = () => {
   };
 
   return (
-    <div className="max-w-5xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
+    <div className="max-w-6xl mx-auto py-4 sm:py-8 px-1 sm:px-6 lg:px-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Categories</h1>
-          <p className="mt-1 text-sm text-gray-500">Manage your income and expense categories.</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Categories</h1>
+          <p className="mt-0.5 text-xs sm:text-sm text-gray-500">Manage your income and expense categories.</p>
         </div>
-        <div className="mt-4 sm:mt-0 flex space-x-3">
+        <div className="flex flex-col sm:flex-row w-full sm:w-auto gap-2">
           {categories.length === 0 && (
             <button
               onClick={handleSeed}
               disabled={isLoading}
-              className="flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+              className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg shadow-xs text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
             >
               <Wand2 className="w-4 h-4 mr-2 text-purple-500" />
               Generate Defaults
@@ -155,7 +155,7 @@ const Categories = () => {
           )}
           <button
             onClick={() => handleAddNew('Expense')}
-            className="flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+            className="flex items-center justify-center px-4 py-2 border border-transparent rounded-lg shadow-xs text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 transition-colors"
           >
             <Plus className="w-4 h-4 mr-2" />
             Add Category

@@ -429,25 +429,25 @@ const Accounts = () => {
   const otherAccounts = activeAccounts.filter((a) => a.type !== 'Credit Card');
 
   return (
-    <div className="max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <div className="max-w-6xl mx-auto py-4 sm:py-8 px-1 sm:px-6 lg:px-8">
       {/* Header & Quick Stats */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Accounts & Wallets</h1>
-          <p className="mt-1 text-sm text-gray-500">Manage your bank accounts, credit cards, and cash.</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Accounts & Wallets</h1>
+          <p className="mt-0.5 text-xs sm:text-sm text-gray-500">Manage your bank accounts, credit cards, and cash.</p>
         </div>
         <button
           onClick={handleAddNew}
-          className="mt-4 sm:mt-0 flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+          className="w-full sm:w-auto flex items-center justify-center px-4 py-2 border border-transparent rounded-lg shadow-xs text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 transition-colors"
         >
           <Plus className="w-4 h-4 mr-2" />
           Add Account
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-          <p className="text-sm font-medium text-gray-500">Net Balance</p>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6 mb-8">
+        <div className="bg-white rounded-xl shadow-xs p-5 sm:p-6 border border-gray-100">
+          <p className="text-xs sm:text-sm font-medium text-gray-500">Net Balance</p>
           <p className="mt-2 text-3xl font-bold text-gray-900">{formatCurrency(netBalance)}</p>
         </div>
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">

@@ -60,29 +60,29 @@ const NetWorth = () => {
   const historyMax = history.length ? Math.max(...history.map(h => Math.abs(h.netWorth || 0))) : 1;
 
   return (
-    <div className="max-w-5xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <div className="max-w-5xl mx-auto py-4 sm:py-8 px-1 sm:px-6 lg:px-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Net Worth</h1>
-          <p className="mt-1 text-sm text-gray-500">Total Assets − Total Liabilities — your financial snapshot.</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Net Worth</h1>
+          <p className="mt-0.5 text-xs sm:text-sm text-gray-500">Total Assets − Total Liabilities — your financial snapshot.</p>
         </div>
-        <div className="flex space-x-2 mt-4 sm:mt-0">
-          <button onClick={load} className="flex items-center px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <button onClick={load} className="flex-1 sm:flex-none flex items-center justify-center px-3 py-2 text-xs sm:text-sm border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors shadow-xs">
             <RefreshCw className="w-4 h-4 mr-1.5" /> Refresh
           </button>
-          <button onClick={handleSnapshot} disabled={snapping} className="flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50">
+          <button onClick={handleSnapshot} disabled={snapping} className="flex-1 sm:flex-none flex items-center justify-center px-4 py-2 text-xs sm:text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors shadow-xs">
             <Camera className="w-4 h-4 mr-1.5" /> {snapping ? 'Saving...' : 'Save Snapshot'}
           </button>
         </div>
       </div>
 
       {/* Hero Net Worth Card */}
-      <div className={`rounded-2xl p-8 mb-8 text-white ${nwPositive ? 'bg-gradient-to-r from-emerald-500 to-teal-600' : 'bg-gradient-to-r from-red-500 to-rose-600'}`}>
-        <p className="text-white/80 text-sm uppercase tracking-wider">Net Worth</p>
-        <div className="flex items-baseline space-x-3 mt-2">
-          <p className="text-5xl font-black">{fmt(nw)}</p>
-          {nwPositive ? <TrendingUp className="w-8 h-8 text-white/70" /> : <TrendingDown className="w-8 h-8 text-white/70" />}
+      <div className={`rounded-2xl p-5 sm:p-8 mb-6 sm:mb-8 text-white shadow-sm ${nwPositive ? 'bg-gradient-to-r from-emerald-500 to-teal-600' : 'bg-gradient-to-r from-red-500 to-rose-600'}`}>
+        <p className="text-white/80 text-xs sm:text-sm uppercase tracking-wider">Net Worth</p>
+        <div className="flex items-baseline space-x-3 mt-1 sm:mt-2">
+          <p className="text-3xl sm:text-5xl font-black">{fmt(nw)}</p>
+          {nwPositive ? <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8 text-white/70" /> : <TrendingDown className="w-6 h-6 sm:w-8 sm:h-8 text-white/70" />}
         </div>
         <div className="mt-4 flex space-x-6">
           <div>

@@ -103,42 +103,43 @@ const Calendar = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
+    <div className="max-w-7xl mx-auto py-4 sm:py-8 px-1 sm:px-6 lg:px-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Financial Calendar</h1>
-          <p className="mt-1 text-sm text-gray-500">Track past transactions and visualize upcoming cash flows.</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Financial Calendar</h1>
+          <p className="mt-0.5 text-xs sm:text-sm text-gray-500">Track past transactions and visualize upcoming cash flows.</p>
         </div>
         
-        <div className="flex items-center space-x-4 mt-4 sm:mt-0">
-          <div className="flex items-center bg-white border rounded-md shadow-sm">
-            <button onClick={prevMonth} className="p-2 hover:bg-gray-50 border-r"><ChevronLeft className="w-5 h-5 text-gray-600" /></button>
-            <button onClick={today} className="px-4 py-2 text-sm font-medium hover:bg-gray-50 border-r">Today</button>
-            <button onClick={nextMonth} className="p-2 hover:bg-gray-50"><ChevronRight className="w-5 h-5 text-gray-600" /></button>
+        <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto space-x-3 mt-1 sm:mt-0">
+          <div className="flex items-center bg-white border border-gray-200 rounded-lg shadow-xs overflow-hidden">
+            <button onClick={prevMonth} className="p-2 hover:bg-gray-50 border-r border-gray-200 transition-colors"><ChevronLeft className="w-4 h-4 text-gray-600" /></button>
+            <button onClick={today} className="px-3 py-1.5 text-xs sm:text-sm font-medium hover:bg-gray-50 border-r border-gray-200 transition-colors">Today</button>
+            <button onClick={nextMonth} className="p-2 hover:bg-gray-50 transition-colors"><ChevronRight className="w-4 h-4 text-gray-600" /></button>
           </div>
-          <h2 className="text-xl font-bold text-gray-800 min-w-[150px] text-center">
-            {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+          <h2 className="text-base sm:text-xl font-bold text-gray-800 text-right sm:text-center sm:min-w-[150px]">
+            {currentDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
           </h2>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        {/* Days Header */}
-        <div className="grid grid-cols-7 border-b border-gray-200 bg-gray-50">
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-            <div key={day} className="py-2 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider border-r last:border-r-0">
-              {day}
-            </div>
-          ))}
-        </div>
+      <div className="bg-white rounded-xl shadow-xs border border-gray-200 overflow-x-auto">
+        <div className="min-w-[640px] sm:min-w-0">
+          {/* Days Header */}
+          <div className="grid grid-cols-7 border-b border-gray-200 bg-gray-50">
+            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+              <div key={day} className="py-2 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider border-r last:border-r-0">
+                {day}
+              </div>
+            ))}
+          </div>
 
-        {/* Calendar Grid */}
-        <div className="grid grid-cols-7 auto-rows-fr relative">
-          {isLoading && (
-            <div className="absolute inset-0 bg-white/50 flex items-center justify-center z-10">
-              <div className="animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent" />
-            </div>
-          )}
+          {/* Calendar Grid */}
+          <div className="grid grid-cols-7 auto-rows-fr relative">
+            {isLoading && (
+              <div className="absolute inset-0 bg-white/50 flex items-center justify-center z-10">
+                <div className="animate-spin rounded-full h-8 w-8 border-4 border-indigo-500 border-t-transparent" />
+              </div>
+            )}
           {calendarGrid.map((date, idx) => {
             const dateStr = getLocalDateStr(date);
             const dayEvents = eventsByDate[dateStr] || [];
@@ -184,6 +185,7 @@ const Calendar = () => {
           })}
         </div>
       </div>
+    </div>
       
       {/* Legend */}
       <div className="mt-4 flex flex-wrap gap-4 text-xs">

@@ -182,48 +182,48 @@ const Reports = () => {
   const maxCat = byCategory.length > 0 ? byCategory[0].total : 1;
 
   return (
-    <div className="max-w-5xl mx-auto py-8 px-4 sm:px-6 lg:px-8" id="reports-page">
+    <div className="max-w-5xl mx-auto py-4 sm:py-8 px-1 sm:px-6 lg:px-8" id="reports-page">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Reports</h1>
-          <p className="mt-1 text-sm text-gray-500">Financial summaries and data export.</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Reports</h1>
+          <p className="mt-0.5 text-xs sm:text-sm text-gray-500">Financial summaries and data export.</p>
         </div>
-        <div className="flex space-x-2 mt-4 sm:mt-0">
-          <button onClick={() => setCsvImportOpen(true)} className="flex items-center px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+          <button onClick={() => setCsvImportOpen(true)} className="flex-1 sm:flex-none flex items-center justify-center px-3 py-2 text-xs sm:text-sm border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors shadow-xs">
             <FileDown className="w-4 h-4 mr-1.5" />Import CSV
           </button>
-          <button onClick={handleExportCSV} className="flex items-center px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+          <button onClick={handleExportCSV} className="flex-1 sm:flex-none flex items-center justify-center px-3 py-2 text-xs sm:text-sm border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors shadow-xs">
             <FileDown className="w-4 h-4 mr-1.5" />Export CSV
           </button>
-          <button onClick={handlePrint} className="flex items-center px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700">
+          <button onClick={handlePrint} className="w-full sm:w-auto flex items-center justify-center px-4 py-2 text-xs sm:text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-xs">
             🖨 Print / PDF
           </button>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-6">
-        <div className="flex flex-wrap gap-3 items-end">
-          <div>
+      <div className="bg-white rounded-xl shadow-xs border border-gray-100 p-4 sm:p-5 mb-6">
+        <div className="flex flex-col sm:flex-row flex-wrap gap-3 items-stretch sm:items-end">
+          <div className="flex-1 min-w-[130px]">
             <label className="block text-xs font-medium text-gray-500 mb-1">From</label>
             <input type="date" value={filters.startDate} onChange={e => setFilters(f => ({ ...f, startDate: e.target.value }))}
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500" />
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm focus:ring-indigo-500 focus:border-indigo-500" />
           </div>
-          <div>
+          <div className="flex-1 min-w-[130px]">
             <label className="block text-xs font-medium text-gray-500 mb-1">To</label>
             <input type="date" value={filters.endDate} onChange={e => setFilters(f => ({ ...f, endDate: e.target.value }))}
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500" />
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm focus:ring-indigo-500 focus:border-indigo-500" />
           </div>
-          <div>
+          <div className="flex-1 min-w-[140px]">
             <label className="block text-xs font-medium text-gray-500 mb-1">Account</label>
             <select value={filters.account} onChange={e => setFilters(f => ({ ...f, account: e.target.value }))}
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500">
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm focus:ring-indigo-500 focus:border-indigo-500">
               <option value="">All Accounts</option>
               {accounts.map(a => <option key={a._id} value={a._id}>{a.name}</option>)}
             </select>
           </div>
-          <button onClick={() => fetchReports(filters)} disabled={isLoading} className="px-4 py-2 text-sm bg-gray-900 text-white rounded-md hover:bg-gray-700 disabled:opacity-50 flex items-center">
+          <button onClick={() => fetchReports(filters)} disabled={isLoading} className="w-full sm:w-auto px-4 py-2 text-xs sm:text-sm bg-gray-900 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 flex items-center justify-center transition-colors">
             <Filter className="w-4 h-4 mr-1.5" />{isLoading ? 'Loading...' : 'Apply'}
           </button>
         </div>
@@ -231,7 +231,7 @@ const Reports = () => {
 
       {/* Summary Cards */}
       {summary && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-8">
           {[
             { label: 'Total Income', value: fmt(summary.income), icon: TrendingUp, color: 'text-green-600', bg: 'bg-green-50' },
             { label: 'Total Expenses', value: fmt(summary.expenses), icon: TrendingDown, color: 'text-red-600', bg: 'bg-red-50' },

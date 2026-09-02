@@ -21,6 +21,7 @@ import taxRoutes from './routes/taxRoutes.js';
 import calendarRoutes from './routes/calendarRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 import intelligenceRoutes from './routes/intelligenceRoutes.js';
+import proactiveRoutes from './routes/proactiveRoutes.js';
 import { initCronJobs } from './cron/index.js';
 
 dotenv.config();
@@ -67,6 +68,7 @@ app.use('/api/taxes', taxRoutes);
 app.use('/api/calendar', calendarRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/intelligence', intelligenceRoutes);
+app.use('/api/proactive', proactiveRoutes);
 
 app.get('/', (req, res) => {
   res.send('API is running...');

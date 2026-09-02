@@ -3,11 +3,13 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchRecurringRules, deleteRecurringRule, payBill, updateRecurringRule } from '../../store/recurringSlice';
 import { fetchAccounts } from '../../store/accountSlice';
 import { fetchCategories } from '../../store/categorySlice';
+import { fetchSubscriptionAudit, openSubscriptionAuditModal } from '../../store/proactiveSlice';
 import RecurringFormModal from './RecurringFormModal';
 import Pagination from '../../components/Pagination';
 import {
   Plus, Edit2, Trash2, CheckCircle2, Pause, Play,
-  ArrowRightLeft, TrendingDown, TrendingUp, Calendar, AlertCircle
+  ArrowRightLeft, TrendingDown, TrendingUp, Calendar, AlertCircle,
+  Sparkles, Skull, AlertTriangle, Zap, ArrowRight
 } from 'lucide-react';
 
 import { formatCurrency } from '../../utils/formatCurrency';
@@ -32,6 +34,7 @@ const DueBadge = ({ daysLeft }) => {
 const Bills = () => {
   const dispatch = useDispatch();
   const { rules, isLoading } = useSelector((state) => state.recurring);
+  const { subscriptionAudit } = useSelector((state) => state.proactive);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRule, setEditingRule] = useState(null);
@@ -47,6 +50,7 @@ const Bills = () => {
     dispatch(fetchRecurringRules());
     dispatch(fetchAccounts());
     dispatch(fetchCategories());
+    dispatch(fetchSubscriptionAudit());
   }, [dispatch]);
 
   const handleEdit = (rule) => {
@@ -132,14 +136,62 @@ const Bills = () => {
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Bills & Recurring</h1>
           <p className="mt-0.5 text-xs sm:text-sm text-gray-500">Track recurring income, expenses, subscriptions, and EMIs.</p>
         </div>
-        <button
-          onClick={() => { setEditingRule(null); setIsModalOpen(true); }}
-          className="w-full sm:w-auto flex items-center justify-center px-4 py-2 border border-transparent rounded-lg shadow-xs text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 transition-colors"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Add Rule
-        </button>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <button
+            onClick={() => dispatch(openSubscriptionAuditModal())}
+            className="flex-1 sm:flex-none flex items-center justify-center px-3.5 py-2 border border-purple-200 text-purple-700 bg-purple-50 hover:bg-purple-100 rounded-lg shadow-2xs text-sm font-semibold transition-all active:scale-95"
+            title="Launch Autonomous Subscription Clean-Up Audit"
+          >
+            <Sparkles className="w-4 h-4 mr-1.5 text-purple-600" />
+            <span>Audit Subscriptions 🕵️</span>
+          </button>
+          <button
+            onClick={() => { setEditingRule(null); setIsModalOpen(true); }}
+            className="flex-1 sm:flex-none flex items-center justify-center px-4 py-2 border border-transparent rounded-lg shadow-xs text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 transition-colors"
+          >
+            <Plus className="w-4 h-4 mr-1.5" />
+            <span>Add Rule</span>
+          </button>
+        </div>
       </div>
+
+      {/* 🕵️ Zombie Subscription & Price-Hike Detector Banner */}
+      {subscriptionAudit && (subscriptionAudit.summary?.totalZombiesCount > 0 || subscriptionAudit.summary?.totalHikesCount > 0) && (
+        <div className="mb-6 p-4 bg-gradient-to-r from-purple-950 via-indigo-950 to-slate-900 text-white rounded-2xl border border-purple-500/30 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="p-2.5 bg-purple-500/20 border border-purple-400/30 text-purple-300 rounded-xl shrink-0">
+              <Sparkles className="w-5 h-5" />
+            </span>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-xs font-bold text-purple-300 uppercase tracking-wider">
+                  🕵️ Zombie Subscription & Price-Hike Detector
+                </p>
+                {subscriptionAudit.summary?.totalZombiesCount > 0 && (
+                  <span className="text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-400/30 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <Skull className="w-3 h-3" /> {subscriptionAudit.summary.totalZombiesCount} Zombie Inactive
+                  </span>
+                )}
+                {subscriptionAudit.summary?.totalHikesCount > 0 && (
+                  <span className="text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-400/30 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3" /> {subscriptionAudit.summary.totalHikesCount} Price Hike
+                  </span>
+                )}
+              </div>
+              <p className="text-xs sm:text-sm font-semibold text-white mt-0.5">
+                Potential annual waste identified: <strong className="font-mono text-emerald-300">₹{subscriptionAudit.summary?.totalPotentialAnnualSavings?.toLocaleString('en-IN')}/year</strong>. Clean up dormant services in 1-click!
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => dispatch(openSubscriptionAuditModal())}
+            className="w-full sm:w-auto px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-extrabold text-xs rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 shrink-0"
+          >
+            <span>Review Clean-Up Audit</span>
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6 mb-8">

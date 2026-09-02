@@ -2,12 +2,14 @@ import { useEffect, useState, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchDashboardData } from '../../store/dashboardSlice';
 import { fetchHealthScore } from '../../store/intelligenceSlice';
+import { fetchSafeToSpend, fetchProactiveNudges } from '../../store/proactiveSlice';
 import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, startOfYear, endOfYear, subMonths } from 'date-fns';
 import { Link } from 'react-router-dom';
 import {
   Wallet, TrendingUp, TrendingDown, Landmark,
   PiggyBank, CreditCard, Receipt, Building2, Target,
-  ArrowUpRight, ArrowDownRight, Clock, Plus, Calendar as CalendarIcon, ArrowRight
+  ArrowUpRight, ArrowDownRight, Clock, Plus, Calendar as CalendarIcon, ArrowRight,
+  Zap, Sparkles, AlertTriangle, ShieldCheck
 } from 'lucide-react';
 import { BarChart } from '@mui/x-charts/BarChart';
 import { PieChart } from '@mui/x-charts/PieChart';
@@ -19,10 +21,13 @@ const Dashboard = () => {
   const dispatch = useDispatch();
   const { data, isLoading, isError, message } = useSelector(state => state.dashboard);
   const { healthScore } = useSelector(state => state.intelligence);
+  const { safeToSpendData, nudges } = useSelector(state => state.proactive);
   const [timeRange, setTimeRange] = useState('thisMonth');
 
   useEffect(() => {
     dispatch(fetchHealthScore());
+    dispatch(fetchSafeToSpend());
+    dispatch(fetchProactiveNudges());
     const now = new Date();
     let startDate, endDate;
 
@@ -140,7 +145,7 @@ const Dashboard = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Financial Command Center</h1>
-          <p className="text-xs sm:text-sm text-gray-500">Your comprehensive financial snapshot.</p>
+          <p className="text-xs sm:text-sm text-gray-500">Your autonomous wealth snapshot & live guardrails.</p>
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <Link to="/transactions" className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-indigo-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors shadow-xs">
@@ -160,6 +165,31 @@ const Dashboard = () => {
         </div>
       </div>
 
+      {/* Proactive Intelligence Banner (If Critical Warnings Exist) */}
+      {nudges && nudges.length > 0 && nudges.some(n => n.severity === 'CRITICAL' || n.severity === 'WARNING') && (
+        <div className="p-4 bg-gradient-to-r from-amber-500/10 via-rose-500/10 to-indigo-500/10 border border-amber-200/80 rounded-2xl flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="p-2 bg-amber-500/20 text-amber-800 rounded-xl">
+              <AlertTriangle className="w-5 h-5" />
+            </span>
+            <div>
+              <p className="text-xs font-bold text-amber-900 uppercase tracking-wider">
+                Proactive Intelligence Alert
+              </p>
+              <p className="text-xs sm:text-sm font-medium text-gray-800 mt-0.5">
+                {nudges.find(n => n.severity === 'CRITICAL')?.title || nudges[0].title}
+              </p>
+            </div>
+          </div>
+          <Link
+            to="/intelligence"
+            className="text-xs font-bold text-indigo-700 hover:text-indigo-900 bg-white px-3 py-1.5 rounded-lg border border-indigo-200 shadow-2xs whitespace-nowrap"
+          >
+            Review Nudges &rarr;
+          </Link>
+        </div>
+      )}
+
       {/* Point-in-Time Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <KpiCard title="Net Worth" amount={snapshot.netWorth} icon={Landmark} colorClass="bg-indigo-100" />
@@ -168,34 +198,30 @@ const Dashboard = () => {
         <KpiCard title="Total Investments" amount={snapshot.totalInvestments} icon={TrendingUp} colorClass="bg-blue-100" />
       </div>
 
-      {/* Account Balance Distribution (New) */}
-      {snapshot.accountBreakdown && snapshot.accountBreakdown.length > 0 && (
-        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-          <p className="text-xs font-medium text-gray-500 mb-2 uppercase tracking-wider">Cash Distribution</p>
-          <div className="flex h-3 rounded-full overflow-hidden w-full bg-gray-100">
-            {snapshot.accountBreakdown.map((acc, i) => {
-              const colors = ['bg-emerald-500', 'bg-blue-500', 'bg-indigo-500', 'bg-purple-500', 'bg-pink-500', 'bg-orange-500'];
-              const pct = (acc.balance / snapshot.cashAvailable) * 100;
-              return <div key={i} className={`${colors[i % colors.length]} h-full`} style={{ width: `${pct}%` }} title={`${acc.name}: ${formatCurrency(acc.balance)}`} />;
-            })}
+      {/* Period Flow Metrics + Dynamic Safe-to-Spend Card */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Dynamic Safe-to-Spend Today Card */}
+        <div className="bg-gradient-to-br from-indigo-900 via-indigo-800 to-slate-900 text-white p-6 rounded-xl shadow-md flex flex-col justify-between relative overflow-hidden">
+          <div className="flex justify-between items-start mb-2">
+            <div>
+              <span className="text-[10px] font-bold tracking-wider uppercase bg-emerald-400/20 text-emerald-300 border border-emerald-300/30 px-2 py-0.5 rounded-full">
+                Live Dynamic Guardrail
+              </span>
+              <p className="text-xs text-indigo-200 mt-2 font-medium">Safe-to-Spend Today</p>
+              <h3 className="text-2xl sm:text-3xl font-bold text-white font-mono mt-0.5">
+                {formatCurrency(safeToSpendData?.safeToSpendDaily || 0)}
+                <span className="text-xs font-normal text-indigo-200">/day</span>
+              </h3>
+            </div>
+            <div className="p-2.5 rounded-xl bg-white/10 border border-white/10">
+              <Zap className="w-5 h-5 text-amber-300" />
+            </div>
           </div>
-          <div className="flex flex-wrap gap-4 mt-3">
-            {snapshot.accountBreakdown.map((acc, i) => {
-              const colors = ['bg-emerald-500', 'bg-blue-500', 'bg-indigo-500', 'bg-purple-500', 'bg-pink-500', 'bg-orange-500'];
-              return (
-                <div key={i} className="flex items-center gap-1.5 text-xs">
-                  <span className={`w-2 h-2 rounded-full ${colors[i % colors.length]}`}></span>
-                  <span className="text-gray-600">{acc.name}</span>
-                  <span className="font-medium text-gray-900">{formatCurrency(acc.balance)}</span>
-                </div>
-              );
-            })}
-          </div>
+          <p className="text-[11px] text-indigo-200/90 mt-2">
+            After reserving for upcoming bills, EMIs, and monthly savings targets.
+          </p>
         </div>
-      )}
 
-      {/* Period Flow Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <KpiCard title="Period Income" amount={period.income} icon={TrendingUp} colorClass="bg-emerald-100" trend={period.comparison?.incomeChange} />
         <KpiCard title="Period Expenses" amount={period.expense} icon={TrendingDown} colorClass="bg-rose-100" trend={period.comparison?.expenseChange} />
 

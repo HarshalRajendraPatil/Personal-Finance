@@ -15,6 +15,7 @@ import taxReducer from './taxSlice';
 import calendarReducer from './calendarSlice';
 import dashboardReducer from './dashboardSlice';
 import intelligenceReducer from './intelligenceSlice';
+import proactiveReducer from './proactiveSlice';
 
 export const store = configureStore({
   reducer: {
@@ -33,6 +34,7 @@ export const store = configureStore({
     calendar: calendarReducer,
     dashboard: dashboardReducer,
     intelligence: intelligenceReducer,
+    proactive: proactiveReducer,
   },
 });
 

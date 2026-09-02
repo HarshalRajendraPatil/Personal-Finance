@@ -2,10 +2,18 @@ import { useEffect, useState } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../store/authSlice';
+import { fetchProactiveNudges, fetchSalaryPlan, fetchSubscriptionAudit, fetchOverdraftForecast, openWhatIfModal } from '../store/proactiveSlice';
+import ActionCenterDrawer from '../components/ActionCenterDrawer';
+import AICopilotDrawer from '../components/AICopilotDrawer';
+import SalaryDistributorModal from '../components/SalaryDistributorModal';
+import SubscriptionAuditModal from '../components/SubscriptionAuditModal';
+import OverdraftShieldModal from '../components/OverdraftShieldModal';
+import WhatIfSimulatorModal from '../components/WhatIfSimulatorModal';
 import {
   User, LogOut, LayoutDashboard, Wallet, Tags, ArrowRightLeft,
   CalendarClock, PiggyBank, Users, Target, BarChart3, TrendingUp,
-  Building2, Scale, Activity, Menu, X, ChevronRight
+  Building2, Scale, Activity, Menu, X, ChevronRight, Bell, Sparkles,
+  Bot, Compass
 } from 'lucide-react';
 
 const MainLayout = () => {
@@ -13,7 +21,18 @@ const MainLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useSelector((state) => state.auth);
+  const { nudges } = useSelector((state) => state.proactive);
+
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isActionCenterOpen, setIsActionCenterOpen] = useState(false);
+  const [isCopilotOpen, setIsCopilotOpen] = useState(false);
+
+  useEffect(() => {
+    dispatch(fetchProactiveNudges());
+    dispatch(fetchSalaryPlan());
+    dispatch(fetchSubscriptionAudit());
+    dispatch(fetchOverdraftForecast());
+  }, [dispatch]);
 
   useEffect(() => {
     const path = location.pathname;
@@ -120,15 +139,29 @@ const MainLayout = () => {
           </Link>
         </div>
 
-        <Link to="/profile" className="flex items-center gap-2 p-1 rounded-full hover:bg-gray-100 transition-colors">
-          {user?.profilePic ? (
-            <img src={user.profilePic} alt="" className="h-8 w-8 rounded-full bg-gray-200 object-cover ring-2 ring-indigo-500/20" />
-          ) : (
-            <div className="h-8 w-8 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
-              <User className="h-4 w-4" />
-            </div>
-          )}
-        </Link>
+        <div className="flex items-center gap-2">
+          {/* Action Center Bell */}
+          <button
+            onClick={() => setIsActionCenterOpen(true)}
+            className="p-2 text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg relative transition-colors"
+            title="Proactive Action Center"
+          >
+            <Bell className="w-5 h-5" />
+            {nudges.length > 0 && (
+              <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-rose-500 rounded-full ring-2 ring-white" />
+            )}
+          </button>
+
+          <Link to="/profile" className="flex items-center p-1 rounded-full hover:bg-gray-100 transition-colors">
+            {user?.profilePic ? (
+              <img src={user.profilePic} alt="" className="h-8 w-8 rounded-full bg-gray-200 object-cover ring-2 ring-indigo-500/20" />
+            ) : (
+              <div className="h-8 w-8 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
+                <User className="h-4 w-4" />
+              </div>
+            )}
+          </Link>
+        </div>
       </header>
 
       {/* ── Mobile Slide-over Drawer / Backdrop ── */}
@@ -163,6 +196,7 @@ const MainLayout = () => {
 
             {/* Drawer Navigation Links */}
             <div className="flex-1 overflow-y-auto py-3 px-3 space-y-4">
+
               {navLinks.map((section) => (
                 <div key={section.group}>
                   {section.group !== 'Core' && (
@@ -232,17 +266,30 @@ const MainLayout = () => {
       {/* ── Desktop Sidebar (Visible on md and larger) ── */}
       <aside className="w-64 bg-white border-r border-gray-200 hidden md:flex md:flex-col md:h-screen md:sticky md:top-0">
         {/* Brand Header */}
-        <div className="h-16 flex items-center px-6 border-b border-gray-200">
+        <div className="h-16 flex items-center justify-between px-6 border-b border-gray-200">
           <Link to="/dashboard" className="flex items-center gap-2">
             <span className="bg-indigo-600 text-white p-1.5 rounded-lg shadow-xs">
               <Activity className="w-5 h-5" />
             </span>
             <span className="text-xl font-bold text-gray-900 tracking-tight">Capise</span>
           </Link>
+
+          {/* Action Center Bell in Header */}
+          <button
+            onClick={() => setIsActionCenterOpen(true)}
+            className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg relative transition-colors"
+            title="Proactive Action Center"
+          >
+            <Bell className="w-5 h-5" />
+            {nudges.length > 0 && (
+              <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-rose-500 rounded-full ring-2 ring-white animate-pulse" />
+            )}
+          </button>
         </div>
 
         {/* Scrollable Navigation */}
         <div className="flex-1 overflow-y-auto py-4">
+
           <nav className="px-3 space-y-4">
             {navLinks.map((section) => (
               <div key={section.group}>
@@ -300,11 +347,44 @@ const MainLayout = () => {
       </aside>
 
       {/* ── Main Content Area (Mobile & Desktop) ── */}
-      <main className="flex-1 flex flex-col min-w-0 w-full overflow-x-hidden">
-        <div className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8 max-w-full overflow-x-hidden">
+      <main className="flex-1 flex flex-col min-w-0 w-full overflow-x-hidden relative">
+        <div className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8 max-w-full overflow-x-hidden pb-20 md:pb-8">
           <Outlet />
         </div>
+
+        {/* 🔮 Time-Machine Simulator Floating Button */}
+        <button
+          onClick={() => dispatch(openWhatIfModal())}
+          className="fixed bottom-20 sm:bottom-6 right-6 sm:right-56 z-40 bg-gradient-to-r from-purple-700 to-indigo-800 hover:from-purple-800 hover:to-indigo-900 text-white p-3.5 sm:px-4 sm:py-3 rounded-full shadow-xl hover:shadow-2xl flex items-center gap-2 transition-all hover:scale-105 active:scale-95 border border-purple-400/30 group"
+          aria-label="Open What-If Financial Time-Machine"
+          title="Predictive What-If Financial Time-Machine"
+        >
+          <Compass className="w-5 h-5 text-purple-200 group-hover:text-white transition-colors" />
+          <span className="hidden sm:inline font-bold text-xs tracking-wide">Time-Machine 🔮</span>
+        </button>
+
+        {/* 🤖 AI Copilot Floating Launcher */}
+        <button
+          onClick={() => setIsCopilotOpen(true)}
+          className="fixed bottom-6 right-6 z-40 bg-gradient-to-r from-indigo-700 to-indigo-900 hover:from-indigo-800 hover:to-slate-900 text-white p-3.5 sm:px-5 sm:py-3 rounded-full shadow-xl hover:shadow-2xl flex items-center gap-2.5 transition-all hover:scale-105 active:scale-95 border border-indigo-500/30 group"
+          aria-label="Open AI Copilot"
+        >
+          <div className="relative">
+            <Bot className="w-5 h-5 text-indigo-200 group-hover:text-white transition-colors" />
+            <span className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-400 rounded-full animate-ping" />
+            <span className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-400 rounded-full" />
+          </div>
+          <span className="hidden sm:inline font-bold text-xs tracking-wide">Capise Copilot (AI)</span>
+        </button>
       </main>
+
+      {/* ── Modals and Drawers ── */}
+      <ActionCenterDrawer isOpen={isActionCenterOpen} onClose={() => setIsActionCenterOpen(false)} />
+      <AICopilotDrawer isOpen={isCopilotOpen} onClose={() => setIsCopilotOpen(false)} />
+      <SalaryDistributorModal />
+      <SubscriptionAuditModal />
+      <OverdraftShieldModal />
+      <WhatIfSimulatorModal />
 
     </div>
   );

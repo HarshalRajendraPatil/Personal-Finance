@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchAccounts, deleteAccount } from '../../store/accountSlice';
+import { openOverdraftModal, fetchOverdraftForecast } from '../../store/proactiveSlice';
 import AccountFormModal from './AccountFormModal';
 import accountService from '../../services/accountService';
 import Pagination from '../../components/Pagination';
@@ -21,6 +22,11 @@ import {
   CheckCircle2,
   X,
   Loader2,
+  ShieldAlert,
+  ShieldCheck,
+  Sparkles,
+  Zap,
+  ArrowRight,
 } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatCurrency';
 
@@ -407,6 +413,7 @@ const CreditCardStatementModal = ({ isOpen, onClose, card, onPayClick }) => {
 const Accounts = () => {
   const dispatch = useDispatch();
   const { accounts, isLoading, error } = useSelector((state) => state.accounts);
+  const { overdraftForecast } = useSelector((state) => state.proactive);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState(null);
@@ -417,6 +424,7 @@ const Accounts = () => {
 
   useEffect(() => {
     dispatch(fetchAccounts());
+    dispatch(fetchOverdraftForecast(5000));
   }, [dispatch]);
 
   const handleEdit = (account) => {
@@ -487,14 +495,55 @@ const Accounts = () => {
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Accounts & Wallets</h1>
           <p className="mt-0.5 text-xs sm:text-sm text-gray-500">Manage your bank accounts, credit cards, and cash.</p>
         </div>
-        <button
-          onClick={handleAddNew}
-          className="w-full sm:w-auto flex items-center justify-center px-4 py-2 border border-transparent rounded-lg shadow-xs text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 transition-colors"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Add Account
-        </button>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <button
+            onClick={() => dispatch(openOverdraftModal())}
+            className="flex-1 sm:flex-none flex items-center justify-center px-3.5 py-2 border border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg shadow-2xs text-sm font-semibold transition-all active:scale-95"
+            title="Open 14-Day Overdraft & Low-Balance Shield"
+          >
+            <ShieldCheck className="w-4 h-4 mr-1.5 text-indigo-600" />
+            <span>Overdraft Shield 🛡️</span>
+          </button>
+          <button
+            onClick={handleAddNew}
+            className="flex-1 sm:flex-none flex items-center justify-center px-4 py-2 border border-transparent rounded-lg shadow-xs text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 transition-colors"
+          >
+            <Plus className="w-4 h-4 mr-1.5" />
+            <span>Add Account</span>
+          </button>
+        </div>
       </div>
+
+      {/* 🛡️ Autonomous Overdraft & Low-Balance Shield Alert Banner */}
+      {overdraftForecast && overdraftForecast.summary?.breachedAccountsCount > 0 && (
+        <div className="mb-6 p-4 bg-gradient-to-r from-rose-950 via-slate-900 to-indigo-950 text-white rounded-2xl border border-rose-500/30 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="p-2.5 bg-rose-500/20 border border-rose-400/30 text-rose-300 rounded-xl shrink-0">
+              <ShieldAlert className="w-5 h-5" />
+            </span>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-xs font-bold text-rose-300 uppercase tracking-wider">
+                  🛡️ Low-Balance Breach Risk Projected
+                </p>
+                <span className="text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-400/30 px-2 py-0.5 rounded-full">
+                  {overdraftForecast.summary.breachedAccountsCount} account(s) at risk
+                </span>
+              </div>
+              <p className="text-xs sm:text-sm font-semibold text-white mt-0.5">
+                Projected shortfall of <strong className="font-mono text-rose-300">₹{overdraftForecast.summary?.totalShortfall?.toLocaleString('en-IN')}</strong> in the next 14 days before scheduled EMIs/bills. Avoid ECS/NACH bounce fees in 1-click!
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => dispatch(openOverdraftModal())}
+            className="w-full sm:w-auto px-4 py-2.5 bg-gradient-to-r from-rose-600 to-indigo-600 hover:from-rose-700 hover:to-indigo-700 text-white font-extrabold text-xs rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 shrink-0"
+          >
+            <span>Auto-Rebalance Now</span>
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6 mb-8">
         <div className="bg-white rounded-xl shadow-xs p-5 sm:p-6 border border-gray-100">

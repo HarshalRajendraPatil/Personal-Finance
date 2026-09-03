@@ -1,23 +1,161 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchInvestments, createInvestment, updateInvestment, deleteInvestment, updateCurrentValue, syncAllInvestments, syncInvestmentPrice, clearSyncMessage } from '../../store/investmentSlice';
+import {
+  fetchInvestments,
+  createInvestment,
+  updateInvestment,
+  deleteInvestment,
+  updateCurrentValue,
+  syncAllInvestments,
+  syncInvestmentPrice,
+  clearSyncMessage,
+  clearSyncError,
+} from '../../store/investmentSlice';
 import { fetchAccounts } from '../../store/accountSlice';
+import { fetchTransactions } from '../../store/transactionSlice';
+import { validateInvestmentSymbol } from '../../services/investmentService';
 import Pagination from '../../components/Pagination';
-import { Plus, TrendingUp, TrendingDown, Edit2, Trash2, RefreshCw, IndianRupee, Zap, CheckCircle2, Globe, Sparkles } from 'lucide-react';
+import {
+  Plus,
+  TrendingUp,
+  TrendingDown,
+  Edit2,
+  Trash2,
+  RefreshCw,
+  IndianRupee,
+  Zap,
+  CheckCircle2,
+  AlertTriangle,
+  AlertCircle,
+  Globe,
+  Sparkles,
+  Info,
+  BookOpen,
+} from 'lucide-react';
 
 
 const fmt = (n) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n || 0);
 const fmtPct = (n) => `${n >= 0 ? '+' : ''}${(n || 0).toFixed(2)}%`;
 
-const TYPES = ['Stocks', 'Mutual Fund', 'ETF', 'Fixed Deposit', 'PPF', 'EPF', 'NPS', 'Gold', 'Crypto', 'Bonds', 'Other'];
+const TYPES = ['Stocks', 'Mutual Fund', 'ETF', 'Fixed Deposit', 'PPF', 'EPF', 'NPS', 'Gold', 'Silver', 'Crypto', 'Bonds', 'Other'];
 const TYPE_COLORS = {
   'Stocks': '#3b82f6', 'Mutual Fund': '#10b981', 'ETF': '#8b5cf6', 'Fixed Deposit': '#f59e0b',
-  'PPF': '#ec4899', 'EPF': '#06b6d4', 'NPS': '#84cc16', 'Gold': '#f97316',
+  'PPF': '#ec4899', 'EPF': '#06b6d4', 'NPS': '#84cc16', 'Gold': '#f59e0b', 'Silver': '#94a3b8',
   'Crypto': '#ef4444', 'Bonds': '#6366f1', 'Other': '#64748b',
 };
 
-// ── Investment Form Modal ──────────────────────────────────────────────
-const InvestmentFormModal = ({ isOpen, onClose, investment = null }) => {
+const ASSET_SYNC_GUIDANCE = {
+  'Stocks': {
+    canTrackLive: true,
+    codeLabel: 'Stock ISIN Code (12 chars) or NSE/BSE Ticker',
+    placeholder: 'e.g. INE002A01018 (ISIN), RELIANCE.NS, TCS.NS',
+    examples: [
+      { label: 'Reliance (ISIN)', code: 'INE002A01018' },
+      { label: 'Tata Motors (ISIN)', code: 'INE155A01022' },
+      { label: 'Infosys (ISIN)', code: 'INE009A01021' },
+      { label: 'TCS (Ticker)', code: 'TCS.NS' },
+    ],
+    tip: 'Indian stocks support 12-character ISIN codes (e.g. INE002A01018) or NSE tickers with .NS suffix.',
+  },
+  'Gold': {
+    canTrackLive: true,
+    codeLabel: 'Gold ETF Ticker or SGB Symbol',
+    placeholder: 'e.g. GOLDBEES.NS, HDFCGOLD.NS, SGBDE31III-GB.NS',
+    examples: [
+      { label: 'Nippon Gold ETF', code: 'GOLDBEES.NS' },
+      { label: 'HDFC Gold ETF', code: 'HDFCGOLD.NS' },
+      { label: 'SBI Gold ETF', code: 'SETFGOLD.NS' },
+    ],
+    tip: 'Track live gold prices through Gold ETFs like GOLDBEES.NS or traded Sovereign Gold Bond symbols.',
+  },
+  'Silver': {
+    canTrackLive: true,
+    codeLabel: 'Silver ETF Ticker',
+    placeholder: 'e.g. SILVERBEES.NS, HDFCSILVER.NS, ICICISILVE.NS',
+    examples: [
+      { label: 'Nippon Silver ETF', code: 'SILVERBEES.NS' },
+      { label: 'HDFC Silver ETF', code: 'HDFCSILVER.NS' },
+      { label: 'ICICI Silver ETF', code: 'ICICISILVE.NS' },
+    ],
+    tip: 'Track real-time silver commodity prices using liquid Silver ETFs like SILVERBEES.NS on NSE.',
+  },
+  'Bonds': {
+    canTrackLive: true,
+    codeLabel: 'Bond ETF Ticker / G-Sec Ticker / Bond ISIN',
+    placeholder: 'e.g. EBBETF0430.NS, GILT5YBEES.NS, LIQUIDBEES.NS',
+    examples: [
+      { label: 'Bharat Bond 2030', code: 'EBBETF0430.NS' },
+      { label: '5-Year Govt G-Sec', code: 'GILT5YBEES.NS' },
+      { label: 'Liquid Debt ETF', code: 'LIQUIDBEES.NS' },
+    ],
+    tip: 'Government G-Secs, Bharat Bonds, and debt securities trading on NSE can be tracked via their ETF ticker or bond ISIN.',
+  },
+  'ETF': {
+    canTrackLive: true,
+    codeLabel: 'Exchange Traded Fund (ETF) Ticker',
+    placeholder: 'e.g. NIFTYBEES.NS, MON100.NS, SILVERBEES.NS',
+    examples: [
+      { label: 'Nifty 50 ETF', code: 'NIFTYBEES.NS' },
+      { label: 'Nasdaq 100 ETF', code: 'MON100.NS' },
+      { label: 'Silver ETF', code: 'SILVERBEES.NS' },
+    ],
+    tip: 'Enter the NSE ticker with .NS suffix for index, international, or thematic ETFs.',
+  },
+  'Mutual Fund': {
+    canTrackLive: true,
+    codeLabel: '6-Digit AMFI Scheme Code',
+    placeholder: 'e.g. 120716 (UTI Nifty 50), 122639 (Parag Parikh)',
+    examples: [
+      { label: 'UTI Nifty 50 Direct', code: '120716' },
+      { label: 'Parag Parikh Flexi Cap', code: '122639' },
+    ],
+    tip: 'Find the official 6-digit numeric scheme code on AMFI India or your fund mutual fund CAS statement.',
+  },
+  'Crypto': {
+    canTrackLive: true,
+    codeLabel: 'CoinGecko Token ID or Ticker',
+    placeholder: 'e.g. bitcoin, ethereum, solana, btc, eth',
+    examples: [
+      { label: 'Bitcoin (BTC)', code: 'bitcoin' },
+      { label: 'Ethereum (ETH)', code: 'ethereum' },
+      { label: 'Solana (SOL)', code: 'solana' },
+    ],
+    tip: 'Enter the CoinGecko coin identifier (e.g. bitcoin, ethereum, solana) or standard token symbol.',
+  },
+  'Fixed Deposit': {
+    canTrackLive: false,
+    reason: 'Fixed Deposits are term deposits with banks/NBFCs that grow at a fixed contracted interest rate (e.g. 7.1% p.a.). They do not trade on live stock exchanges.',
+    actionRequired: 'Update your current value manually or log interest income as it accrues. No exchange symbol is needed.',
+  },
+  'PPF': {
+    canTrackLive: false,
+    reason: 'Public Provident Fund (PPF) is a sovereign, non-market traded 15-year statutory savings scheme backed by the Government of India (current interest: ~7.1% p.a.).',
+    actionRequired: 'Log manual periodic balance updates from your bank portal or annual interest credits.',
+  },
+  'EPF': {
+    canTrackLive: false,
+    reason: 'Employee Provident Fund (EPF/PF) is administered by EPFO with an annual statutory interest declaration (~8.25% p.a.). It has no public live market ticker.',
+    actionRequired: 'Update your EPF balance periodically from your EPFO UAN passbook.',
+  },
+  'NPS': {
+    canTrackLive: false,
+    reason: 'National Pension System (NPS) units are managed across Tier-1/Tier-2 PFM accounts (Scheme E, C, G) held under your PRAN.',
+    actionRequired: 'Update your portfolio balance periodically from your CRA (Protean/NSDL/KFintech) statement.',
+  },
+  'Other': {
+    canTrackLive: true,
+    codeLabel: 'Ticker, ISIN, or Asset Symbol',
+    placeholder: 'e.g. SILVERBEES.NS, GOLDBEES.NS, or custom ticker',
+    examples: [
+      { label: 'Silver ETF', code: 'SILVERBEES.NS' },
+      { label: 'Gold ETF', code: 'GOLDBEES.NS' },
+    ],
+    tip: 'For commodities like Silver, enter the corresponding ETF ticker (e.g. SILVERBEES.NS).',
+  },
+};
+
+
+const InvestmentFormModal = ({ isOpen, onClose, investment = null, onOpenGuide }) => {
   const dispatch = useDispatch();
   const { accounts } = useSelector(s => s.accounts);
   const { isLoading } = useSelector(s => s.investments);
@@ -25,12 +163,18 @@ const InvestmentFormModal = ({ isOpen, onClose, investment = null }) => {
     name: '', type: 'Mutual Fund', platform: '', investedAmount: '', currentValue: '',
     quantity: '', buyPrice: '', purchaseDate: '', maturityDate: '', notes: '',
     isSip: false, sipAmount: '', sipFrequency: 'monthly', sipDay: 1, sipAccount: '',
+    accountId: '', bookTransaction: true,
     symbol: '', autoSyncPrice: false
   });
   const [localError, setLocalError] = useState('');
+  const [isValidatingSymbol, setIsValidatingSymbol] = useState(false);
+  const [symbolValidationResult, setSymbolValidationResult] = useState(null);
+  const [symbolValidationError, setSymbolValidationError] = useState('');
 
   useEffect(() => {
     setLocalError('');
+    setSymbolValidationResult(null);
+    setSymbolValidationError('');
     if (investment) {
       setForm({
         name: investment.name, type: investment.type, platform: investment.platform || '',
@@ -44,22 +188,52 @@ const InvestmentFormModal = ({ isOpen, onClose, investment = null }) => {
         sipFrequency: investment.sipFrequency || 'monthly',
         sipDay: investment.sipDay || 1,
         sipAccount: investment.sipAccount?._id || investment.sipAccount || '',
+        accountId: investment.fundingAccount?._id || investment.fundingAccount || '',
+        bookTransaction: false,
         symbol: investment.symbol || '',
         autoSyncPrice: investment.autoSyncPrice || false,
       });
     } else {
+      const defaultBank = accounts.find(a => !a.isArchived && a.type === 'Bank')?._id || accounts[0]?._id || '';
       setForm({
         name: '', type: 'Mutual Fund', platform: '', investedAmount: '', currentValue: '',
         quantity: '', buyPrice: '', purchaseDate: new Date().toISOString().split('T')[0],
         maturityDate: '', notes: '', isSip: false, sipAmount: '', sipFrequency: 'monthly',
-        sipDay: 1, sipAccount: '', symbol: '', autoSyncPrice: false
+        sipDay: 1, sipAccount: defaultBank, accountId: defaultBank, bookTransaction: true,
+        symbol: '', autoSyncPrice: false
       });
     }
-  }, [investment, isOpen]);
+  }, [investment, isOpen, accounts]);
+
+  const handleValidateSymbol = async () => {
+    if (!form.symbol.trim()) {
+      setSymbolValidationError('Please enter an ISIN code or symbol to verify.');
+      return;
+    }
+    setIsValidatingSymbol(true);
+    setSymbolValidationResult(null);
+    setSymbolValidationError('');
+    try {
+      const res = await validateInvestmentSymbol(form.symbol.trim(), form.type);
+      setSymbolValidationResult(res.data);
+      if (!form.buyPrice && res.data.price) {
+        setForm(f => ({ ...f, buyPrice: res.data.price }));
+      }
+    } catch (err) {
+      setSymbolValidationError(err.response?.data?.message || err.message || 'Could not track live price for this code/symbol.');
+    } finally {
+      setIsValidatingSymbol(false);
+    }
+  };
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLocalError('');
+    if (!investment && form.bookTransaction && !form.accountId) {
+      setLocalError('Please select a funding bank account to record the transfer, or uncheck the transfer box.');
+      return;
+    }
     try {
       const payload = {
         ...form,
@@ -73,12 +247,19 @@ const InvestmentFormModal = ({ isOpen, onClose, investment = null }) => {
         sipAmount: form.isSip ? parseFloat(form.sipAmount || 0) : 0,
         sipFrequency: form.sipFrequency || 'monthly',
         sipDay: parseInt(form.sipDay || 1),
-        sipAccount: form.isSip ? (form.sipAccount || null) : null,
+        sipAccount: form.isSip ? (form.sipAccount || form.accountId || null) : null,
+        accountId: form.accountId || null,
+        bookTransaction: Boolean(form.bookTransaction),
         symbol: form.symbol ? form.symbol.trim() : '',
         autoSyncPrice: Boolean(form.autoSyncPrice),
       };
-      if (investment) await dispatch(updateInvestment({ id: investment._id, data: payload })).unwrap();
-      else await dispatch(createInvestment(payload)).unwrap();
+      if (investment) {
+        await dispatch(updateInvestment({ id: investment._id, data: payload })).unwrap();
+      } else {
+        await dispatch(createInvestment(payload)).unwrap();
+        dispatch(fetchAccounts());
+        dispatch(fetchTransactions());
+      }
       onClose();
     } catch (err) {
       setLocalError(typeof err === 'string' ? err : err?.message || 'Something went wrong.');
@@ -127,6 +308,57 @@ const InvestmentFormModal = ({ isOpen, onClose, investment = null }) => {
               <input type="number" step="0.01" value={form.buyPrice} onChange={e => setForm(f => ({ ...f, buyPrice: e.target.value }))} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" />
             </div>
           </div>
+
+          {/* Funding Bank Account (Recorded as Transfer in Transactions) */}
+          {!investment && (
+            <div className="bg-indigo-50/70 border border-indigo-100 rounded-xl p-3.5 space-y-3">
+              <label className="flex items-center space-x-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.bookTransaction}
+                  onChange={e => setForm(f => ({ ...f, bookTransaction: e.target.checked }))}
+                  className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
+                />
+                <span className="text-sm font-semibold text-indigo-950">💸 Record as Transfer in Transactions Tab</span>
+              </label>
+              <p className="text-xs text-indigo-700/90 leading-relaxed">
+                Automatically logs a <strong>Transfer</strong> transaction and deducts this capital from your selected bank account.
+              </p>
+              {form.bookTransaction && (
+                <div>
+                  <label className="block text-xs font-medium text-indigo-900 mb-1">
+                    Funding Bank Account <span className="text-rose-500">*</span>
+                  </label>
+                  <select
+                    value={form.accountId}
+                    onChange={e => {
+                      const accId = e.target.value;
+                      setForm(f => ({
+                        ...f,
+                        accountId: accId,
+                        sipAccount: f.sipAccount || accId,
+                      }));
+                    }}
+                    className={`block w-full px-3 py-1.5 bg-white border rounded-md text-sm focus:ring-indigo-500 focus:border-indigo-500 ${
+                      form.bookTransaction && !form.accountId ? 'border-amber-400 ring-1 ring-amber-300' : 'border-indigo-200'
+                    }`}
+                  >
+                    <option value="">Select funding account</option>
+                    {accounts.filter(a => !a.isArchived).map(a => (
+                      <option key={a._id} value={a._id}>
+                        {a.name} (Balance: ₹{a.currentBalance?.toLocaleString('en-IN')})
+                      </option>
+                    ))}
+                  </select>
+                  {form.bookTransaction && !form.accountId && (
+                    <p className="text-[11px] text-amber-700 mt-1 font-medium">
+                      Please select which account funded this investment to record the transfer.
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Automated SIP Section */}
           <div className="bg-emerald-50/70 border border-emerald-100 rounded-lg p-3.5 space-y-3">
@@ -195,38 +427,137 @@ const InvestmentFormModal = ({ isOpen, onClose, investment = null }) => {
             )}
           </div>
 
-          {/* Live Market Price Sync Section */}
-          <div className="bg-blue-50/70 border border-blue-100 rounded-lg p-3.5 space-y-3">
-            <label className="flex items-center space-x-2.5 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={form.autoSyncPrice}
-                onChange={e => setForm(f => ({ ...f, autoSyncPrice: e.target.checked }))}
-                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-              />
-              <span className="text-sm font-semibold text-blue-950">⚡ Auto-Sync Market Price / NAV</span>
-            </label>
-            <p className="text-xs text-blue-700/90 leading-relaxed">
-              Automatically fetches daily closing NAVs for Indian Mutual Funds (via AMFI scheme code) or Crypto prices (via CoinGecko ID) and updates your current value.
-            </p>
-            {form.autoSyncPrice && (
-              <div className="pt-1">
-                <label className="block text-xs font-medium text-blue-900">
-                  Symbol / AMFI Scheme Code / Crypto ID
+          {/* Live Market Price Sync / Asset Guidance Section */}
+          {(() => {
+            const guidance = ASSET_SYNC_GUIDANCE[form.type] || ASSET_SYNC_GUIDANCE['Other'];
+            if (!guidance.canTrackLive) {
+              return (
+                <div className="bg-amber-50/90 border border-amber-200 rounded-xl p-3.5 space-y-2">
+                  <div className="flex items-center gap-2 text-amber-950 font-bold text-xs uppercase tracking-wider">
+                    <Info className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                    <span>Non-Market Traded Instrument (Fixed Interest)</span>
+                  </div>
+                  <p className="text-xs text-amber-900 leading-relaxed">
+                    {guidance.reason}
+                  </p>
+                  <div className="p-2.5 bg-white/80 border border-amber-200/60 rounded-lg text-[11px] text-amber-800 font-medium flex items-center gap-1.5">
+                    <span>📌</span>
+                    <span>{guidance.actionRequired}</span>
+                  </div>
+                </div>
+              );
+            }
+
+            return (
+              <div className="bg-blue-50/70 border border-blue-100 rounded-xl p-3.5 space-y-3">
+                <label className="flex items-center space-x-2.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={form.autoSyncPrice}
+                    onChange={e => setForm(f => ({ ...f, autoSyncPrice: e.target.checked }))}
+                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-sm font-semibold text-blue-950">⚡ Auto-Sync Live Market Price / NAV</span>
                 </label>
-                <input
-                  type="text"
-                  value={form.symbol}
-                  onChange={e => setForm(f => ({ ...f, symbol: e.target.value }))}
-                  placeholder="e.g. 120503 (AMFI Code) or bitcoin, ethereum"
-                  className="mt-1 block w-full px-3 py-1.5 bg-white border border-blue-200 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
-                />
-                <span className="text-[11px] text-blue-600 mt-1 block">
-                  Tip: For Indian Mutual Funds, find the 6-digit scheme code on AMFI (e.g., Parag Parikh Flexi Cap = <code>122639</code>).
-                </span>
+                <p className="text-xs text-blue-700/90 leading-relaxed">
+                  {guidance.tip}
+                </p>
+
+                {form.autoSyncPrice && (
+                  <div className="pt-1 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-xs font-medium text-blue-900">
+                        {guidance.codeLabel}
+                      </label>
+                      {onOpenGuide && (
+                        <button
+                          type="button"
+                          onClick={onOpenGuide}
+                          className="text-[11px] text-blue-600 hover:text-blue-800 font-semibold underline flex items-center gap-1 cursor-pointer"
+                        >
+                          <BookOpen className="w-3 h-3" /> Symbol Guide
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={form.symbol}
+                        onChange={e => {
+                          setForm(f => ({ ...f, symbol: e.target.value }));
+                          setSymbolValidationResult(null);
+                          setSymbolValidationError('');
+                        }}
+                        placeholder={guidance.placeholder}
+                        className="flex-1 px-3 py-1.5 bg-white border border-blue-200 rounded-md text-sm font-mono focus:ring-blue-500 focus:border-blue-500 uppercase"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleValidateSymbol}
+                        disabled={isValidatingSymbol || !form.symbol.trim()}
+                        className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-xs font-bold transition-all disabled:opacity-50 flex items-center gap-1.5 shrink-0 shadow-xs"
+                      >
+                        {isValidatingSymbol ? (
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Zap className="w-3.5 h-3.5 fill-white" />
+                        )}
+                        {isValidatingSymbol ? 'Checking...' : 'Verify Code'}
+                      </button>
+                    </div>
+
+                    {/* Quick-fill Example Badges */}
+                    {guidance.examples?.length > 0 && (
+                      <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                        <span className="text-[11px] text-gray-500 font-medium">Quick Suggestions:</span>
+                        {guidance.examples.map((ex, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => {
+                              setForm(f => ({ ...f, symbol: ex.code }));
+                              setSymbolValidationResult(null);
+                              setSymbolValidationError('');
+                            }}
+                            className="text-[10px] font-mono bg-white border border-blue-200 hover:border-blue-400 hover:bg-blue-100/50 text-blue-800 px-2 py-0.5 rounded-md transition-colors"
+                            title={`Use ${ex.code}`}
+                          >
+                            {ex.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Validation Success Badge */}
+                    {symbolValidationResult && (
+                      <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-800 flex items-start gap-2 animate-in fade-in-50">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-bold block">
+                            Verified: {symbolValidationResult.assetName} ({symbolValidationResult.isin || symbolValidationResult.symbol})
+                          </span>
+                          <span className="text-[11px] text-emerald-700">
+                            Live Market Price: <strong>₹{symbolValidationResult.price.toLocaleString('en-IN')}</strong> ({symbolValidationResult.source})
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Validation Error Badge */}
+                    {symbolValidationError && (
+                      <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-800 flex items-start gap-2 animate-in fade-in-50">
+                        <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-bold block">Could not track price</span>
+                          <span className="text-[11px] text-rose-700 leading-relaxed">{symbolValidationError}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            );
+          })()}
 
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -314,12 +645,186 @@ const UpdateValueModal = ({ isOpen, onClose, investment }) => {
   );
 };
 
+// ── Asset Code & Symbol Reference Modal ────────────────────────────────
+const AssetCodeGuideModal = ({ isOpen, onClose }) => {
+  if (!isOpen) return null;
+
+  const categories = [
+    {
+      title: '📈 Indian Stocks (Equities)',
+      badge: '12-Char ISIN or NSE Ticker',
+      description: 'Use the official 12-character ISIN code (recommended for 100% precision) or the NSE ticker symbol.',
+      entries: [
+        { name: 'Reliance Industries', code: 'INE002A01018', alt: 'RELIANCE.NS', note: '12-char ISIN or NSE ticker' },
+        { name: 'Tata Motors', code: 'INE155A01022', alt: 'TATAMOTORS.NS', note: '12-char ISIN' },
+        { name: 'Infosys Ltd', code: 'INE009A01021', alt: 'INFY.NS', note: '12-char ISIN' },
+        { name: 'HDFC Bank', code: 'INE040A01034', alt: 'HDFCBANK.NS', note: '12-char ISIN' },
+        { name: 'Tata Consultancy Services', code: 'INE467B01029', alt: 'TCS.NS', note: '12-char ISIN' },
+      ],
+      whereToFind: 'Found on Zerodha Kite, Groww, Upstox in "Security Overview", your holding statement, or search Google: "[Company Name] ISIN".',
+    },
+    {
+      title: '📊 Mutual Funds (Direct & Regular)',
+      badge: '6-Digit AMFI Code',
+      description: 'Use the official 6-digit numeric AMFI Scheme Code for automated daily closing NAV sync.',
+      entries: [
+        { name: 'UTI Nifty 50 Index Fund Direct-Growth', code: '120716', note: 'Daily AMFI NAV' },
+        { name: 'Parag Parikh Flexi Cap Fund Direct-Growth', code: '122639', note: 'Daily AMFI NAV' },
+        { name: 'Mirae Asset Large Cap Fund Direct-Growth', code: '119598', note: 'Daily AMFI NAV' },
+        { name: 'HDFC Mid-Cap Opportunities Direct-Growth', code: '118989', note: 'Daily AMFI NAV' },
+        { name: 'Quant Small Cap Fund Direct-Growth', code: '120828', note: 'Daily AMFI NAV' },
+      ],
+      whereToFind: 'Found on your monthly CAS statement (CAMS / KFintech), fund factsheet, or search your fund at www.mfapi.in.',
+    },
+    {
+      title: '🪙 Commodities (Gold & Silver)',
+      badge: 'NSE Commodity ETF',
+      description: 'Physical bullion tracking through liquid exchange-traded commodity funds (ETFs) on NSE.',
+      entries: [
+        { name: 'Nippon India Gold ETF (Gold BeES)', code: 'GOLDBEES.NS', alt: 'GOLD / GOLDBEES', note: 'Tracks 1/100th gram gold' },
+        { name: 'HDFC Gold ETF', code: 'HDFCGOLD.NS', note: 'Physical gold backed' },
+        { name: 'Nippon India Silver ETF (Silver BeES)', code: 'SILVERBEES.NS', alt: 'SILVER / SILVERBEES', note: 'Tracks 1 gram silver' },
+        { name: 'HDFC Silver ETF', code: 'HDFCSILVER.NS', note: 'Physical silver backed' },
+      ],
+      whereToFind: 'Traded on NSE like any stock. Simply enter GOLDBEES.NS or SILVERBEES.NS.',
+    },
+    {
+      title: '🏛️ Bonds & Government Securities (G-Sec)',
+      badge: 'Debt ETF Ticker',
+      description: 'Target-maturity PSU debt, sovereign government securities, and liquid debt ETFs trading on NSE.',
+      entries: [
+        { name: 'Bharat Bond ETF April 2030 (PSU AAA)', code: 'EBBETF0430.NS', alt: 'BHARATBOND', note: 'Target maturity bond' },
+        { name: '5-Year Govt of India G-Sec Bond ETF', code: 'GILT5YBEES.NS', alt: 'GSEC / GILT', note: 'Sovereign debt' },
+        { name: 'Nippon India Liquid BeES (Debt)', code: 'LIQUIDBEES.NS', note: 'Daily dividend reinvestment' },
+      ],
+      whereToFind: 'Traded on NSE debt segment. You can use the ETF ticker or aliases like BHARATBOND or GSEC.',
+    },
+    {
+      title: '🌐 Exchange Traded Funds (ETFs)',
+      badge: 'NSE Ticker (.NS)',
+      description: 'Index, international, and sector ETFs traded on the National Stock Exchange (NSE).',
+      entries: [
+        { name: 'Nippon India Nifty 50 BeES', code: 'NIFTYBEES.NS', alt: 'NIFTY', note: 'Tracks Nifty 50 index' },
+        { name: 'Motilal Oswal Nasdaq 100 ETF', code: 'MON100.NS', note: 'Tracks top 100 US Tech leaders' },
+        { name: 'Nippon India Junior BeES', code: 'JUNIORBEES.NS', note: 'Tracks Nifty Next 50' },
+      ],
+      whereToFind: 'Search on your broker terminal with .NS suffix.',
+    },
+    {
+      title: '⚡ Cryptocurrencies',
+      badge: 'CoinGecko Token ID',
+      description: 'Real-time cryptocurrency valuation in Indian Rupees (INR) via CoinGecko API.',
+      entries: [
+        { name: 'Bitcoin (BTC)', code: 'bitcoin', alt: 'btc', note: 'CoinGecko slug or ticker' },
+        { name: 'Ethereum (ETH)', code: 'ethereum', alt: 'eth', note: 'CoinGecko slug or ticker' },
+        { name: 'Solana (SOL)', code: 'solana', alt: 'sol', note: 'CoinGecko slug or ticker' },
+        { name: 'Cardano (ADA)', code: 'cardano', alt: 'ada', note: 'CoinGecko slug or ticker' },
+      ],
+      whereToFind: 'Standard crypto token identifier or the URL slug on CoinGecko.com.',
+    },
+    {
+      title: '🔒 Non-Market Traded Statutory Instruments',
+      badge: 'Manual / Interest Accrual',
+      description: 'Fixed Deposits, PPF, EPF, and NPS do NOT trade on stock exchanges because they accrue fixed guaranteed or statutory interest.',
+      entries: [
+        { name: 'Bank Fixed Deposit (FD)', code: 'Leave Blank', note: 'Grows at fixed contracted bank interest (e.g. 7.25% p.a.)' },
+        { name: 'Public Provident Fund (PPF)', code: 'Leave Blank', note: 'Govt 15-year sovereign savings scheme (7.10% p.a.)' },
+        { name: 'Employee Provident Fund (EPF)', code: 'Leave Blank', note: 'EPFO statutory retirement fund (8.25% p.a.)' },
+        { name: 'National Pension System (NPS)', code: 'Leave Blank', note: 'PRAN retirement pension accounts (Scheme E/C/G)' },
+      ],
+      whereToFind: 'Uncheck "Auto-Sync Market Price" and update the current balance periodically from your passbook/statement.',
+    },
+  ];
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in-50">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden border border-gray-100">
+        {/* Header */}
+        <div className="p-4 sm:p-5 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-gray-50 to-indigo-50/30">
+          <div>
+            <h2 className="text-base sm:text-lg font-bold text-gray-900 flex items-center gap-2">
+              <BookOpen className="w-5 h-5 text-indigo-600" /> Asset Code & Symbol Quick Reference Guide
+            </h2>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Exact symbols, ISINs, and codes to enter for 100% automated live price tracking across all asset classes.
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg text-lg font-bold transition-colors cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Content list */}
+        <div className="p-4 sm:p-5 overflow-y-auto space-y-4 divide-y divide-gray-100">
+          {categories.map((cat, idx) => (
+            <div key={idx} className={idx > 0 ? 'pt-4 space-y-2.5' : 'space-y-2.5'}>
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <h3 className="text-sm font-bold text-gray-900">{cat.title}</h3>
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 border border-gray-200">
+                  {cat.badge}
+                </span>
+              </div>
+              <p className="text-xs text-gray-600 leading-relaxed">{cat.description}</p>
+
+              {/* Table of examples */}
+              <div className="bg-gray-50/70 border border-gray-200/80 rounded-xl overflow-x-auto">
+                <table className="w-full text-left text-xs min-w-[420px]">
+                  <thead className="bg-gray-100/70 text-gray-600 font-semibold border-b border-gray-200">
+                    <tr>
+                      <th className="px-3 py-2">Asset Name</th>
+                      <th className="px-3 py-2">Code to Enter</th>
+                      <th className="px-3 py-2">Alternative / Note</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200/60 font-mono">
+                    {cat.entries.map((item, i) => (
+                      <tr key={i} className="hover:bg-white transition-colors">
+                        <td className="px-3 py-2 font-sans font-medium text-gray-800">{item.name}</td>
+                        <td className="px-3 py-2 text-indigo-700 font-bold bg-indigo-50/40 select-all">{item.code}</td>
+                        <td className="px-3 py-2 font-sans text-gray-500 text-[11px]">{item.alt ? `${item.alt} · ` : ''}{item.note}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {cat.whereToFind && (
+                <div className="text-[11px] text-gray-500 flex items-start gap-1.5 pt-0.5">
+                  <span className="font-semibold text-gray-700 shrink-0">💡 Where to find:</span>
+                  <span>{cat.whereToFind}</span>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Footer */}
+        <div className="p-4 border-t border-gray-100 bg-gray-50 flex items-center justify-between flex-wrap gap-2">
+          <span className="text-xs text-gray-500">
+            Tip: Click <strong>"Verify Code"</strong> when adding an investment to preview the live price before saving.
+          </span>
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer"
+          >
+            Got it, Close Guide
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ── Main Page ─────────────────────────────────────────────────────────
 const Investments = () => {
   const dispatch = useDispatch();
-  const { investments, isLoading, isSyncing, syncMessage } = useSelector(s => s.investments);
+  const { investments, isLoading, isSyncing, syncMessage, syncError } = useSelector(s => s.investments);
   const [modalOpen, setModalOpen] = useState(false);
   const [valueModalOpen, setValueModalOpen] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
   const [editingInv, setEditingInv] = useState(null);
   const [activeInv, setActiveInv] = useState(null);
   const [syncingId, setSyncingId] = useState(null);
@@ -332,18 +837,20 @@ const Investments = () => {
   }, [dispatch]);
 
   const handleSyncAll = async () => {
+    dispatch(clearSyncMessage());
     await dispatch(syncAllInvestments());
     dispatch(fetchAccounts());
-    setTimeout(() => { dispatch(clearSyncMessage()); }, 5000);
+    setTimeout(() => { dispatch(clearSyncMessage()); }, 7000);
   };
 
   const handleSyncSinglePrice = async (invId) => {
     setSyncingId(invId);
+    dispatch(clearSyncMessage());
     try {
       await dispatch(syncInvestmentPrice(invId)).unwrap();
-      setTimeout(() => { dispatch(clearSyncMessage()); }, 4000);
+      setTimeout(() => { dispatch(clearSyncMessage()); }, 5000);
     } catch (err) {
-      // Handled in slice
+      setTimeout(() => { dispatch(clearSyncMessage()); }, 8000);
     }
     setSyncingId(null);
   };
@@ -378,11 +885,19 @@ const Investments = () => {
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Investments</h1>
           <p className="mt-0.5 text-xs sm:text-sm text-gray-500">Autonomous SIP tracking, live market NAV revaluation, and portfolio analytics.</p>
         </div>
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
+          <button
+            onClick={() => setGuideOpen(true)}
+            className="flex-1 sm:flex-none flex items-center justify-center px-3 py-2 text-xs sm:text-sm font-medium border border-indigo-200 text-indigo-700 bg-indigo-50/80 hover:bg-indigo-100 rounded-lg shadow-2xs transition-colors cursor-pointer"
+            title="View exact symbols and ISIN codes for all asset classes"
+          >
+            <BookOpen className="w-4 h-4 mr-1.5 text-indigo-600" />
+            Code Guide
+          </button>
           <button
             onClick={handleSyncAll}
             disabled={isSyncing}
-            className="flex-1 sm:flex-none flex items-center justify-center px-3.5 py-2 text-xs sm:text-sm font-medium border border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg shadow-2xs transition-colors disabled:opacity-50"
+            className="flex-1 sm:flex-none flex items-center justify-center px-3.5 py-2 text-xs sm:text-sm font-medium border border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg shadow-2xs transition-colors disabled:opacity-50 cursor-pointer"
             title="Execute due SIPs and fetch live market prices/NAVs"
           >
             {isSyncing ? (
@@ -392,19 +907,32 @@ const Investments = () => {
             )}
             {isSyncing ? 'Syncing Portfolio...' : 'Sync Live Prices & SIPs'}
           </button>
-          <button onClick={() => { setEditingInv(null); setModalOpen(true); }} className="flex-1 sm:flex-none flex items-center justify-center px-4 py-2 text-xs sm:text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-xs transition-colors">
+          <button onClick={() => { setEditingInv(null); setModalOpen(true); }} className="flex-1 sm:flex-none flex items-center justify-center px-4 py-2 text-xs sm:text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-xs transition-colors cursor-pointer">
             <Plus className="w-4 h-4 mr-1.5" /> Add Investment
           </button>
         </div>
       </div>
 
       {syncMessage && (
-        <div className="mb-6 flex items-center justify-between p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-sm">
+        <div className="mb-4 sm:mb-6 flex items-center justify-between p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-sm shadow-xs animate-in fade-in-50">
           <div className="flex items-center space-x-2">
             <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
             <span>{syncMessage}</span>
           </div>
           <button onClick={() => dispatch(clearSyncMessage())} className="text-emerald-700 hover:text-emerald-900 font-bold text-xs uppercase ml-4">Dismiss</button>
+        </div>
+      )}
+
+      {syncError && (
+        <div className="mb-4 sm:mb-6 flex items-start justify-between p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-sm shadow-xs animate-in fade-in-50">
+          <div className="flex items-start space-x-2.5">
+            <AlertTriangle className="w-5 h-5 text-rose-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <span className="font-bold block text-rose-900">Live Price Tracking Issue</span>
+              <span className="text-xs sm:text-sm text-rose-700 leading-relaxed">{syncError}</span>
+            </div>
+          </div>
+          <button onClick={() => dispatch(clearSyncMessage())} className="text-rose-700 hover:text-rose-900 font-bold text-xs uppercase ml-4">Dismiss</button>
         </div>
       )}
 
@@ -499,6 +1027,23 @@ const Investments = () => {
                           Live
                         </span>
                       )}
+                      {['Fixed Deposit', 'PPF', 'EPF', 'NPS'].includes(inv.type) && (
+                        <span
+                          className="inline-flex items-center text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200/60"
+                          title="Non-market traded instrument. Accrues fixed interest rate."
+                        >
+                          <Info className="w-2.5 h-2.5 mr-0.5 text-amber-600" />
+                          Fixed Rate
+                        </span>
+                      )}
+                      {!['Fixed Deposit', 'PPF', 'EPF', 'NPS'].includes(inv.type) && (!inv.autoSyncPrice || !inv.symbol) && (
+                        <span
+                          className="inline-flex items-center text-[10px] font-medium px-2 py-0.5 rounded-full bg-gray-50 text-gray-500 border border-gray-200"
+                          title="Auto-sync disabled. Add an ISIN, ticker, or scheme code to track live."
+                        >
+                          Manual Tracking
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center space-x-1">
                       {inv.autoSyncPrice && inv.symbol && (
@@ -577,8 +1122,14 @@ const Investments = () => {
       )}
 
 
-      <InvestmentFormModal isOpen={modalOpen} onClose={() => setModalOpen(false)} investment={editingInv} />
+      <InvestmentFormModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        investment={editingInv}
+        onOpenGuide={() => setGuideOpen(true)}
+      />
       <UpdateValueModal isOpen={valueModalOpen} onClose={() => setValueModalOpen(false)} investment={activeInv} />
+      <AssetCodeGuideModal isOpen={guideOpen} onClose={() => setGuideOpen(false)} />
     </div>
   );
 };

@@ -5,7 +5,7 @@ const investmentSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true },
   type: {
     type: String,
-    enum: ['Stocks', 'Mutual Fund', 'ETF', 'Fixed Deposit', 'PPF', 'EPF', 'NPS', 'Gold', 'Crypto', 'Bonds', 'Other'],
+    enum: ['Stocks', 'Mutual Fund', 'ETF', 'Fixed Deposit', 'PPF', 'EPF', 'NPS', 'Gold', 'Silver', 'Crypto', 'Bonds', 'Other'],
     required: true,
   },
   platform: { type: String, default: '' },
@@ -25,6 +25,8 @@ const investmentSchema = new mongoose.Schema({
   sipDay: { type: Number, default: 1, min: 1, max: 31 },
   nextSipDate: { type: Date, default: null },
   sipAccount: { type: mongoose.Schema.Types.ObjectId, ref: 'Account', default: null },
+  fundingAccount: { type: mongoose.Schema.Types.ObjectId, ref: 'Account', default: null },
+  transactionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Transaction', default: null },
   // Live market price auto-sync
   symbol: { type: String, default: '', trim: true }, // AMFI scheme code (e.g. 120503) or crypto/stock ID
   autoSyncPrice: { type: Boolean, default: false },

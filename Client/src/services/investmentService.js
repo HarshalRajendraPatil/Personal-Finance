@@ -7,3 +7,8 @@ export const deleteInvestment = (id) => axios.delete(`${API}/${id}`, { withCrede
 export const updateCurrentValue = (id, data) => axios.put(`${API}/${id}/value`, data, { withCredentials: true });
 export const syncAllInvestments = () => axios.post(`${API}/sync-all`, {}, { withCredentials: true });
 export const syncInvestmentPrice = (id) => axios.post(`${API}/${id}/sync-price`, {}, { withCredentials: true });
+export const validateInvestmentSymbol = (symbol, type) =>
+  axios.get(`${API}/validate-symbol?symbol=${encodeURIComponent(symbol)}&type=${encodeURIComponent(type || '')}`, {
+    withCredentials: true,
+  });
+

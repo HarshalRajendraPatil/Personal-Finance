@@ -3,6 +3,7 @@ import Account from '../models/Account.js';
 import { checkBudgetGuardrails } from '../services/budgetGuardrailService.js';
 import { previewBankStatement, ingestBankStatement } from '../services/csvIngestionService.js';
 import { scanReceiptWithAI } from '../services/ocrReceiptService.js';
+import memoryCache from '../utils/cache.js';
 
 /**
  * ⚡ Get transactions with lean performance & optional pagination
@@ -133,6 +134,7 @@ export const createTransaction = async (req, res) => {
       responseData.budgetAlert = budgetAlert;
     }
 
+    memoryCache.invalidateUser(req.user._id);
     res.status(201).json(responseData);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -221,6 +223,7 @@ export const updateTransaction = async (req, res) => {
       responseData.budgetAlert = budgetAlert;
     }
 
+    memoryCache.invalidateUser(req.user._id);
     res.json(responseData);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -249,6 +252,7 @@ export const deleteTransaction = async (req, res) => {
     }
 
     await Promise.all([transaction.deleteOne(), ...balanceUpdates]);
+    memoryCache.invalidateUser(req.user._id);
     res.json({ message: 'Transaction removed' });
   } catch (error) {
     res.status(500).json({ message: error.message });

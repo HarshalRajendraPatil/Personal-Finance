@@ -279,6 +279,8 @@ const TransactionFormModal = ({ isOpen, onClose, transaction = null }) => {
     try {
       const payload = {
         ...data,
+        category: data.category || null,
+        subcategory: data.subcategory && data.subcategory !== '' ? data.subcategory : null,
         tags: data.tags ? data.tags.split(',').map((t) => t.trim()).filter(Boolean) : [],
         attachmentUrl,
       };
@@ -405,7 +407,9 @@ const TransactionFormModal = ({ isOpen, onClose, transaction = null }) => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <div className="flex items-center justify-between">
-                    <label className="block text-sm font-medium text-gray-700">Category</label>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Category <span className="text-red-500 font-bold">*</span>
+                    </label>
                     {suggestion && selectedCategory !== suggestion.categoryId && (
                       <button
                         type="button"
@@ -421,7 +425,7 @@ const TransactionFormModal = ({ isOpen, onClose, transaction = null }) => {
                     {...register('category')}
                     className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                   >
-                    <option value="">Select Category</option>
+                    <option value="">Select Category *</option>
                     {parentCategories.map((c) => (
                       <option key={c._id} value={c._id}>{c.name}</option>
                     ))}
@@ -430,13 +434,15 @@ const TransactionFormModal = ({ isOpen, onClose, transaction = null }) => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Subcategory</label>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Subcategory <span className="text-gray-400 font-normal text-xs">(Optional)</span>
+                  </label>
                   <select
                     {...register('subcategory')}
                     disabled={!selectedCategory || subCategories.length === 0}
                     className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
                   >
-                    <option value="">None</option>
+                    <option value="">None (Optional)</option>
                     {subCategories.map((c) => (
                       <option key={c._id} value={c._id}>{c.name}</option>
                     ))}

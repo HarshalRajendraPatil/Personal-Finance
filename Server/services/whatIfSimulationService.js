@@ -5,13 +5,14 @@ import Goal from '../models/Goal.js';
 import Investment from '../models/Investment.js';
 import RecurringRule from '../models/RecurringRule.js';
 import Transaction from '../models/Transaction.js';
+import memoryCache from '../utils/cache.js';
 
 let genAIClient = null;
 const getGenAI = () => {
   if (!genAIClient) {
     const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
     if (!apiKey) {
-      console.warn('⚠️ GEMINI_API_KEY not found. NLP parsing will use rule-based fallback.');
+      console.warn('⚠️ GEMINI_API_KEY not found in environment.');
       return null;
     }
     genAIClient = new GoogleGenAI({ apiKey });
@@ -20,133 +21,50 @@ const getGenAI = () => {
 };
 
 /**
- * Parses natural language prompt into structured simulation parameters using Gemini 2.5 Flash
+ * 🤖 Robust Gemini caller with multi-model fallback and transient retry
  */
-export const parseWhatIfQueryWithGemini = async (promptText) => {
+const callGeminiWithFallback = async (userPrompt, systemInstruction = '', maxRetries = 2) => {
   const ai = getGenAI();
-  if (!ai || !promptText) {
-    return parseQueryFallback(promptText);
+  if (!ai) return null;
+
+  // Prioritize gemini-2.5-flash with automatic fallback to gemini-3.5-flash-lite
+  const models = ['gemini-3.5-flash-lite', 'gemini-2.5-flash'];
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    for (const model of models) {
+      try {
+        const fullPrompt = systemInstruction
+          ? `${systemInstruction}\n\nTask:\n${userPrompt}`
+          : userPrompt;
+
+        const response = await ai.models.generateContent({
+          model,
+          contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
+          config: {
+            temperature: 0.1, // Low temperature for high deterministic consistency
+            responseMimeType: 'application/json',
+          },
+        });
+
+        const text = response.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (text) {
+          return JSON.parse(text);
+        }
+      } catch (err) {
+        console.warn(`⚠️ [What-If AI] Model ${model} attempt ${attempt + 1} failed: ${err.message?.slice(0, 100)}`);
+        // Brief pause before trying next model
+        await new Promise((r) => setTimeout(r, 400));
+      }
+    }
   }
 
-  try {
-    const systemPrompt = `You are an elite financial simulation parser for an Indian personal finance application.
-Parse the user's "What-If" scenario prompt into structured JSON.
-Return strictly valid JSON without markdown wrapping.
-
-Schema:
-{
-  "title": "Short descriptive scenario title (e.g., Buy Royal Enfield Hunter 350)",
-  "scenarioType": "BIG_PURCHASE" | "VACATION_LUMPSUM" | "SIP_INCREASE" | "SALARY_CHANGE" | "DEBT_PREPAYMENT" | "CUSTOM",
-  "lumpsumOutflow": number (one-time expense or down payment in INR, default 0),
-  "lumpsumInflow": number (one-time bonus or windfall in INR, default 0),
-  "monthlyExpenseDelta": number (new recurring monthly outflow like EMI or subscription in INR, default 0),
-  "monthlyIncomeDelta": number (net change in monthly income/salary in INR, default 0),
-  "monthlyInvestmentDelta": number (net change in monthly SIP or investments in INR, default 0),
-  "durationMonths": number (duration of the monthly change, e.g. 24 for a 2-year EMI, 36 for 3 years, 60 for permanent/long-term, default 36),
-  "startMonthOffset": number (0 for next month, 1 for in 2 months, default 0),
-  "horizonYears": number (1 to 5, default 3)
-}
-
-Examples:
-- "What happens if I buy a ₹1,80,000 motorcycle next month with 20% down payment and ₹5,000 EMI for 2 years?"
-  -> { "title": "Buy Motorcycle (₹1.8L)", "scenarioType": "BIG_PURCHASE", "lumpsumOutflow": 36000, "monthlyExpenseDelta": 5000, "durationMonths": 24, "horizonYears": 3 }
-- "How does taking a 10-day Europe vacation costing ₹2,50,000 affect my finances?"
-  -> { "title": "Europe Vacation (₹2.5L)", "scenarioType": "VACATION_LUMPSUM", "lumpsumOutflow": 250000, "durationMonths": 1, "horizonYears": 3 }
-- "If I increase my SIP from ₹15,000 to ₹25,000/mo, how will my wealth grow over 5 years?"
-  -> { "title": "Boost Monthly SIP by ₹10,000", "scenarioType": "SIP_INCREASE", "monthlyInvestmentDelta": 10000, "durationMonths": 60, "horizonYears": 5 }
-- "What if I get a 30% salary hike of ₹40,000/mo starting next month?"
-  -> { "title": "Salary Hike (+₹40,000/mo)", "scenarioType": "SALARY_CHANGE", "monthlyIncomeDelta": 40000, "durationMonths": 60, "horizonYears": 3 }`;
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: [
-        { role: 'user', parts: [{ text: `${systemPrompt}\n\nUser Query: "${promptText}"` }] },
-      ],
-      config: {
-        temperature: 0.1,
-        responseMimeType: 'application/json',
-      },
-    });
-
-    const text = response.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!text) return parseQueryFallback(promptText);
-
-    return JSON.parse(text);
-  } catch (err) {
-    console.warn('Gemini NLP What-If parsing failed, using fallback:', err.message);
-    return parseQueryFallback(promptText);
-  }
+  return null;
 };
 
 /**
- * Rule-based fallback parser for offline / keyless execution
+ * 📊 Gathers rich, verified baseline financial context from the user's database records
  */
-const parseQueryFallback = (promptText = '') => {
-  const text = promptText.toLowerCase();
-  let lumpsumOutflow = 0;
-  let monthlyExpenseDelta = 0;
-  let monthlyInvestmentDelta = 0;
-  let monthlyIncomeDelta = 0;
-  let scenarioType = 'CUSTOM';
-  let title = promptText.slice(0, 40) || 'Custom What-If Scenario';
-
-  const amounts = (promptText.match(/₹?\s*([\d,]+(?:\.\d+)?)\s*(?:l|lakh|k)?/gi) || []).map((m) => {
-    let clean = m.replace(/[₹,\s]/g, '');
-    let multiplier = 1;
-    if (/lakh|l$/i.test(m)) multiplier = 100000;
-    if (/k$/i.test(m)) multiplier = 1000;
-    return parseFloat(clean) * multiplier;
-  });
-
-  if (text.includes('sip') || text.includes('invest')) {
-    scenarioType = 'SIP_INCREASE';
-    title = 'Boost Monthly SIP';
-    monthlyInvestmentDelta = amounts[0] || 10000;
-  } else if (text.includes('vacation') || text.includes('trip') || text.includes('travel')) {
-    scenarioType = 'VACATION_LUMPSUM';
-    title = 'Vacation & Travel';
-    lumpsumOutflow = amounts[0] || 200000;
-  } else if (text.includes('car') || text.includes('bike') || text.includes('motorcycle') || text.includes('buy')) {
-    scenarioType = 'BIG_PURCHASE';
-    title = 'Big-Ticket Purchase';
-    const totalCost = amounts[0] || 180000;
-    lumpsumOutflow = Math.round(totalCost * 0.2); // 20% down payment
-    monthlyExpenseDelta = Math.round((totalCost * 0.8) / 24); // 2-year rough EMI
-  } else if (text.includes('salary') || text.includes('hike') || text.includes('income')) {
-    scenarioType = 'SALARY_CHANGE';
-    title = 'Salary & Income Change';
-    monthlyIncomeDelta = amounts[0] || 30000;
-  }
-
-  return {
-    title,
-    scenarioType,
-    lumpsumOutflow,
-    lumpsumInflow: 0,
-    monthlyExpenseDelta,
-    monthlyIncomeDelta,
-    monthlyInvestmentDelta,
-    durationMonths: 36,
-    startMonthOffset: 0,
-    horizonYears: 3,
-  };
-};
-
-/**
- * 🔮 Mathematical Dual-Universe Simulation Engine
- */
-export const runWhatIfSimulation = async (userId, { prompt, scenario, horizonYears = 3 }) => {
-  let params = scenario;
-  if (!params && prompt) {
-    params = await parseWhatIfQueryWithGemini(prompt);
-  } else if (!params) {
-    params = parseQueryFallback('Custom Financial Simulation');
-  }
-
-  const hYears = Math.min(5, Math.max(1, params.horizonYears || horizonYears || 3));
-  const totalMonths = hYears * 12;
-
-  // 1. Gather live baseline user data
+export const buildUserFinancialContext = async (userId) => {
   const [accounts, loans, goals, investments, recurringRules, recentTxns] = await Promise.all([
     Account.find({ user: userId, isArchived: false }).lean(),
     Loan.find({ user: userId, isActive: true }).lean(),
@@ -159,14 +77,22 @@ export const runWhatIfSimulation = async (userId, { prompt, scenario, horizonYea
     }).lean(),
   ]);
 
-  // Baseline balances
+  // Liquid Balances
   const liquidAccounts = accounts.filter((a) => ['Bank', 'Cash', 'UPI'].includes(a.type));
   const startingLiquidBalance = liquidAccounts.reduce((sum, a) => sum + (a.currentBalance || 0), 0);
-  const startingInvestments = investments.reduce((sum, inv) => sum + (inv.currentValue || inv.amountInvested || 0), 0);
-  const startingLoanDebt = loans.reduce((sum, l) => sum + (l.principal || 0), 0);
-  const startingNetWorth = startingLiquidBalance + startingInvestments - startingLoanDebt;
+  const fdAccounts = accounts.filter((a) => a.type === 'FD');
+  const startingFDBalance = fdAccounts.reduce((sum, a) => sum + (a.currentBalance || 0), 0);
 
-  // Monthly Cash Flow baselines (analyzing 90 days avg)
+  // Investments & Debts
+  const startingInvestments = investments.reduce(
+    (sum, inv) => sum + (inv.currentValue || inv.investedAmount || inv.amountInvested || 0),
+    0
+  );
+  const startingLoanDebt = loans.reduce((sum, l) => sum + (l.principal || 0), 0);
+  const startingNetWorth = startingLiquidBalance + startingFDBalance + startingInvestments - startingLoanDebt;
+
+  // Monthly Income: Prioritize active recurring salary rule for rock-solid stability
+  const salaryRule = recurringRules.find((r) => r.type === 'Income' && /salary|payroll|stipend|wages/i.test(r.name));
   let pastIncome = 0;
   let pastExpense = 0;
   recentTxns.forEach((t) => {
@@ -174,17 +100,313 @@ export const runWhatIfSimulation = async (userId, { prompt, scenario, horizonYea
     if (t.type === 'Expense') pastExpense += t.amount;
   });
 
-  const baselineMonthlyIncome = pastIncome > 0 ? Math.round(pastIncome / 3) : 100000;
-  const baselineMonthlyExpense = pastExpense > 0 ? Math.round(pastExpense / 3) : 55000;
-  const baselineMonthlySIP = recurringRules
+  const baselineMonthlyIncome = salaryRule?.amount || (pastIncome > 0 ? Math.round(pastIncome / 3) : 115000);
+
+  // Monthly Commitments
+  const loanMonthlyEMI = loans.reduce((sum, l) => sum + (l.emiAmount || 0), 0);
+  const recurringBillsMonthly = recurringRules
+    .filter((r) => r.type === 'Expense' && !/sip|fund|invest/i.test(r.name))
+    .reduce((sum, r) => sum + r.amount, 0);
+  const recurringSIPMonthly = recurringRules
     .filter((r) => r.type === 'Expense' && /sip|fund|stock|invest/i.test(r.name))
     .reduce((sum, r) => sum + r.amount, 0) || 15000;
 
+  // Discretionary living buffer
+  const averageRecentMonthlyExpense = pastExpense > 0 ? Math.round(pastExpense / 3) : 65000;
+  const baselineMonthlyExpense = Math.max(averageRecentMonthlyExpense, recurringBillsMonthly + loanMonthlyEMI + 20000);
   const baselineMonthlySurplus = baselineMonthlyIncome - baselineMonthlyExpense;
   const baselineEmergencyRunwayMonths =
-    baselineMonthlyExpense > 0 ? Number((startingLiquidBalance / baselineMonthlyExpense).toFixed(1)) : 12;
+    baselineMonthlyExpense > 0 ? Number((startingLiquidBalance / baselineMonthlyExpense).toFixed(1)) : 6.0;
 
-  // Scenario Adjustments
+  const formattedContextString = `
+User Financial Standing in Database:
+- User Liquid Savings: ₹${startingLiquidBalance.toLocaleString('en-IN')} (Accounts: ${liquidAccounts.map((a) => `${a.name}: ₹${a.currentBalance?.toLocaleString('en-IN')}`).join(', ')})
+- User Fixed Deposits: ₹${startingFDBalance.toLocaleString('en-IN')}
+- Total Portfolio Investments: ₹${startingInvestments.toLocaleString('en-IN')}
+- Verified Monthly Net Income (Salary): ₹${baselineMonthlyIncome.toLocaleString('en-IN')}
+- Average Monthly Outflows: ₹${baselineMonthlyExpense.toLocaleString('en-IN')} (Fixed Bills: ₹${recurringBillsMonthly.toLocaleString('en-IN')}, Loan EMIs: ₹${loanMonthlyEMI.toLocaleString('en-IN')})
+- Active Loan EMIs: ${loans.map((l) => `${l.name} (EMI: ₹${l.emiAmount?.toLocaleString('en-IN')}, Balance: ₹${l.principal?.toLocaleString('en-IN')})`).join('; ') || 'None'}
+- Active Monthly SIPs: ₹${recurringSIPMonthly.toLocaleString('en-IN')}/month
+- Active Financial Goals: ${goals.map((g) => `"${g.name || g.title}" (Target: ₹${g.targetAmount?.toLocaleString('en-IN')}, Saved: ₹${g.currentAmount?.toLocaleString('en-IN')})`).join('; ') || 'None'}
+- Current Net Monthly Surplus: ~₹${baselineMonthlySurplus.toLocaleString('en-IN')}/month
+- Current Emergency Buffer Runway: ${baselineEmergencyRunwayMonths} months
+`;
+
+  return {
+    accounts,
+    loans,
+    goals,
+    investments,
+    recurringRules,
+    startingLiquidBalance,
+    startingFDBalance,
+    startingInvestments,
+    startingLoanDebt,
+    startingNetWorth,
+    baselineMonthlyIncome,
+    baselineMonthlyExpense,
+    loanMonthlyEMI,
+    recurringBillsMonthly,
+    recurringSIPMonthly,
+    baselineMonthlySurplus,
+    baselineEmergencyRunwayMonths,
+    formattedContextString,
+  };
+};
+
+/**
+ * 🧠 Parses natural language prompt into structured simulation parameters grounded in user's DB profile
+ */
+export const parseWhatIfQueryWithGemini = async (promptText, userContext, selectedHorizon = 3) => {
+  const systemPrompt = `You are an elite financial simulation parser for an Indian personal finance platform.
+Analyze the user's "What-If" scenario prompt in the exact context of their real financial standing in the database.
+Extract precise, realistic mathematical simulation parameters grounded in their actual data.
+
+${userContext?.formattedContextString || ''}
+
+Important Grounding Guidelines:
+1. If the user refers to a goal (e.g., "vacation", "MacBook", "emergency fund"), reference the exact target amount and details from their active goals list.
+2. If the user refers to existing debts or car/home loans, reference their actual loan principal and EMI amounts.
+3. If the user mentions sabbatical or taking time off, set monthlyIncomeDelta = -user's monthly salary (e.g. -${userContext?.baselineMonthlyIncome || 115000}).
+4. If the user mentions increasing SIP, calculate delta relative to their current ₹${userContext?.recurringSIPMonthly || 15000} SIP.
+5. Horizon Years: Strictly anchor to ${selectedHorizon} unless the user query explicitly states a specific duration like "over 5 years" or "in 2 years".
+6. Return strictly valid JSON without markdown wrapping.
+
+Schema:
+{
+  "title": "Descriptive scenario title",
+  "scenarioType": "BIG_PURCHASE" | "VACATION_LUMPSUM" | "SIP_INCREASE" | "SALARY_CHANGE" | "DEBT_PREPAYMENT" | "CUSTOM",
+  "lumpsumOutflow": number (one-time outflow in INR, default 0),
+  "lumpsumInflow": number (one-time bonus or windfall in INR, default 0),
+  "monthlyExpenseDelta": number (new recurring monthly outflow like EMI or subscription in INR, default 0),
+  "monthlyIncomeDelta": number (net change in monthly income/salary in INR, default 0),
+  "monthlyInvestmentDelta": number (net change in monthly SIP or investments in INR, default 0),
+  "durationMonths": number (duration of the change in months, e.g. 24 for 2-year EMI, 6 for 6-month sabbatical, 36 for permanent/long-term),
+  "startMonthOffset": number (0 for next month, 1 for in 2 months, default 0),
+  "horizonYears": number (1 to 5, default ${selectedHorizon}),
+  "rationale": "Short 1-sentence explanation of why these parameters match user context"
+}`;
+
+  const parsed = await callGeminiWithFallback(`User Scenario: "${promptText}"`, systemPrompt);
+  if (parsed && parsed.title && parsed.scenarioType) {
+    // Enforce selected horizon anchor if not explicit
+    if (!/1\s*year|2\s*year|5\s*year/i.test(promptText)) {
+      parsed.horizonYears = selectedHorizon;
+    }
+    return parsed;
+  }
+
+  return parseQueryFallback(promptText, userContext, selectedHorizon);
+};
+
+/**
+ * 🛡️ Smart Rule-Based Fallback using User's Real DB Standing
+ */
+const parseQueryFallback = (promptText = '', userContext = null, selectedHorizon = 3) => {
+  const text = promptText.toLowerCase();
+  let lumpsumOutflow = 0;
+  let lumpsumInflow = 0;
+  let monthlyExpenseDelta = 0;
+  let monthlyInvestmentDelta = 0;
+  let monthlyIncomeDelta = 0;
+  let durationMonths = selectedHorizon * 12;
+  let scenarioType = 'CUSTOM';
+  let title = promptText.slice(0, 40) || 'Custom What-If Scenario';
+
+  const amounts = (promptText.match(/₹?\s*([\d,]+(?:\.\d+)?)\s*(?:l|lakh|k)?/gi) || []).map((m) => {
+    let clean = m.replace(/[₹,\s]/g, '');
+    let multiplier = 1;
+    if (/lakh|l$/i.test(m)) multiplier = 100000;
+    if (/k$/i.test(m)) multiplier = 1000;
+    return parseFloat(clean) * multiplier;
+  });
+
+  if (text.includes('sabbatical') || text.includes('quit') || text.includes('break')) {
+    scenarioType = 'SALARY_CHANGE';
+    title = 'Career Sabbatical';
+    monthlyIncomeDelta = -(userContext?.baselineMonthlyIncome || 115000);
+    durationMonths = 6;
+  } else if (text.includes('sip') || text.includes('invest')) {
+    scenarioType = 'SIP_INCREASE';
+    title = 'Boost Monthly SIP';
+    monthlyInvestmentDelta = amounts[0] || 10000;
+  } else if (text.includes('vacation') || text.includes('trip') || text.includes('europe')) {
+    scenarioType = 'VACATION_LUMPSUM';
+    title = 'Vacation & Travel';
+    const vacationGoal = userContext?.goals?.find((g) => /vacation|travel|trip/i.test(g.name || g.title));
+    lumpsumOutflow = vacationGoal ? vacationGoal.targetAmount : (amounts[0] || 250000);
+    durationMonths = 1;
+  } else if (text.includes('car') || text.includes('bike') || text.includes('motorcycle') || text.includes('buy')) {
+    scenarioType = 'BIG_PURCHASE';
+    title = 'Big-Ticket Purchase';
+    const totalCost = amounts[0] || 180000;
+    lumpsumOutflow = Math.round(totalCost * 0.2); // 20% down payment
+    monthlyExpenseDelta = Math.round((totalCost * 0.8) / 24); // 2-year EMI
+    durationMonths = 24;
+  } else if (text.includes('prepay') || text.includes('loan')) {
+    scenarioType = 'DEBT_PREPAYMENT';
+    title = 'Loan Prepayment';
+    lumpsumOutflow = amounts[0] || 100000;
+    durationMonths = 1;
+  } else if (text.includes('salary') || text.includes('hike') || text.includes('income')) {
+    scenarioType = 'SALARY_CHANGE';
+    title = 'Salary Hike';
+    monthlyIncomeDelta = amounts[0] || 30000;
+  }
+
+  return {
+    title,
+    scenarioType,
+    lumpsumOutflow,
+    lumpsumInflow,
+    monthlyExpenseDelta,
+    monthlyIncomeDelta,
+    monthlyInvestmentDelta,
+    durationMonths,
+    startMonthOffset: 0,
+    horizonYears: selectedHorizon,
+    rationale: 'Parameters derived deterministically from your database profile and query keywords.',
+  };
+};
+
+/**
+ * 🔮 Synthesizes deep, personalized AI financial intelligence from mathematical results
+ */
+export const synthesizeSimulationWithGemini = async ({
+  userContext,
+  scenarioParams,
+  mathResults,
+}) => {
+  const prompt = `You are an elite personal wealth advisor analyzing the mathematical output of a multi-year What-If simulation for an Indian client.
+
+User Standing:
+- Liquid Savings: ₹${userContext.startingLiquidBalance.toLocaleString('en-IN')}
+- Monthly Salary: ₹${userContext.baselineMonthlyIncome.toLocaleString('en-IN')}
+- Monthly Baseline Expenses: ₹${userContext.baselineMonthlyExpense.toLocaleString('en-IN')}
+- Active Loans: ${userContext.loans.map((l) => `${l.name} (EMI ₹${l.emiAmount?.toLocaleString('en-IN')})`).join(', ') || 'None'}
+
+Scenario Evaluated:
+- Title: "${scenarioParams.title}" (${scenarioParams.scenarioType})
+- Lumpsum Outflow: ₹${scenarioParams.lumpsumOutflow?.toLocaleString('en-IN') || 0}
+- Monthly Outflow Delta: ₹${scenarioParams.monthlyExpenseDelta?.toLocaleString('en-IN') || 0}
+- Monthly Income Delta: ₹${scenarioParams.monthlyIncomeDelta?.toLocaleString('en-IN') || 0}
+- Monthly SIP Delta: ₹${scenarioParams.monthlyInvestmentDelta?.toLocaleString('en-IN') || 0}
+- Horizon: ${mathResults.horizonYears} Years
+
+Mathematical Projections:
+- Baseline Ending Net Worth: ₹${mathResults.endBaseNetWorth.toLocaleString('en-IN')}
+- Simulated Ending Net Worth: ₹${mathResults.endSimNetWorth.toLocaleString('en-IN')} (Net Difference: ${mathResults.netWorthDelta >= 0 ? '+' : ''}₹${mathResults.netWorthDelta.toLocaleString('en-IN')})
+- Baseline Emergency Runway: ${userContext.baselineEmergencyRunwayMonths} months
+- Simulated Minimum Emergency Runway: ${mathResults.simMinRunwayMonths} months (Lowest balance: ₹${mathResults.minLiquidSim.toLocaleString('en-IN')} ${mathResults.bottleneckMonth ? `in ${mathResults.bottleneckMonth}` : ''})
+- Goal Timeline Impact:
+${mathResults.goalsImpact.map((g) => `  * ${g.title}: ${g.shiftLabel}`).join('\n')}
+
+Synthesize professional, deeply personalized financial intelligence strictly in this JSON schema:
+{
+  "verdict": "HIGHLY_SAFE" | "MODERATE_RISK" | "HIGH_RISK_BOTTLENECK",
+  "verdictTitle": "Sharp, punchy headline referencing the specific scenario",
+  "verdictDescription": "2-3 sentences explaining exactly how liquid runway, compounding, and goals are affected. Reference exact numbers.",
+  "strategicAdvice": [
+    "Advice point 1 specifically referencing user accounts or cash flow",
+    "Advice point 2 specifically addressing emergency buffer or goal trade-offs",
+    "Advice point 3 proposing a concrete optimization"
+  ],
+  "actionProposals": [
+    {
+      "id": "prop_1",
+      "type": "BUDGET_GUARD" | "ADJUST_SIP" | "CREATE_GOAL" | "STAGGER_PURCHASE",
+      "title": "Action title",
+      "description": "Short actionable description",
+      "actionLabel": "Executable button label"
+    },
+    {
+      "id": "prop_2",
+      "type": "BUFFER_RESERVE",
+      "title": "Second Action title",
+      "description": "Short actionable description",
+      "actionLabel": "Executable button label"
+    }
+  ]
+}`;
+
+  const aiSynthesis = await callGeminiWithFallback(prompt);
+  if (aiSynthesis && aiSynthesis.verdict && aiSynthesis.verdictTitle) {
+    return aiSynthesis;
+  }
+
+  // Deterministic rule-based synthesis fallback
+  let verdict = 'HIGHLY_SAFE';
+  let verdictTitle = 'Highly Safe & Financially Feasible ✅';
+  let verdictDescription = `Your liquid reserves remain cushioned at ${mathResults.simMinRunwayMonths} months of living expenses, comfortably exceeding standard safety guidelines.`;
+
+  if (mathResults.minLiquidSim < 15000 || mathResults.simMinRunwayMonths < 2) {
+    verdict = 'HIGH_RISK_BOTTLENECK';
+    verdictTitle = 'High Liquidity Bottleneck Risk 🚨';
+    verdictDescription = `Liquid cash drops to ₹${mathResults.minLiquidSim.toLocaleString('en-IN')} in ${mathResults.bottleneckMonth || 'future months'}, threatening upcoming EMI and fixed obligations.`;
+  } else if (mathResults.simMinRunwayMonths < 4.5 || mathResults.minLiquidSim < 40000) {
+    verdict = 'MODERATE_RISK';
+    verdictTitle = 'Feasible with Guarded Cash Flow ⚠️';
+    verdictDescription = `Emergency runway temporarily tightens from ${userContext.baselineEmergencyRunwayMonths}mo to ${mathResults.simMinRunwayMonths}mo. Consider keeping an extra liquidity buffer.`;
+  }
+
+  return {
+    verdict,
+    verdictTitle,
+    verdictDescription,
+    strategicAdvice: [
+      `Your projected Net Worth at Year ${mathResults.horizonYears} will be ₹${mathResults.endSimNetWorth.toLocaleString('en-IN')} (${mathResults.netWorthDelta >= 0 ? '+' : ''}₹${mathResults.netWorthDelta.toLocaleString('en-IN')} vs baseline).`,
+      `Liquid emergency runway shifts from ${userContext.baselineEmergencyRunwayMonths} months to ${mathResults.simMinRunwayMonths} months.`,
+      mathResults.simMinRunwayMonths >= 6
+        ? 'Your liquid cushion comfortably satisfies RBI 6-month safety recommendations.'
+        : 'Stagger large one-time expenses or maintain a ₹30,000 liquid safety buffer in savings.',
+    ],
+    actionProposals: [
+      {
+        id: 'prop_safe_spend',
+        type: 'BUDGET_GUARD',
+        title: 'Calibrate Discretionary Spending',
+        description: `Temporarily reduce non-essential daily allowance by ₹${Math.round((scenarioParams.monthlyExpenseDelta || scenarioParams.lumpsumOutflow / 12) * 0.5).toLocaleString('en-IN')}/mo.`,
+        actionLabel: 'Calibrate Budget',
+      },
+      {
+        id: 'prop_sinking_fund',
+        type: 'CREATE_GOAL',
+        title: `Create Sinking Fund for "${scenarioParams.title}"`,
+        description: `Automate monthly savings of ₹${Math.round((scenarioParams.lumpsumOutflow || 50000) / 6).toLocaleString('en-IN')}/mo prior to executing.`,
+        actionLabel: 'Set Up Goal',
+      },
+    ],
+  };
+};
+
+/**
+ * 🔮 Complete Autonomous Dual-Universe Simulation Engine
+ */
+export const runWhatIfSimulation = async (userId, { prompt, scenario, horizonYears = 3 }) => {
+  const selectedHorizon = Math.min(5, Math.max(1, Number(horizonYears) || 3));
+
+  // 1. Check in-memory cache to guarantee identical, deterministic results on rapid repeated clicks
+  const cacheKey = `user_${userId}_whatif_${prompt ? prompt.trim().toLowerCase() : JSON.stringify(scenario)}_${selectedHorizon}`;
+  const cachedResult = memoryCache.get(cacheKey);
+  if (cachedResult) {
+    return cachedResult;
+  }
+
+  // 2. Gather verified user financial standing from database
+  const userContext = await buildUserFinancialContext(userId);
+
+  // 3. Resolve scenario parameters
+  let params = scenario;
+  if (!params && prompt) {
+    params = await parseWhatIfQueryWithGemini(prompt, userContext, selectedHorizon);
+  } else if (!params) {
+    params = parseQueryFallback('Custom Financial Simulation', userContext, selectedHorizon);
+  }
+
+  const hYears = Math.min(5, Math.max(1, params.horizonYears || selectedHorizon));
+  const totalMonths = hYears * 12;
+
+  // 4. Mathematical Simulation Setup
   const lumpsumOutflow = Number(params.lumpsumOutflow || 0);
   const lumpsumInflow = Number(params.lumpsumInflow || 0);
   const monthlyExpenseDelta = Number(params.monthlyExpenseDelta || 0);
@@ -193,38 +415,32 @@ export const runWhatIfSimulation = async (userId, { prompt, scenario, horizonYea
   const durationMonths = Number(params.durationMonths || totalMonths);
   const startOffset = Number(params.startMonthOffset || 0);
 
-  // Month-by-month trajectory arrays
   const baselineTrajectory = [];
   const simulatedTrajectory = [];
 
-  let curLiquidBase = startingLiquidBalance;
-  let curInvBase = startingInvestments;
-  let curDebtBase = startingLoanDebt;
+  let curLiquidBase = userContext.startingLiquidBalance;
+  let curInvBase = userContext.startingInvestments + userContext.startingFDBalance;
+  let curDebtBase = userContext.startingLoanDebt;
 
-  let curLiquidSim = startingLiquidBalance;
-  let curInvSim = startingInvestments;
-  let curDebtSim = startingLoanDebt;
+  let curLiquidSim = userContext.startingLiquidBalance;
+  let curInvSim = userContext.startingInvestments + userContext.startingFDBalance;
+  let curDebtSim = userContext.startingLoanDebt;
 
   let minLiquidSim = curLiquidSim;
-  let minLiquidMonthIndex = 0;
   let bottleneckMonth = null;
 
-  const annualInvReturn = 0.12; // 12% CAGR equity growth
+  const annualInvReturn = 0.12; // 12% blended CAGR for long-term Indian equities & SIPs
   const monthlyInvMultiplier = Math.pow(1 + annualInvReturn, 1 / 12);
-
   const now = new Date();
 
   for (let m = 1; m <= totalMonths; m++) {
     const monthDate = new Date(now.getFullYear(), now.getMonth() + m, 1);
     const monthLabel = monthDate.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
 
-    // --- 1. BASELINE UNIVERSE ---
-    // Investments compound + baseline SIP
-    curInvBase = curInvBase * monthlyInvMultiplier + baselineMonthlySIP;
-    // Liquid cash adds net surplus minus SIP
-    curLiquidBase = Math.max(0, curLiquidBase + (baselineMonthlySurplus - baselineMonthlySIP));
-    // Debt reduces gradually
-    curDebtBase = Math.max(0, curDebtBase - (startingLoanDebt > 0 ? startingLoanDebt / 48 : 0));
+    // --- BASELINE UNIVERSE ---
+    curInvBase = curInvBase * monthlyInvMultiplier + userContext.recurringSIPMonthly;
+    curLiquidBase = Math.max(0, curLiquidBase + (userContext.baselineMonthlySurplus - userContext.recurringSIPMonthly));
+    curDebtBase = Math.max(0, curDebtBase - (userContext.startingLoanDebt > 0 ? userContext.startingLoanDebt / 48 : 0));
     const netWorthBase = Math.round(curLiquidBase + curInvBase - curDebtBase);
 
     baselineTrajectory.push({
@@ -236,30 +452,29 @@ export const runWhatIfSimulation = async (userId, { prompt, scenario, horizonYea
       netWorth: netWorthBase,
     });
 
-    // --- 2. SIMULATED UNIVERSE ---
-    // Apply one-time lumpsums on startOffset month
+    // --- SIMULATED UNIVERSE ---
+    // Apply one-time lumpsums on designated month
     if (m === startOffset + 1) {
       curLiquidSim = curLiquidSim - lumpsumOutflow + lumpsumInflow;
     }
 
-    // Determine monthly deltas for this month
-    const isWithinDeltaDuration = m > startOffset && m <= startOffset + durationMonths;
-    const effectiveExpDelta = isWithinDeltaDuration ? monthlyExpenseDelta : 0;
-    const effectiveIncDelta = isWithinDeltaDuration ? monthlyIncomeDelta : 0;
-    const effectiveInvDelta = isWithinDeltaDuration ? monthlyInvestmentDelta : 0;
+    // Apply active duration deltas
+    const isWithinDelta = m > startOffset && m <= startOffset + durationMonths;
+    const effExpDelta = isWithinDelta ? monthlyExpenseDelta : 0;
+    const effIncDelta = isWithinDelta ? monthlyIncomeDelta : 0;
+    const effInvDelta = isWithinDelta ? monthlyInvestmentDelta : 0;
 
-    const simSIP = baselineMonthlySIP + effectiveInvDelta;
-    const simSurplus = (baselineMonthlyIncome + effectiveIncDelta) - (baselineMonthlyExpense + effectiveExpDelta);
+    const simSIP = userContext.recurringSIPMonthly + effInvDelta;
+    const simSurplus = (userContext.baselineMonthlyIncome + effIncDelta) - (userContext.baselineMonthlyExpense + effExpDelta);
 
-    curInvSim = curInvSim * monthlyInvMultiplier + simSIP;
+    curInvSim = Math.max(0, curInvSim * monthlyInvMultiplier + simSIP);
     curLiquidSim = curLiquidSim + (simSurplus - simSIP);
-    curDebtSim = Math.max(0, curDebtSim - (startingLoanDebt > 0 ? startingLoanDebt / 48 : 0));
+    curDebtSim = Math.max(0, curDebtSim - (userContext.startingLoanDebt > 0 ? userContext.startingLoanDebt / 48 : 0));
 
     if (curLiquidSim < minLiquidSim) {
       minLiquidSim = curLiquidSim;
-      minLiquidMonthIndex = m;
-      if (curLiquidSim < 15000 && !bottleneckMonth) {
-        bottleneckMonth = { monthLabel, balance: Math.round(curLiquidSim) };
+      if (curLiquidSim < 25000 && !bottleneckMonth) {
+        bottleneckMonth = monthLabel;
       }
     }
 
@@ -272,24 +487,24 @@ export const runWhatIfSimulation = async (userId, { prompt, scenario, horizonYea
       investments: Math.round(curInvSim),
       debt: Math.round(curDebtSim),
       netWorth: netWorthSim,
-      isBottleneck: curLiquidSim < 15000,
+      isBottleneck: curLiquidSim < 25000,
     });
   }
 
-  // Final Horizon Comparison Stats
+  // 5. Ending Comparison Stats
   const endBase = baselineTrajectory[totalMonths - 1];
   const endSim = simulatedTrajectory[totalMonths - 1];
   const netWorthDelta = endSim.netWorth - endBase.netWorth;
 
-  const simMinRunwayMonths = baselineMonthlyExpense > 0
-    ? Number((Math.max(0, minLiquidSim) / (baselineMonthlyExpense + monthlyExpenseDelta)).toFixed(1))
-    : 12;
+  const simMinRunwayMonths = userContext.baselineMonthlyExpense > 0
+    ? Number((Math.max(0, minLiquidSim) / (userContext.baselineMonthlyExpense + monthlyExpenseDelta)).toFixed(1))
+    : 6.0;
 
-  // Goals completion impact calculation
-  const goalsImpact = goals.map((g) => {
+  // 6. Impact on Active Goals
+  const goalsImpact = userContext.goals.map((g) => {
     const needed = Math.max(0, (g.targetAmount || 100000) - (g.currentAmount || 0));
-    const baseMonths = baselineMonthlySurplus > 0 ? Math.ceil(needed / baselineMonthlySurplus) : 60;
-    const simMonthlySurplus = baselineMonthlySurplus + monthlyIncomeDelta - monthlyExpenseDelta - monthlyInvestmentDelta;
+    const baseMonths = userContext.baselineMonthlySurplus > 0 ? Math.ceil(needed / userContext.baselineMonthlySurplus) : 60;
+    const simMonthlySurplus = userContext.baselineMonthlySurplus + monthlyIncomeDelta - monthlyExpenseDelta - monthlyInvestmentDelta;
     const simMonths = simMonthlySurplus > 0 ? Math.ceil(needed / simMonthlySurplus) : 99;
     const delayMonths = simMonths - baseMonths;
 
@@ -302,83 +517,68 @@ export const runWhatIfSimulation = async (userId, { prompt, scenario, horizonYea
       simulatedMonthsToComplete: Math.min(120, simMonths),
       shiftLabel:
         delayMonths === 0
-          ? 'No Impact (On Schedule)'
+          ? 'On Schedule (Zero Impact)'
           : delayMonths > 0
-          ? `Delayed by ~${delayMonths} months`
-          : `Accelerated by ~${Math.abs(delayMonths)} months faster!`,
+            ? `Delayed by ~${delayMonths} months`
+            : `Accelerated by ~${Math.abs(delayMonths)} months faster!`,
       status: delayMonths > 3 ? 'DELAY_WARNING' : delayMonths < 0 ? 'ACCELERATED' : 'STABLE',
     };
   });
 
-  // Safety Verdict Logic
-  let verdict = 'HIGHLY_SAFE';
-  let verdictTitle = 'Highly Safe & Financially Feasible ✅';
-  let verdictDescription = 'Your liquid safety cushion remains strong with >6 months emergency buffer and zero cash flow bottlenecks.';
+  // 7. Synthesize Deep Financial Intelligence with Gemini
+  const mathResults = {
+    horizonYears: hYears,
+    endBaseNetWorth: endBase.netWorth,
+    endSimNetWorth: endSim.netWorth,
+    netWorthDelta,
+    minLiquidSim: Math.round(minLiquidSim),
+    simMinRunwayMonths,
+    bottleneckMonth,
+    goalsImpact,
+  };
 
-  if (minLiquidSim < 0 || simMinRunwayMonths < 2) {
-    verdict = 'HIGH_RISK_BOTTLENECK';
-    verdictTitle = 'High Risk of Cash Flow Deficit 🚨';
-    verdictDescription = `Liquid reserves dip critically to ₹${Math.round(minLiquidSim).toLocaleString('en-IN')} in ${bottleneckMonth?.monthLabel || 'future months'}. Consider reducing the lumpsum or extending tenure.`;
-  } else if (simMinRunwayMonths < 5 || minLiquidSim < 30000) {
-    verdict = 'MODERATE_RISK';
-    verdictTitle = 'Manageable with Caution ⚠️';
-    verdictDescription = `Emergency runway temporarily tightens from ${baselineEmergencyRunwayMonths}mo to ${simMinRunwayMonths}mo. Discretionary spending should be guarded during this period.`;
-  }
+  const aiSynthesis = await synthesizeSimulationWithGemini({
+    userContext,
+    scenarioParams: params,
+    mathResults,
+  });
 
-  // Generate AI Strategic Recommendations
-  let strategicAdvice = [
-    `Your projected Net Worth at Year ${hYears} will be ₹${endSim.netWorth.toLocaleString('en-IN')} (${netWorthDelta >= 0 ? '+' : ''}₹${netWorthDelta.toLocaleString('en-IN')} vs baseline).`,
-    `Emergency runway shifts from ${baselineEmergencyRunwayMonths} months to ${simMinRunwayMonths} months.`,
-    simMinRunwayMonths >= 6
-      ? 'Your emergency buffer comfortably covers standard RBI 6-month safety guidelines.'
-      : 'Consider staggering large purchases or building a ₹25,000 buffer prior to execution.',
-  ];
-
-  return {
+  const finalResult = {
     scenarioParams: params,
     horizonYears: hYears,
     baselineSummary: {
-      startingLiquidBalance,
-      startingInvestments,
-      startingLoanDebt,
-      startingNetWorth,
-      monthlyIncome: baselineMonthlyIncome,
-      monthlyExpense: baselineMonthlyExpense,
-      monthlySIP: baselineMonthlySIP,
-      emergencyRunwayMonths: baselineEmergencyRunwayMonths,
+      startingLiquidBalance: userContext.startingLiquidBalance,
+      startingInvestments: userContext.startingInvestments,
+      startingFDBalance: userContext.startingFDBalance,
+      startingLoanDebt: userContext.startingLoanDebt,
+      startingNetWorth: userContext.startingNetWorth,
+      monthlyIncome: userContext.baselineMonthlyIncome,
+      monthlyExpense: userContext.baselineMonthlyExpense,
+      monthlySIP: userContext.recurringSIPMonthly,
+      emergencyRunwayMonths: userContext.baselineEmergencyRunwayMonths,
     },
     simulationSummary: {
-      verdict,
-      verdictTitle,
-      verdictDescription,
+      verdict: aiSynthesis.verdict,
+      verdictTitle: aiSynthesis.verdictTitle,
+      verdictDescription: aiSynthesis.verdictDescription,
       minProjectedLiquidSavings: Math.round(minLiquidSim),
       minRunwayMonths: simMinRunwayMonths,
-      bottleneckMonth: bottleneckMonth?.monthLabel || null,
+      bottleneckMonth,
       baselineEndingNetWorth: endBase.netWorth,
       simulatedEndingNetWorth: endSim.netWorth,
       netWorthDifference: netWorthDelta,
-      strategicAdvice,
+      strategicAdvice: aiSynthesis.strategicAdvice,
     },
     goalsImpact,
     trajectories: {
       baseline: baselineTrajectory,
       simulated: simulatedTrajectory,
     },
-    actionProposals: [
-      {
-        id: 'prop_adjust_safe_spend',
-        type: 'ADJUST_SAFE_SPEND',
-        title: 'Adjust Daily Safe-to-Spend Cap',
-        description: `Temporarily lock ₹${Math.round(monthlyExpenseDelta || lumpsumOutflow / 12).toLocaleString('en-IN')}/mo from discretionary spending to protect emergency runway.`,
-        actionLabel: 'Apply Budget Lock',
-      },
-      {
-        id: 'prop_sinking_fund',
-        type: 'CREATE_GOAL',
-        title: `Create Sinking Fund Goal for "${params.title}"`,
-        description: `Set up an automated monthly target of ₹${Math.round((lumpsumOutflow || 50000) / 6).toLocaleString('en-IN')}/mo over 6 months before purchase.`,
-        actionLabel: 'Create Dedicated Goal',
-      },
-    ],
+    actionProposals: aiSynthesis.actionProposals,
   };
+
+  // Cache result for 60 seconds to ensure 100% deterministic consistency on rapid re-queries
+  memoryCache.set(cacheKey, finalResult, 60);
+
+  return finalResult;
 };

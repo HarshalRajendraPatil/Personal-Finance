@@ -78,6 +78,22 @@ const WhatIfSimulatorModal = () => {
     }
   }, [isWhatIfModalOpen, whatIfResult]);
 
+  // Synchronize manual fine-tuner fields whenever an AI simulation result arrives
+  useEffect(() => {
+    if (whatIfResult?.scenarioParams) {
+      const p = whatIfResult.scenarioParams;
+      setTitle(p.title || '');
+      setLumpsumOutflow(p.lumpsumOutflow ? String(p.lumpsumOutflow) : '');
+      setMonthlyExpenseDelta(p.monthlyExpenseDelta ? String(p.monthlyExpenseDelta) : '');
+      setMonthlyIncomeDelta(p.monthlyIncomeDelta ? String(p.monthlyIncomeDelta) : '');
+      setMonthlyInvestmentDelta(p.monthlyInvestmentDelta ? String(p.monthlyInvestmentDelta) : '');
+      setDurationMonths(p.durationMonths || 36);
+      if (p.horizonYears) {
+        setHorizonYears(p.horizonYears);
+      }
+    }
+  }, [whatIfResult]);
+
   if (!isWhatIfModalOpen) return null;
 
   const handleRunSimulation = (overridePrompt = null) => {
@@ -119,11 +135,12 @@ const WhatIfSimulatorModal = () => {
   const params = whatIfResult?.scenarioParams;
   const goalsImpact = whatIfResult?.goalsImpact || [];
   const trajectories = whatIfResult?.trajectories;
+  const actionProposals = whatIfResult?.actionProposals || [];
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-gray-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
       <div className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl border border-gray-200 overflow-hidden flex flex-col max-h-[92vh] animate-in zoom-in-95 duration-200">
-        
+
         {/* Header Ribbon */}
         <div className="p-5 sm:p-6 bg-gradient-to-r from-purple-950 via-slate-900 to-indigo-950 text-white flex items-start justify-between relative overflow-hidden">
           <div className="relative z-10">
@@ -136,11 +153,11 @@ const WhatIfSimulatorModal = () => {
               </h2>
               <span className="text-[11px] font-bold bg-white/10 text-purple-300 border border-white/20 px-2.5 py-0.5 rounded-full flex items-center gap-1">
                 <Sparkles className="w-3 h-3 text-purple-300" />
-                Gemini 2.5 Flash Engine
+                Grounded Gemini AI Engine
               </span>
             </div>
             <p className="text-xs sm:text-sm text-purple-200">
-              Simulate life decisions in a multi-year mathematical sandbox. Models rolling balances, emergency safety runway, and goal timelines before spending.
+              Simulate life decisions in a multi-year mathematical sandbox. Grounded in your real database accounts, salary, loan EMIs & active goals.
             </p>
           </div>
 
@@ -154,7 +171,7 @@ const WhatIfSimulatorModal = () => {
 
         {/* Modal Body */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 bg-gray-50/50">
-          
+
           {/* Natural Language Prompt Bar & Presets */}
           <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-200 shadow-2xs space-y-3">
             <label className="block text-xs font-bold text-gray-900 uppercase tracking-wider">
@@ -321,23 +338,21 @@ const WhatIfSimulatorModal = () => {
           {/* Simulation Output Dashboard */}
           {whatIfResult && !isLoadingWhatIf && (
             <div className="space-y-4 animate-in fade-in-50">
-              
+
               {/* 1. Verdict Banner */}
-              <div className={`p-4 sm:p-5 rounded-3xl border text-white shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${
-                summary?.verdict === 'HIGHLY_SAFE'
-                  ? 'bg-gradient-to-r from-emerald-950 via-slate-900 to-indigo-950 border-emerald-500/30'
-                  : summary?.verdict === 'MODERATE_RISK'
+              <div className={`p-4 sm:p-5 rounded-3xl border text-white shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${summary?.verdict === 'HIGHLY_SAFE'
+                ? 'bg-gradient-to-r from-emerald-950 via-slate-900 to-indigo-950 border-emerald-500/30'
+                : summary?.verdict === 'MODERATE_RISK'
                   ? 'bg-gradient-to-r from-amber-950 via-slate-900 to-indigo-950 border-amber-500/30'
                   : 'bg-gradient-to-r from-rose-950 via-slate-900 to-indigo-950 border-rose-500/30'
-              }`}>
+                }`}>
                 <div className="flex items-center gap-3">
-                  <span className={`p-3 rounded-2xl border shrink-0 ${
-                    summary?.verdict === 'HIGHLY_SAFE'
-                      ? 'bg-emerald-500/20 border-emerald-400/30 text-emerald-300'
-                      : summary?.verdict === 'MODERATE_RISK'
+                  <span className={`p-3 rounded-2xl border shrink-0 ${summary?.verdict === 'HIGHLY_SAFE'
+                    ? 'bg-emerald-500/20 border-emerald-400/30 text-emerald-300'
+                    : summary?.verdict === 'MODERATE_RISK'
                       ? 'bg-amber-500/20 border-amber-400/30 text-amber-300'
                       : 'bg-rose-500/20 border-rose-400/30 text-rose-300'
-                  }`}>
+                    }`}>
                     {summary?.verdict === 'HIGHLY_SAFE' ? (
                       <ShieldCheck className="w-6 h-6" />
                     ) : summary?.verdict === 'MODERATE_RISK' ? (
@@ -357,12 +372,17 @@ const WhatIfSimulatorModal = () => {
                 <div className="text-right shrink-0 bg-white/10 px-4 py-2.5 rounded-2xl border border-white/20">
                   <span className="text-[10px] uppercase font-bold text-gray-300 block">Scenario Evaluated</span>
                   <span className="text-xs sm:text-sm font-extrabold text-white">{params?.title}</span>
+                  {params?.rationale && (
+                    <p className="text-[10px] text-purple-200 max-w-xs text-right mt-0.5 truncate" title={params.rationale}>
+                      💡 {params.rationale}
+                    </p>
+                  )}
                 </div>
               </div>
 
               {/* 2. Key Comparison Metrics Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                
+
                 {/* Net Worth at Horizon */}
                 <div className="bg-white p-3.5 rounded-2xl border border-gray-200 shadow-2xs flex flex-col justify-between">
                   <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1">
@@ -440,13 +460,12 @@ const WhatIfSimulatorModal = () => {
                     {goalsImpact.map((g) => (
                       <div
                         key={g.goalId}
-                        className={`p-3 rounded-xl border flex items-center justify-between gap-3 text-xs ${
-                          g.status === 'DELAY_WARNING'
-                            ? 'bg-amber-50/50 border-amber-200'
-                            : g.status === 'ACCELERATED'
+                        className={`p-3 rounded-xl border flex items-center justify-between gap-3 text-xs ${g.status === 'DELAY_WARNING'
+                          ? 'bg-amber-50/50 border-amber-200'
+                          : g.status === 'ACCELERATED'
                             ? 'bg-emerald-50/50 border-emerald-200'
                             : 'bg-gray-50/60 border-gray-100'
-                        }`}
+                          }`}
                       >
                         <div>
                           <p className="font-extrabold text-gray-900">{g.title}</p>
@@ -455,13 +474,12 @@ const WhatIfSimulatorModal = () => {
                           </p>
                         </div>
                         <div className="text-right">
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
-                            g.status === 'DELAY_WARNING'
-                              ? 'bg-amber-100 text-amber-800'
-                              : g.status === 'ACCELERATED'
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${g.status === 'DELAY_WARNING'
+                            ? 'bg-amber-100 text-amber-800'
+                            : g.status === 'ACCELERATED'
                               ? 'bg-emerald-100 text-emerald-800'
                               : 'bg-gray-100 text-gray-700'
-                          }`}>
+                            }`}>
                             {g.shiftLabel}
                           </span>
                         </div>
@@ -486,6 +504,36 @@ const WhatIfSimulatorModal = () => {
                   ))}
                 </div>
               </div>
+
+              {/* 5. Action Proposals */}
+              {actionProposals.length > 0 && (
+                <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-200 shadow-2xs space-y-3">
+                  <div className="flex items-center gap-2 text-xs font-bold text-gray-900 uppercase tracking-wider">
+                    <Zap className="w-4 h-4 text-amber-500" />
+                    <span>AI-Recommended Proactive Safeguards:</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {actionProposals.map((prop) => (
+                      <div
+                        key={prop.id}
+                        className="p-3.5 bg-gray-50/80 border border-gray-200 rounded-xl flex flex-col justify-between"
+                      >
+                        <div>
+                          <h5 className="text-xs font-bold text-gray-900">{prop.title}</h5>
+                          <p className="text-[11px] text-gray-600 mt-0.5 leading-relaxed">
+                            {prop.description}
+                          </p>
+                        </div>
+                        <div className="mt-3 flex justify-end">
+                          <span className="px-3 py-1 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg text-[11px] font-bold">
+                            {prop.actionLabel || 'Recommended'}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
             </div>
           )}

@@ -48,8 +48,8 @@ app.use(cors({
   credentials: true,
 }));
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(cookieParser());
 
 app.use('/api/auth', authRoutes);
@@ -72,6 +72,15 @@ app.use('/api/proactive', proactiveRoutes);
 
 app.get('/', (req, res) => {
   res.send('API is running...');
+});
+
+// Centralized Error Handling Middleware
+app.use((err, req, res, next) => {
+  if (err.type === 'entity.too.large') {
+    return res.status(413).json({ message: 'Request payload too large. Please upload smaller files or batches.' });
+  }
+  console.error('[SERVER ERROR]', err);
+  res.status(err.status || 500).json({ message: err.message || 'Internal Server Error' });
 });
 
 const PORT = process.env.PORT || 5000;

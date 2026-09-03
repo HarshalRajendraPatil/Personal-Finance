@@ -43,7 +43,7 @@ const Transactions = () => {
   const { transactions, isLoading, lastBudgetAlert } = useSelector((state) => state.transactions);
   const { accounts } = useSelector((state) => state.accounts);
   const { categories } = useSelector((state) => state.categories);
-  
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [csvModalOpen, setCsvModalOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState(null);
@@ -97,20 +97,26 @@ const Transactions = () => {
   // Close modal and refresh accounts to reflect balance changes
   const handleModalClose = () => {
     setIsModalOpen(false);
-    dispatch(fetchAccounts()); 
+    dispatch(fetchAccounts());
   };
 
   // ⚡ Memoized Filtered Transactions
   const filteredTransactions = useMemo(() => {
     return transactions.filter(t => {
-      const s = filters.search.toLowerCase();
+      const s = filters.search.toLowerCase().trim();
       const matchesSearch = !s || (
         t.merchant?.toLowerCase().includes(s) ||
         t.notes?.toLowerCase().includes(s) ||
-        t.category?.name?.toLowerCase().includes(s)
+        t.category?.name?.toLowerCase().includes(s) ||
+        t.account?.name?.toLowerCase().includes(s) ||
+        t.toAccount?.name?.toLowerCase().includes(s) ||
+        t.type?.toLowerCase().includes(s) ||
+        (Array.isArray(t.tags) && t.tags.some(tag => tag.toLowerCase().includes(s)))
       );
       const matchesType = filters.type === 'All' || t.type === filters.type;
-      const matchesAccount = !filters.account || t.account?._id === filters.account;
+      const matchesAccount = !filters.account ||
+        t.account?._id === filters.account || t.account === filters.account ||
+        t.toAccount?._id === filters.account || t.toAccount === filters.account;
       const matchesCategory = !filters.category || t.category?._id === filters.category;
       const txDate = new Date(t.date);
       const matchesStartDate = !filters.startDate || txDate >= new Date(filters.startDate);
@@ -141,14 +147,6 @@ const Transactions = () => {
         </div>
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <button
-            onClick={handleAddNew}
-            className="flex-1 sm:flex-none flex items-center justify-center px-3.5 py-2 text-xs sm:text-sm font-medium border border-purple-200 text-purple-700 bg-purple-50 hover:bg-purple-100 rounded-lg shadow-2xs transition-colors"
-            title="Scan invoice or receipt photo with AI"
-          >
-            <ScanLine className="w-4 h-4 mr-1.5 text-purple-600" />
-            Scan Receipt
-          </button>
-          <button
             onClick={() => setCsvModalOpen(true)}
             className="flex-1 sm:flex-none flex items-center justify-center px-3.5 py-2 text-xs sm:text-sm font-medium border border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg shadow-2xs transition-colors"
             title="Upload and auto-deduplicate bank statement CSV"
@@ -170,11 +168,10 @@ const Transactions = () => {
       {/* ⚡ Budget Guardrail Trigger Notification Banner */}
       {lastBudgetAlert && (
         <div
-          className={`mb-4 p-4 rounded-xl border flex items-start justify-between shadow-2xs transition-all ${
-            lastBudgetAlert.level === 'critical'
+          className={`mb-4 p-4 rounded-xl border flex items-start justify-between shadow-2xs transition-all ${lastBudgetAlert.level === 'critical'
               ? 'bg-rose-50 border-rose-200 text-rose-900'
               : 'bg-amber-50 border-amber-200 text-amber-900'
-          }`}
+            }`}
         >
           <div className="flex items-start space-x-3">
             {lastBudgetAlert.level === 'critical' ? (
@@ -333,8 +330,13 @@ const Transactions = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {t.type === 'Transfer' ? (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                          Transfer
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${t.tags?.includes('investment')
+                            ? 'bg-purple-100 text-purple-800'
+                            : t.tags?.includes('goal')
+                              ? 'bg-indigo-100 text-indigo-800'
+                              : 'bg-blue-100 text-blue-800'
+                          }`}>
+                          {t.tags?.includes('investment') ? '💼 Investment' : t.tags?.includes('goal') ? '🎯 Goal Savings' : '🔁 Transfer'}
                         </span>
                       ) : (
                         <div className="flex items-center">
@@ -351,7 +353,18 @@ const Transactions = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {t.type === 'Transfer' ? (
-                        <span>{t.account?.name} → {t.toAccount ? t.toAccount.name : 'Goal / External'}</span>
+                        <span>
+                          {t.account?.name} →{' '}
+                          {t.toAccount ? (
+                            t.toAccount.name
+                          ) : t.tags?.includes('investment') ? (
+                            <span className="font-semibold text-purple-700">{t.merchant || 'Investment'}</span>
+                          ) : t.tags?.includes('goal') ? (
+                            <span className="font-semibold text-indigo-700">{t.merchant || 'Goal Savings'}</span>
+                          ) : (
+                            t.merchant || 'External Transfer'
+                          )}
+                        </span>
                       ) : (
                         t.account?.name
                       )}
@@ -398,10 +411,10 @@ const Transactions = () => {
 
 
 
-      <TransactionFormModal 
-        isOpen={isModalOpen} 
-        onClose={handleModalClose} 
-        transaction={editingTransaction} 
+      <TransactionFormModal
+        isOpen={isModalOpen}
+        onClose={handleModalClose}
+        transaction={editingTransaction}
       />
 
       <CSVImporterModal

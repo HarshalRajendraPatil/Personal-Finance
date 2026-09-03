@@ -1,242 +1,55 @@
-# 🪙 Capise — Autonomous AI-Powered Personal Finance & Wealth Operating System
+# 💎 Capise — Autonomous Personal Finance & Wealth Operating System
 
-> **A Next-Generation, Proactive, Event-Driven Wealth & Financial Intelligence Platform for India.**
-
-[![React](https://img.shields.io/badge/Frontend-React%2019%20%2B%20Vite-61DAFB?style=flat&logo=react)](https://react.dev/)
-[![TailwindCSS](https://img.shields.io/badge/Styles-TailwindCSS%20v4-38B2AC?style=flat&logo=tailwind-css)](https://tailwindcss.com/)
-[![Node.js](https://img.shields.io/badge/Backend-Node.js%20%2B%20Express%205-339933?style=flat&logo=node.js)](https://nodejs.org/)
-[![MongoDB](https://img.shields.io/badge/Database-MongoDB%20Mongoose%209-47A248?style=flat&logo=mongodb)](https://www.mongodb.com/)
-[![AI Engine](https://img.shields.io/badge/AI-Google%20Gemini%202.5%20Flash-4285F4?style=flat&logo=google)](https://ai.google.dev/)
+> **An intelligent, autonomous personal finance platform powered by Google Gemini AI, real-time market revaluation engines, and proactive financial intelligence.**  
+> Effortlessly track multi-asset portfolios, bank accounts, budgets, goals, liabilities, and recurring bills — with deterministic simulation engines and autonomous financial guardrails.
 
 ---
 
-## 📖 Table of Contents
-1. [Executive Overview](#-executive-overview)
-2. [Complete Feature Suite in Detail](#-complete-feature-suite-in-detail)
-   - [1. Financial Command Center (Dashboard)](#1-financial-command-center-dashboard)
-   - [2. Actionable AI Copilot with Generative 1-Click Tool Calling](#2-actionable-ai-copilot-with-generative-1-click-tool-calling)
-   - [3. Autonomous "Salary Day" Smart Distributor (50/30/20)](#3-autonomous-salary-day-smart-distributor-503020)
-   - [4. "Zombie Subscription" & Hidden Price-Hike Detector](#4-zombie-subscription--hidden-price-hike-detector)
-   - [5. Autonomous "Overdraft & Low-Balance Shield" with Auto-Rebalancing](#5-autonomous-overdraft--low-balance-shield-with-auto-rebalancing)
-   - [6. Predictive "What-If" Financial Time-Machine (Multi-Year Simulator)](#6-predictive-what-if-financial-time-machine-multi-year-simulator)
-   - [7. Real-Time Event-Driven Budget Guardrails](#7-real-time-event-driven-budget-guardrails)
-   - [8. Autonomous AI Multimodal Receipt & Invoice OCR Scanner](#8-autonomous-ai-multimodal-receipt--invoice-ocr-scanner)
-   - [9. Multi-Account & Credit Card Management](#9-multi-account--credit-card-management)
-   - [10. Transaction Ledger & Advanced Multi-Filter Engine](#10-transaction-ledger--advanced-multi-filter-engine)
-   - [11. Recurring Bills & Obligation Manager](#11-recurring-bills--obligation-manager)
-   - [12. Financial Goals & Dynamic Completion Projections](#12-financial-goals--dynamic-completion-projections)
-   - [13. Investment Portfolio & Automated SIP Engine](#13-investment-portfolio--automated-sip-engine)
-   - [14. Debt & Loan Management with EMI Amortization](#14-debt--loan-management-with-emi-amortization)
-   - [15. Peer-to-Peer Lending & Borrowing Ledger (People)](#15-peer-to-peer-lending--borrowing-ledger-people)
-   - [16. Interactive Monthly Financial Calendar](#16-interactive-monthly-financial-calendar)
-   - [17. Analytics, Financial Reports & CSV Data Export](#17-analytics-financial-reports--csv-data-export)
-   - [18. Indian Income Tax Estimator (Old vs New Regime)](#18-indian-income-tax-estimator-old-vs-new-regime)
-   - [19. Historical Net Worth Tracker & Auto-Snapshots](#19-historical-net-worth-tracker--auto-snapshots)
-   - [20. Category Architecture & Merchant Categorizer](#20-category-architecture--merchant-categorizer)
-   - [21. User Profile & Security Center](#21-user-profile--security-center)
-3. [System Architecture & Tech Stack](#-system-architecture--tech-stack)
-4. [Repository Structure](#-repository-structure)
-5. [Installation & Quickstart Guide](#-installation--quickstart-guide)
-6. [API Route Reference](#-api-route-reference)
-7. [Performance Optimizations & Latency Benchmarks](#-performance-optimizations--latency-benchmarks)
-8. [License](#-license)
+## 📑 Table of Contents
+
+- [Executive Overview](#-executive-overview)
+- [System Architecture & Tech Stack](#-system-architecture--tech-stack)
+- [Comprehensive Feature Breakdown](#-comprehensive-feature-breakdown)
+  - [1. Executive Financial Dashboard](#1-executive-financial-dashboard)
+  - [2. Multi-Account Central Hub](#2-multi-account-central-hub)
+  - [3. Autonomous Transactions Ledger](#3-autonomous-transactions-ledger)
+  - [4. Multi-Asset Investments & Market Revaluation](#4-multi-asset-investments--market-revaluation)
+  - [5. Smart Budgets & Real-Time Guardrails](#5-smart-budgets--real-time-guardrails)
+  - [6. Goals & Milestones Tracker](#6-goals--milestones-tracker)
+  - [7. Loans & Debt Payoff Accelerator](#7-loans--debt-payoff-accelerator)
+  - [8. Peer-to-Peer Lending & Split Management (People)](#8-peer-to-peer-lending--split-management-people)
+  - [9. Bills, Subscriptions & Zombie Service Audit](#9-bills-subscriptions--zombie-service-audit)
+  - [10. Proactive Financial Intelligence Hub](#10-proactive-financial-intelligence-hub)
+    - [Proactive Intelligence Nudges](#proactive-intelligence-nudges)
+    - [Overdraft Shield](#overdraft-shield)
+    - [Salary Day Smart Distributor](#salary-day-smart-distributor)
+    - [What-If Financial Time Machine](#what-if-financial-time-machine)
+    - [AI Financial Copilot & Autonomous Action Drawer](#ai-financial-copilot--autonomous-action-drawer)
+  - [11. Net Worth & Asset Solvency Analytics](#11-net-worth--asset-solvency-analytics)
+  - [12. Tax Planning & Regime Comparator](#12-tax-planning--regime-comparator)
+  - [13. Unified Financial Calendar](#13-unified-financial-calendar)
+  - [14. Deep Analytics & Cashflow Reports](#14-deep-analytics--cashflow-reports)
+  - [15. Categories & Taxonomy System](#15-categories--taxonomy-system)
+- [Autonomous Background Daemons (Cron Master)](#-autonomous-background-daemons-cron-master)
+- [Database Models & Entity Architecture](#-database-models--entity-architecture)
+- [API Reference & Endpoint Map](#-api-reference--endpoint-map)
+- [Installation & Local Setup](#-installation--local-setup)
+- [Environment Variables Configuration](#-environment-variables-configuration)
+- [Security & Architecture Standards](#-security--architecture-standards)
 
 ---
 
-## 🚀 Executive Overview
+## 🌟 Executive Overview
 
-**Capise** is an autonomous, proactive wealth operating system engineered for modern personal finance management in India. While traditional expense trackers rely on manual inputs and retrospective charts, Capise acts as an intelligent financial co-pilot that continuously monitors your financial ecosystem. 
+Managing modern personal finances across checking accounts, credit cards, mutual funds, direct stocks, gold, employee provident funds, personal loans, and recurring subscriptions is fragmented, exhausting, and manual.
 
-Powered by **Google Gemini 2.5 Flash** and an event-driven backend, Capise actively forecasts cash flow bottlenecks, audits dormant subscriptions, intercepts budget overspends before they occur, dynamically redistributes monthly salary, and allows 1-click execution of financial decisions directly within the application.
-
----
-
-## 🌟 Complete Feature Suite in Detail
-
-### 1. Financial Command Center (Dashboard)
-The centralized cockpit providing an instant, real-time snapshot of your financial health and dynamic daily guardrails:
-- **Live Safe-to-Spend Today Card**: Dynamically calculates how much uncommitted discretionary cash you can safely spend today after mathematically reserving funds for upcoming rent, utility bills, loan EMIs, and monthly savings targets.
-- **Dynamic Financial Health Score (0–100 Gauge)**: An algorithmic score assessing 4 core pillars: Emergency Runway, Debt-to-Income (DTI) ratio, Savings Rate %, and Budget Discipline.
-- **Period Flow KPI Cards**: Real-time income, expense, and net savings metrics with percentage comparisons against previous periods.
-- **Spending Velocity & Burn Rate**: Tracks the daily burn rate (₹/day) against days elapsed in the billing cycle and computes the projected month-end expenditure.
-- **Visual Cash Flow & Category Donut Charts**: High-performance MUI X-Charts illustrating income vs expense cash flow and color-coded category distributions.
-- **Upcoming 7-Day Obligations Horizon**: Real-time ticker of scheduled bills, subscriptions, and EMIs due in the next 7 days.
-- **Historical Net Worth Sparkline**: In-card trend curve showing month-over-month wealth accumulation.
-
----
-
-### 2. Actionable AI Copilot with Generative 1-Click Tool Calling
-A conversational AI wealth manager powered by **Google Gemini 2.5 Flash** that doesn't just provide text advice—it generates interactive, 1-click execution actions:
-- **Real-Time Data Grounding**: Answers natural language questions with exact numbers from your live database (e.g., *"What is my exact total investment and its breakdown?"*, *"How much did I spend on Dining last month?"*).
-- **Generative 1-Click Execution Buttons**:
-  - `UPDATE_BUDGET_LIMIT`: Auto-generates an action button when a budget is exceeded (e.g., *"Increase Dining limit to ₹8,000"* ➔ `[Update Budget Limit]`).
-  - `OPEN_WHATSAPP_REMINDER`: Pre-fills a professional, friendly reminder message with repayment links when a peer loan is due.
-  - `LOG_INVESTMENT_TRANSFER`: Recommends sweeping idle cash into index funds or high-yield liquid funds and executes the transaction in 1 click.
-  - `EXECUTE_AUTO_REBALANCE`: Detects upcoming account low-balance breaches and transfers funds from donor accounts in 1 click.
-- **Context-Aware Markdown Rendering**: Formats responses into structured markdown tables, bullet points, and live metric status ribbons.
-- **Conversation State Management**: Persistent chat history with one-click conversation reset.
-
----
-
-### 3. Autonomous "Salary Day" Smart Distributor (50/30/20)
-An automated wealth allocator that intercepts salary deposits and orchestrates monthly cash flow:
-- **Automatic High-Income Detection**: Triggers an allocation card whenever an income transaction exceeds the user's defined salary threshold.
-- **Intelligent 3-Bucket Split**:
-  - **50% Needs (Committed Living)**: Automatically scans scheduled recurring rules and active loans to pre-lock funds for Rent, Electricity, Internet, EMIs, and essential groceries.
-  - **20% Wealth Building (Investments & Goals)**: Pro-rates allocations into recurring SIPs, Emergency Funds, and active financial goals.
-  - **30% Safe-to-Spend (Discretionary Allowance)**: Establishes a daily baseline allowance for guilt-free living.
-- **1-Click Bulk Allocation**: Executes the entire distribution across accounts and budgets simultaneously.
-- **Duplicate-Month Protection**: Ensures that multiple salary transactions or mid-month bonuses in the same billing cycle do not trigger duplicate allocations.
-
----
-
-### 4. "Zombie Subscription" & Hidden Price-Hike Detector
-An autonomous subscription audit service that protects you from recurring fee creep:
-- **Hidden Price-Hike Detection**: Compares recurring rules against actual transaction charges to detect quiet price increases (e.g., Netflix plan increasing from ₹649 to ₹799/mo).
-- **60+ Day Zombie Subscription Flagging**: Analyzes transaction histories to identify recurring subscriptions where zero related activity has occurred in over 60 days.
-- **Subscription Clean-Up Audit**: Computes the exact annual cost of each subscription and projects total potential annual savings.
-- **Direct 1-Click Cancellation Portals**: Direct deep-links to official cancellation portals (Netflix, Spotify, Amazon Prime, Hotstar, Cult.fit, Apple Subscriptions, Google Play, YouTube Premium, ChatGPT Plus, Airtel, Jio).
-
----
-
-### 5. Autonomous "Overdraft & Low-Balance Shield" with Auto-Rebalancing
-An automated cash flow safeguard designed to prevent bank non-maintenance penalties and ECS/NACH mandate bounce fees (₹450–₹590 per failed EMI/SIP):
-- **14-Day Rolling Cash-Flow Trajectory Forecast**: Projects future daily balances across all liquid accounts by matching upcoming Loan EMIs, Recurring Rules, and credit card dues.
-- **Minimum Buffer Breach Interceptor**: Flags projected breaches below the safety threshold (default: ₹5,000) before scheduled debits occur.
-- **Optimal Donor Discovery**: Discovers the best liquid savings or current account with surplus funds.
-- **1-Click Auto-Rebalance Transfer**: Executes an atomic, double-entry transfer between accounts to prevent bounce charges.
-
----
-
-### 6. Predictive "What-If" Financial Time-Machine (Multi-Year Simulator)
-A predictive sandbox for simulating major life and financial decisions before spending money:
-- **Gemini NLP Scenario Parsing**: Converts natural language prompts (*"What if I buy a ₹1,80,000 motorcycle next month with 20% down payment?"*) into structured simulation parameters.
-- **Dual-Universe Mathematical Engine**: Runs parallel 12-to-60 month mathematical projections (Baseline Universe vs Simulated Universe).
-- **Built-in Quick Scenario Presets**:
-  - 🏍️ *Major Purchase / Asset*: Down payment + recurring monthly EMI impact.
-  - ✈️ *Vacation / Lump-Sum*: Immediate capital withdrawal and emergency runway impact.
-  - 📈 *SIP Step-Up*: Net worth acceleration curve and milestone shifts.
-  - 💼 *Career / Salary Hike*: Compounding effect of increased monthly income.
-  - 🏠 *Debt Prepayment*: Interest savings and loan tenure reduction calculations.
-- **Simulation Verdict & Bottleneck Detection**: Delivers an automated safety verdict (`HIGHLY_SAFE`, `MODERATE_RISK`, `HIGH_RISK_BOTTLENECK`), runway shifts, ending net worth deltas, and goal completion timeline shifts.
-
----
-
-### 7. Real-Time Event-Driven Budget Guardrails
-- **Live Interceptor**: Evaluates every logged transaction and imported bank statement in real time against active budget categories.
-- **Multi-Tier Threshold Alerts**: Automatically triggers visual warnings when spending reaches 80% (Warning) or crosses 100% (Critical Overspend).
-- **Dynamic Guardrail Interceptors**: Alerts users on checkout-level transactions before overspending compounds.
-
----
-
-### 8. Autonomous AI Multimodal Receipt & Invoice OCR Scanner
-- **Gemini Vision OCR Engine**: Scans uploaded receipts, restaurant bills, retail invoices, and tax receipts.
-- **Automatic Entity Extraction**: Automatically detects and extracts Merchant Name, Total Amount, Date, Category, and Subcategory.
-- **Form Auto-Population**: Pre-fills the transaction creation modal, reducing transaction logging time to seconds.
-
----
-
-### 9. Multi-Account & Credit Card Management
-- **Supported Account Types**: Bank Accounts (Savings/Current), Cash Wallets, UPI Accounts, and Credit Cards.
-- **Credit Card Intelligence**: Tracks total Credit Limit, Current Balance, Utilization Rate (%), Statement Generation Date, and Payment Due Date with automated high-utilization warnings (>30%).
-- **Atomic Double-Entry Transactions**: Modifies account balances atomically using MongoDB `$inc` operators.
-- **Account Archival**: Allows archiving dormant accounts while preserving complete historical transaction integrity.
-
----
-
-### 10. Transaction Ledger & Advanced Multi-Filter Engine
-- **Transaction Types**: Income, Expense, and Inter-Account Transfers.
-- **Parent vs Subcategory Hierarchy**: Parent category is **strictly required** for organization, while subcategories are **strictly optional**.
-- **Advanced Filter Drawer**: Filter by search text, transaction type, source account, category, custom date ranges, and min/max amount thresholds.
-- **Pagination & Responsive Data Tables**: Fast paginated views with touch-enabled horizontal scrolling for mobile devices.
-- **Bank Statement CSV Importer**: Intelligent CSV importer with column mapping and duplicate transaction detection.
-
----
-
-### 11. Recurring Bills & Obligation Manager
-- **Customizable Frequencies**: Daily, Weekly, Monthly, and Yearly recurring schedules.
-- **Automated Cron Ingestion**: Daily background cron jobs automatically post active recurring expenses on their scheduled run dates.
-- **Calendar Synchronization**: Links scheduled bills and subscription rules directly to the interactive financial calendar.
-
----
-
-### 12. Financial Goals & Dynamic Completion Projections
-- **Milestone Tracking**: Define target amounts, current saved amounts, target deadlines, custom color themes, and icons.
-- **Dynamic Projected Completion Date**: Calculates the projected completion date based on historical contribution velocity.
-- **1-Click Contribution Modal**: Logs goal contributions directly from linked bank accounts.
-- **Circular SVG Progress Gauges**: Visual circular progress rings displaying percentage completion.
-
----
-
-### 13. Investment Portfolio & Automated SIP Engine
-- **Supported Asset Classes**: Mutual Funds, Equity Stocks, ETFs, Fixed Deposits (FD), PPF, EPF, NPS, Sovereign Gold Bonds / Digital Gold, Cryptocurrencies, Corporate Bonds, and Real Estate.
-- **Live Performance Tracking**: Computes Total Invested Amount, Current Market Value, Absolute Gain/Loss (₹), and Overall Return (%).
-- **Automated SIP Engine**: Manages recurring SIP schedules, linking SIP debits to specific bank accounts and executing on scheduled days of the month.
-- **Live Crypto & Market Price Sync**: Integrates with CoinGecko and market APIs for real-time asset valuation.
-
----
-
-### 14. Debt & Loan Management with EMI Amortization
-- **Loan Types**: Home Loans, Car Loans, Personal Loans, Education Loans, Gold Loans, and Business Loans.
-- **Mathematical EMI Calculator**: Computes exact monthly EMI based on Principal, Annual Interest Rate (%), and Tenure (months).
-- **Amortization Breakdown**: Calculates cumulative principal paid, interest paid, and remaining debt liability.
-- **Auto-Debit Engine**: Automates monthly EMI deduction from designated debit accounts.
-- **Prepayment & Extra Payment Logger**: Recalculates remaining tenure upon lump-sum prepayments.
-
----
-
-### 15. Peer-to-Peer Lending & Borrowing Ledger (People)
-- **Dual Ledger Tracking**: Track funds given to friends/family (*"I Lent"*) and borrowed funds (*"I Borrowed"*).
-- **Due Date Reminders & Countdown**: Visual badges highlighting overdue or upcoming repayments.
-- **Partial Repayments & Full Settlement**: Log incremental repayments with automatic balance updates.
-- **1-Click WhatsApp Reminder**: Opens WhatsApp with pre-filled, customized repayment reminder messages.
-
----
-
-### 16. Interactive Monthly Financial Calendar
-- **Unified Obligation Calendar**: Visual monthly grid displaying recurring bills, salary dates, loan EMIs, and goal milestones.
-- **Daily Obligation Drawer**: Click on any date to inspect scheduled debits and mark bills as paid.
-- **Cash Flow Planning**: Identifies cash-intensive weeks in advance.
-
----
-
-### 17. Analytics, Financial Reports & CSV Data Export
-- **Custom Time Horizons**: Filter analytics by Current Month, Last 3 Months, Last 6 Months, or Custom Date Ranges.
-- **Category-Wise Spending Breakdown**: Visual distribution bars detailing expenditure per category with percentage splits.
-- **Income vs Expense Cash Flow Trend**: Visual trajectory tracking savings rate over time.
-- **1-Click CSV Export**: Export complete transaction and report data for accounting or tax auditing.
-
----
-
-### 18. Indian Income Tax Estimator (Old vs New Regime)
-- **Financial Years Supported**: FY 2023-24 (AY 2024-25) and FY 2024-25 (AY 2025-26).
-- **Side-by-Side Regime Comparison**: Compares tax liabilities under the **Old Tax Regime** vs **New Tax Regime** to identify maximum tax savings.
-- **Comprehensive Income Buckets**: Salary Income, Business/Profession Income, Capital Gains, and Other Sources.
-- **Deductions & Exemptions**: Standard Deduction (₹50,000 / ₹75,000), Section 80C (EPF, PPF, ELSS up to ₹1.5L), Section 80D (Health Insurance), HRA exemption, and Section 80CCD(1B) (NPS).
-- **Tax Breakdown**: Calculates basic slab tax, 4% Health & Education Cess, 87A rebate, TDS deductions, Advance Tax paid, and Net Payable / Refund amount.
-
----
-
-### 19. Historical Net Worth Tracker & Auto-Snapshots
-- **Real-Time Net Worth Formula**:
-  $$\text{Net Worth} = \sum \text{Liquid Assets} + \sum \text{Investments} + \sum \text{Goal Funds} + \sum \text{Lent Funds} - (\sum \text{Credit Card Dues} + \sum \text{Loan Liabilities} + \sum \text{Borrowed Debts})$$
-- **Automated Daily/Monthly Snapshots**: Background cron captures historical wealth snapshots automatically.
-- **Manual Snapshot Capture**: Capture immediate snapshots with custom annotations.
-- **Growth Curves**: Visual multi-month net worth trajectory graph.
-
----
-
-### 20. Category Architecture & Merchant Categorizer
-- **Hierarchical Taxonomy**: Pre-seeded with over 50+ localized Indian categories and subcategories (Dining, Groceries, Rent, Utilities, Fuel, SIPs, Healthcare, Entertainment).
-- **Strict Hierarchy Rules**: Parent category is mandatory for system analytics; subcategories are optional for granular tracking.
-- **Rule-Based Merchant Auto-Categorizer**: Automatically maps merchant names (e.g., Swiggy, Zomato, Uber, D-Mart, Amazon, Netflix) to their appropriate category upon transaction entry or CSV import.
-
----
-
-### 21. User Profile & Security Center
-- **Profile Customization**: Manage name, email, profile avatar, and default currency (INR ₹).
-- **JWT Session Security**: Secure HTTP-only cookie-based authentication with `bcryptjs` password encryption.
-- **Cross-Device Safe-Area Insets**: Full responsive design with iOS safe-area inset padding (`env(safe-area-inset-bottom)`) for notch and home-indicator mobile devices.
+**Capise** transforms personal finance from a passive spreadsheet into an **autonomous financial copilot**. It:
+1. **Unifies your complete net worth** in one real-time dashboard across liquid cash, investments, and debts.
+2. **Auto-revalues your assets** using live market data (NSE/BSE Indian stocks via ISIN codes, AMFI Mutual Fund NAVs, Yahoo Finance tickers, and global crypto).
+3. **Automates capital deployment** by logging recurring SIPs, salary day distributions, and goal savings as proper non-expense transfers.
+4. **Protects your bank balances** via an intelligent **Overdraft Shield** that detects impending minimum balance violations and calculates zero-cost internal rebalancing transfers.
+5. **Projects your financial destiny** with the **What-If Financial Time Machine**, simulating career moves, home purchases, sabbatical years, and market shocks 10 to 30 years into the future with database-grounded calculations.
+6. **Empowers you with an AI Copilot** that doesn't just give generic advice — it understands your exact financial ground truth and executes 1-click financial actions directly on your accounts.
 
 ---
 
@@ -244,246 +57,426 @@ A predictive sandbox for simulating major life and financial decisions before sp
 
 ```mermaid
 graph TD
-    Client["🖥️ Client (React 19 + Vite + TailwindCSS v4)"]
-    Server["⚡ Server (Node.js + Express 5)"]
-    DB[("🍃 MongoDB Database")]
-    Gemini["🤖 Google Gemini 2.5 Flash API"]
-    Cache["⚡ In-Memory High-Speed TTL Cache"]
-
-    Client <-->|REST API + In-Flight Deduplication| Server
-    Server <-->|Compound Indexed Queries + .lean()| DB
-    Server <-->|NLP & Multimodal OCR| Gemini
-    Server <-->|Sub-Millisecond Read Acceleration| Cache
+    Client[React 18 + Vite SPA] <--> |REST API + JWT| Server[Node.js + Express 5 Server]
+    Server <--> Database[(MongoDB Database)]
+    Server <--> Gemini[Google Gemini AI Engine]
+    Server <--> MarketAPIs[Market Price APIs: AMFI / Yahoo / NSE / BSE]
+    Server <--> CronMaster[Node-Cron Automation Daemons]
 ```
 
-| Layer | Technologies Used | Key Purpose |
-| :--- | :--- | :--- |
-| **Frontend UI** | React 19, Vite v8.2.2, TailwindCSS v4 | High-performance SPA with instant HMR and modern styling |
-| **State Management** | Redux Toolkit, React-Redux | Centralized reactive global store across all modules |
-| **Data Visualization** | MUI X-Charts (`@mui/x-charts`) | Interactive cash flow bar charts, category pies, and sparklines |
-| **Backend Framework** | Node.js (ES Modules), Express 5 | Asynchronous REST API server with compression |
-| **Database & ODM** | MongoDB, Mongoose 9 | Document store with compound indexes and `.lean()` execution |
-| **Artificial Intelligence**| Google Gemini 2.5 Flash (`@google/genai`) | AI Copilot, Tool Calling, What-If simulator, and OCR receipt vision |
-| **Caching Layer** | In-Memory TTL Cache (`Server/utils/cache.js`) | Sub-millisecond read caching with automatic user invalidation |
-| **Cron Automation** | `node-cron` | Automated SIP execution, recurring rule posting, and net worth snapshots |
+### Frontend (`/Client`)
+- **Core**: React 18 (Single Page Application via React Router v6)
+- **Bundler & Build**: Vite 8 with ESBuild/Rolldown runtime optimization
+- **State Management**: Redux Toolkit (`@reduxjs/toolkit`, `react-redux`) for predictive global state and slice-based API handling
+- **Styling**: Modern Tailwind CSS design system with custom glassmorphism, responsive cards, rich badges, and mobile-first layouts
+- **Icons & Visuals**: Lucide React (`lucide-react`) & Canvas Confetti for goal celebrations
+- **Formatting Utilities**: Internationalized Indian Rupee (`₹`, `en-IN`) and multi-currency formatter (`formatCurrency.js`)
+
+### Backend (`/Server`)
+- **Runtime**: Node.js v22 (ECMAScript ESM modules)
+- **Framework**: Express 5 with JSON payload support up to **`50MB`** for rich statements and image attachments
+- **Database**: MongoDB with Mongoose ODM (indexes on `user`, `date`, `category`, `isActive`)
+- **Artificial Intelligence**: Google Gemini API (`@google/genai`) with an autonomous multi-model fallback chain (`gemini-2.5-flash` ➡️ `gemini-3.5-flash-lite`)
+- **Cache Engine**: High-frequency in-memory TTL cache (`MemoryCache`) for proactive nudges, overdraft checks, and simulation states
+- **Automation**: Node-Cron (`node-cron`) for scheduled midnight executions, market revaluations, and 1st-of-month review digests
+- **Authentication**: Stateless JWT tokens stored in HTTP headers with bcrypt password encryption
 
 ---
 
-## 📁 Repository Structure
+## 🚀 Comprehensive Feature Breakdown
 
-```text
-Personal-Finance/
-├── Client/                             # React 19 Frontend Application
-│   ├── src/
-│   │   ├── components/                 # Modals, Drawers & Interactive Widgets
-│   │   │   ├── AICopilotDrawer.jsx     # AI Copilot with 1-Click Action Buttons
-│   │   │   ├── ActionCenterDrawer.jsx  # Proactive Action Center Drawer
-│   │   │   ├── SalaryDistributorModal.jsx # 50/30/20 Salary Day Distributor
-│   │   │   ├── SubscriptionAuditModal.jsx # Zombie Subscription Clean-Up Audit
-│   │   │   ├── OverdraftShieldModal.jsx   # 14-Day Overdraft & Low-Balance Shield
-│   │   │   ├── WhatIfSimulatorModal.jsx   # Predictive Time-Machine Simulator
-│   │   │   ├── CSVImporterModal.jsx    # Bank Statement CSV Ingestion
-│   │   │   ├── ProtectedRoute.jsx      # JWT Auth Route Guard
-│   │   │   └── Pagination.jsx          # Reusable Table Pagination
-│   │   ├── layouts/
-│   │   │   └── MainLayout.jsx          # Responsive Layout with Floating Launchers
-│   │   ├── pages/                      # Application Page Views (Lazy Loaded)
-│   │   │   ├── Dashboard/              # Command Center & Safe-to-Spend
-│   │   │   ├── Transactions/           # Expense Ledger & Receipt OCR
-│   │   │   ├── Accounts/               # Liquid Accounts & Credit Cards
-│   │   │   ├── Bills/                  # Recurring Rules & Subscriptions
-│   │   │   ├── Budgets/                # Event-Driven Budget Guardrails
-│   │   │   ├── Goals/                  # Financial Goal Tracking
-│   │   │   ├── Investments/            # Portfolio & SIP Engine
-│   │   │   ├── Loans/                  # Debt Management & EMI Amortization
-│   │   │   ├── People/                 # P2P Lending & Borrowing Ledger
-│   │   │   ├── Reports/                # Analytics & CSV Export
-│   │   │   ├── Taxes/                  # Indian Income Tax Computations
-│   │   │   ├── NetWorth/               # Historical Net Worth Snapshots
-│   │   │   ├── Calendar/               # Monthly Obligation Calendar
-│   │   │   ├── Categories/             # Category Management
-│   │   │   ├── Profile/                # User Profile Settings
-│   │   │   ├── Login.jsx               # Authentication Login View
-│   │   │   └── Register.jsx            # Account Registration View
-│   │   ├── store/                      # Redux Toolkit Slices
-│   │   ├── services/                   # Axios API Client with Deduplication
-│   │   ├── utils/                      # Currency & Date Formatters
-│   │   ├── App.jsx                     # Root Route Configuration
-│   │   ├── index.css                   # Tailwind v4 Styles & Safe Areas
-│   │   └── main.jsx                    # React Entrypoint
-│   └── vite.config.js                  # Rollup Chunk Splitting & Optimization
-│
-└── Server/                             # Node.js Express 5 Backend
-    ├── config/                         # Database Connection Configuration
-    │   └── db.js                       # Mongoose MongoDB Connection
-    ├── controllers/                    # Route Request Controllers
-    │   ├── authController.js           # User Auth & JWT Cookies
-    │   ├── accountController.js        # Accounts & Balances
-    │   ├── transactionController.js    # Transactions & Statements
-    │   ├── proactiveController.js      # Nudges, Salary, What-If, Overdraft
-    │   ├── budgetController.js         # Budgets & Guardrails
-    │   ├── investmentController.js     # Investments & Live Prices
-    │   ├── loanController.js           # Loans & EMI Amortization
-    │   ├── goalController.js           # Goals & Contributions
-    │   ├── lendingController.js        # P2P Lending & WhatsApp
-    │   ├── netWorthController.js       # Net Worth Snapshots
-    │   ├── taxController.js            # Tax Computations
-    │   └── reportController.js         # Aggregate Reports & CSV Export
-    ├── cron/                           # Scheduled Background Jobs
-    │   ├── jobs/recurringJob.js        # Recurring Rule Ingestion
-    │   ├── jobs/sipJob.js              # Automated SIP Execution
-    │   └── jobs/netWorthJob.js         # Daily Net Worth Snapshot
-    ├── models/                         # Mongoose Data Schemas
-    │   ├── User.js                     # User Schema
-    │   ├── Account.js                  # Account Schema
-    │   ├── Transaction.js              # Transaction Schema
-    │   ├── Category.js                 # Category Hierarchy Schema
-    │   ├── Budget.js                   # Budget Schema
-    │   ├── Goal.js                     # Goal Schema
-    │   ├── Investment.js               # Investment Schema
-    │   ├── Loan.js                     # Loan & Payment Schema
-    │   ├── RecurringRule.js            # Recurring Rule Schema
-    │   ├── Lending.js                  # Lending Ledger Schema
-    │   ├── ProactiveNudge.js           # Proactive Nudge Schema
-    │   ├── SalaryDistributionPlan.js   # Salary Allocation Plan Schema
-    │   ├── NetWorthSnapshot.js         # Net Worth Snapshot Schema
-    │   └── TaxRecord.js                # Income Tax Record Schema
-    ├── routes/                         # Express Route Definitions
-    ├── services/                       # Autonomous Intelligence Services
-    │   ├── aiCopilotService.js         # Gemini AI Copilot NLP & Context Builder
-    │   ├── copilotActionExecutionService.js # Generative Tool Calling Executor
-    │   ├── proactiveIntelligenceService.js  # Safe-to-Spend & Nudge Engine
-    │   ├── salaryDistributorService.js # 50/30/20 Smart Distributor Engine
-    │   ├── subscriptionDetectorService.js # Zombie Subscriptions & Price Hikes
-    │   ├── overdraftShieldService.js   # 14-Day Rolling Overdraft Forecast
-    │   ├── whatIfSimulationService.js  # Multi-Year Scenario Simulation Engine
-    │   ├── budgetGuardrailService.js   # Real-Time Budget Interceptor
-    │   ├── csvIngestionService.js      # Statement CSV Parser & Auto-Categorizer
-    │   └── ocrReceiptService.js        # Gemini Multimodal OCR Engine
-    ├── utils/                          # In-Memory TTL Cache & Utilities
-    │   ├── cache.js                    # In-Memory TTL Cache
-    │   └── merchantCategorizer.js      # Merchant Categorization Engine
-    └── server.js                       # Express Server Entrypoint
-```
+### 1. Executive Financial Dashboard
+- **Real-Time Wealth Metrics**: Instant view of **Total Net Worth**, **Total Liquid Balance**, **Total Invested Capital**, and **Total Outstanding Debt**.
+- **Cashflow Momentum**: Current month's total Income vs Total Expenses with dynamic net savings rate (`%`) gauge.
+- **Budget Depletion Guardrails**: Compact visual progress bars showing category budget consumption.
+- **Commitments & Debt Timeline**: Upcoming scheduled bills, subscription renewals, and loan EMIs due in the next 14 days.
+- **Interactive Quick Launcher**: 1-click modal access to:
+  - 💸 **Add Transaction**
+  - 📸 **Scan Receipt with AI**
+  - 📥 **Import Bank Statement CSV**
+  - 🛡️ **Launch Overdraft Shield**
+  - 💼 **Salary Day Smart Distributor**
+  - ⏳ **What-If Financial Time Machine**
 
 ---
 
-## 🚀 Installation & Quickstart Guide
+### 2. Multi-Account Central Hub
+- **Support for All Account Types**:
+  - 🏦 **Bank Accounts** (Checking, Salary, Savings)
+  - 💳 **Credit Cards** (Tracks current balance, credit limit, and available credit)
+  - 💵 **Cash in Hand** (Petty cash and physical wallet balances)
+  - 📱 **Digital Wallets** (Paytm, PhonePe, Amazon Pay, UPI balance)
+  - 📈 **Investment / Demat Accounts** (Zerodha, Groww, AngelOne)
+- **Credit Health & Utilization**: Real-time calculation of credit utilization percentage with alert badges when crossing the recommended 30% threshold.
+- **Account Archiving & Balance Reconciliation**: Safely archive closed accounts without losing historical transactions, or adjust balances with instant audit tracking.
+
+---
+
+### 3. Autonomous Transactions Ledger
+- **Multi-Vector Filter Engine**:
+  - Filter by **Type** (`All`, `Expense`, `Income`, `Transfer`).
+  - Filter by **Account** (source and destination matching).
+  - Filter by **Category** and Subcategory.
+  - Filter by **Date Range** (`Start Date` to `End Date`).
+  - Filter by **Amount Range** (`Min Amount` to `Max Amount`).
+  - Real-time instant search matching across **merchant**, **notes**, **category name**, **account name**, **type**, and **tags** (`t.tags`).
+- **Transfer Intelligence**: Automatically distinguishes capital movements:
+  - `💼 Investment`: Capital deployed from bank into investments.
+  - `🎯 Goal Savings`: Money moved into designated emergency funds and goals.
+  - `🔁 Transfer`: Rebalancing between checking, savings, and digital wallets.
+- **AI Receipt Scanner (Multimodal OCR)**:
+  - Upload receipt or invoice photos (`PNG`, `JPEG`, `WebP`).
+  - Uses Google Gemini vision to extract merchant name, transaction date, total amount, taxes, category recommendation, and line-item breakdown.
+- **Intelligent Bank Statement CSV Importer**:
+  - Drag-and-drop any bank CSV statement (HDFC, ICICI, SBI, Axis, Kotak, etc.).
+  - Auto-detects columns: Date, Description / Narration, Debit, Credit, Balance, Reference Number.
+  - **Deduplication Engine**: Automatically identifies already-ingested transactions using date-merchant-amount hashing to prevent double-counting.
+- **Real-Time Budget Guardrail Alarms**: Displays immediate warning and critical banners when adding a transaction that pushes category spending over 85% or 100% of its budget cap.
+
+---
+
+### 4. Multi-Asset Investments & Market Revaluation
+
+Capise provides an end-to-end investment management hub designed specifically for both Indian and global assets:
+
+#### Supported Asset Classes
+- 📈 **Direct Stocks** (NSE / BSE Indian equities via ISIN codes or tickers)
+- 📊 **Mutual Funds** (Direct & Regular schemes via 6-digit AMFI codes or ISINs)
+- 🪙 **Exchange Traded Funds (ETFs)** (Nifty 50, Bank Nifty, Gold BeES, Silver BeES)
+- 🏅 **Gold & Silver** (Sovereign Gold Bonds, Physical 24K/22K Gold, Digital Gold, Silver)
+- 🌐 **Cryptocurrencies** (Bitcoin, Ethereum, Solana via live market APIs)
+- 🔒 **Fixed Deposits & Term Deposits** (SBI, HDFC, ICICI with interest tracking & maturity dates)
+- 🏛️ **Government Backed Schemes** (PPF 15-Year, EPF / EPFO Passbook, NPS Tier-1 & Tier-2)
+- 📜 **Corporate & Government Bonds** (Yield tracking, maturity dates, interest payout schedules)
+
+#### Key Capabilities
+- **Automated Live Market Revaluation Engine**:
+  - Enter an ISIN code (e.g., `INE002A01018` for Reliance Industries, `INE009A01021` for Infosys) or AMFI Scheme Code (e.g., `120503` for Axis Long Term Equity).
+  - Automatically resolves ISINs to live exchange tickers (`.NS` / `.BO`) and fetches latest market prices.
+  - Built-in "Test / Verify Code" button with live status feedback.
+  - "Sync All Prices" button triggers bulk revaluation across your entire portfolio.
+- **Asset Code Guide Modal**:
+  - Interactive cheat sheet embedded right inside the modal with verified examples for ISIN codes, AMFI codes, Yahoo Finance tickers, commodities, and crypto.
+- **Automated Recurring SIP Processor**:
+  - Configure automated SIPs with frequency (`Monthly`, `Weekly`, `Quarterly`), debit day, and linked funding bank account.
+  - Background cron daemon automatically executes scheduled installments, deducts bank account balances, records `Transfer` transactions, and updates investment units.
+- **Manual Investment Addition with Automatic Ledger Booking**:
+  - When manually adding a lump sum investment, Capise provides a dedicated **"💸 Record as Transfer in Transactions Tab"** toggle.
+  - Automatically books a `Transfer` transaction (`tags: ['investment', 'transfer']`), links the source account, and debits the balance to ensure the transaction ledger matches reality.
+- **Profit / Loss & Performance Metrics**:
+  - Real-time absolute gain/loss (`₹`) and percentage return (`%`).
+  - Historical value trend charts for every asset.
+
+---
+
+### 5. Smart Budgets & Real-Time Guardrails
+- **Flexible Budgeting**: Set category budgets for monthly or custom rolling periods.
+- **Three-Tier Depletion Engine**:
+  - 🟢 **Healthy** (< 75% consumed): Normal pacing.
+  - 🟡 **Caution** (75% – 90% consumed): Advisory alert banners.
+  - 🔴 **Critical Breach** (> 90% – 100%+ consumed): Urgent budget guardrail notification.
+- **Visual Budget Cards**: Shows spent amount, remaining allowance, daily burn velocity, and projected month-end overage.
+
+---
+
+### 6. Goals & Milestones Tracker
+- **Custom Milestone Targets**: Create goals for Emergency Funds, Home Down Payments, Vacations, Vehicle Purchases, or Retirement.
+- **Pacing Intelligence**: Calculates the exact monthly savings required to hit target dates based on days remaining.
+- **1-Click Goal Contributions**:
+  - Deposit money into any goal directly from any bank account.
+  - Automatically logged as a `Transfer` (not an expense) with `tags: ['goal', 'contribution']`.
+- **Celebration Confetti**: Visual celebration animation when a goal hits 100% completion.
+
+---
+
+### 7. Loans & Debt Payoff Accelerator
+- **Liability Tracking**: Personal Loans, Home Mortgages, Auto Loans, Education Loans, and Credit Card installment plans.
+- **Detailed Loan Analytics**:
+  - Principal amount, annual interest rate (`%`), loan tenure, and start date.
+  - Exact monthly EMI calculation and total interest payable.
+  - Visual principal vs interest amortization breakdown.
+- **Prepayment & Early Payoff Simulator**:
+  - Calculates interest saved and tenure reduction when making lump sum or recurring extra prepayments.
+- **Auto-Debit Loan EMIs**: Midnight cron job automatically posts EMI payments on the designated due day.
+
+---
+
+### 8. Peer-to-Peer Lending & Split Management (People)
+- **Track Monies Lent & Borrowed**: Never forget who owes you money or who you need to repay.
+- **Person Profiles**: View net balance per person across all historical transactions.
+- **Repayment Logging**: Record partial or full repayments with automated bank account balance updates and transfer records.
+- **Reminders**: Track settlement due dates and overdue statuses.
+
+---
+
+### 9. Bills, Subscriptions & Zombie Service Audit
+- **Recurring Bill Tracker**: Electricity, broadband, rent, credit card bills, insurance premiums, and mobile recharges.
+- **Due Date Alerts**: Color-coded badges for bills due today, due this week, or overdue.
+- **Zombie Subscription Detector**:
+  - Analyzes transaction histories to detect recurring payments (Netflix, Spotify, AWS, Gym, SaaS).
+  - Flags duplicate services, unused subscriptions, and price creep over time.
+  - Calculates total annual subscription cost and highlights immediate cancellation savings.
+
+---
+
+### 10. Proactive Financial Intelligence Hub
+
+Located at `/intelligence`, this is the command center for autonomous financial management:
+
+#### Proactive Intelligence Nudges
+- **Continuous 8-Point Surveillance Engine**:
+  1. **High Credit Utilization**: Warns when card utilization exceeds 30%.
+  2. **Emergency Fund Vulnerability**: Alerts if liquid cash covers less than 3 months of mandatory expenses.
+  3. **Overspending Pace**: Flags categories burning budget faster than the calendar progression.
+  4. **Bill Due Proximity**: Alerts for bills due in the next 48 hours.
+  5. **Low Balance Alert**: Warns when checking accounts approach minimum balance limits.
+  6. **SIP Cash Readiness**: Verifies sufficient bank balance before automated SIP dates.
+  7. **Debt-to-Income Risk**: Detects dangerous leverage ratios.
+  8. **Tax Deduction Deficit**: Recommends 80C/80D investments before financial year-end.
+
+#### Overdraft Shield
+- Continuously inspects checking/salary accounts against minimum balance thresholds (e.g., ₹10,000).
+- Calculates projected minimum balances over the next 14 days by factoring in scheduled bills and SIPs.
+- If a shortfall is detected, it automatically drafts a **Zero-Cost Internal Rebalancing Plan**, proposing exact transfers from high-liquidity savings/FD accounts to prevent penalty charges.
+- 1-click execution executes the proposed rebalancing transfer instantly.
+
+#### Salary Day Smart Distributor
+- Solves the payday dilemma using either the **50/30/20 Rule** or **Custom Rules**:
+  - **Needs (50%)**: Rent, bills, loan EMIs, and essential groceries.
+  - **Savings & Goals (20%)**: Emergency fund and goal top-ups.
+  - **Investments**: Automated allocation into mutual funds, stocks, and retirement.
+  - **Discretionary (30%)**: Lifestyle, shopping, and dining.
+- Generates a clear distribution blueprint on salary day.
+- 1-click execution moves the funds into designated accounts and goals as transfers.
+
+#### What-If Financial Time Machine
+- **Deterministic Compound Projection Engine**:
+  - Simulates scenarios such as:
+    - *"What if I buy a home with a ₹20,00,000 down payment and ₹45,000 EMI?"*
+    - *"What if I take a 6-month unpaid sabbatical?"*
+    - *"What if I switch jobs with a 35% pay hike?"*
+    - *"What if inflation rises to 8% and the equity market corrects 20%?"*
+  - Projects net worth year-by-year over **5, 10, 15, 20, 25, or 30 years**.
+  - Graphs **Baseline Trajectory vs Scenario Trajectory** side-by-side.
+- **Gemini AI Grounding**: Analyzes the mathematical projection and delivers actionable strategic commentary, risk assessments, and milestone impacts.
+
+#### AI Financial Copilot & Autonomous Action Drawer
+- Accessible from any screen via the floating AI button or header drawer.
+- **Ground-Truth Data Assembly**: Prior to calling Gemini, the server precomputes the user's active ground-truth figures:
+  - Exact net worth, active liquid balances, total debts, and active investment holdings (filtered strictly by `isActive: true`).
+- **Autonomous Tool Calling (Copilot Actions)**: The AI Copilot can propose and execute real actions with your permission:
+  - `CONTRIBUTE_TO_GOAL`: Transfers money into an emergency fund or goal.
+  - `RECORD_TRANSACTION`: Logs income, expense, or transfer transactions.
+  - `DEPLOY_INVESTMENT`: Records a capital deployment into an investment holding.
+- **Rich Markdown Formatting**: Renders responsive tables, hierarchical headings, bullet & numbered lists, monospace code blocks, and styled badges.
+- **Multi-Model Fallback Chain**: Tries `gemini-2.5-flash` first, and if rate-limited or busy, gracefully falls back to `gemini-3.5-flash-lite` with automatic retries.
+
+---
+
+### 11. Net Worth & Asset Solvency Analytics
+- **Historical Net Worth Trajectory**: Tracks total net worth over time through autonomous 1st-of-the-month snapshots.
+- **Asset Allocation Sunburst / Pie Charts**: Distribution across Equities, Fixed Income, Cash, Precious Metals, and Real Assets.
+- **Financial Solvency Ratios**:
+  - **Solvency Index**: Ratio of total assets to total liabilities.
+  - **Liquidity Runway**: Number of months the household can survive on liquid reserves alone.
+  - **Debt-to-Asset Ratio**: Overall financial leverage health.
+
+---
+
+### 12. Tax Planning & Regime Comparator
+- **Indian Income Tax Assessment (Old vs New Regime)**:
+  - Compares tax liabilities under the New Tax Regime (Section 115BAC) and the Old Tax Regime.
+- **Deduction & Exemption Breakdown**:
+  - Section 80C (PPF, ELSS, EPF, LIC — up to ₹1,50,000).
+  - Section 80D (Health Insurance premiums).
+  - Section 80CCD(1B) (National Pension System — additional ₹50,000).
+  - Section 24(b) (Home Loan Interest deduction — up to ₹2,00,000).
+  - House Rent Allowance (HRA) exemption calculator.
+- Recommends which regime yields lower tax liability based on user's specific investment and expense profile.
+
+---
+
+### 13. Unified Financial Calendar
+- **Full Monthly Calendar View**:
+  - Combines salary paydays, bill due dates, scheduled SIP installments, loan EMI debits, and goal deadlines.
+  - Color-coded badges for easy visual distinction.
+  - Click on any day to see the exact cash inflows and outflows scheduled.
+
+---
+
+### 14. Deep Analytics & Cashflow Reports
+- **Spending Heatmaps**: Identify peak spending days and seasonal spikes.
+- **Category & Subcategory Breakdown**: Detailed donuts and bar charts.
+- **Merchant Distribution**: See top merchants by total expenditure.
+- **Export Engine**: Export filtered ledger reports in CSV format.
+
+---
+
+### 15. Categories & Taxonomy System
+- Preloaded with comprehensive personal finance categories (Housing, Utilities, Groceries, Dining, Health, Subscriptions, Salary, Investments, etc.).
+- Create custom parent categories and nested subcategories.
+- Assign custom colors and icons for instant visual recognition.
+
+---
+
+## ⏰ Autonomous Background Daemons (Cron Master)
+
+Configured in [`Server/cron/index.js`](file:///Users/harshalpatil/Desktop/Projects/Personal%20Finance/Server/cron/index.js):
+
+| Schedule | Daemon | Purpose |
+|---|---|---|
+| `0 0 * * *` (Daily Midnight) | **Midnight Financial Automation** | Auto-posts recurring bills, auto-debits loan EMIs, executes scheduled SIPs, and runs Proactive Guardian. |
+| `0 */6 * * *` (Every 6 Hours) | **Proactive Intelligence Guardian** | Evaluates 8 financial health checks and updates real-time nudges. |
+| `0 16 * * 1-5` (Daily 4 PM Mon-Fri) | **Market Close Portfolio Revaluation** | Fetches latest market closing prices for stocks, ETFs, and AMFI mutual funds. |
+| `5 0 1 * *` (Monthly 1st 00:05 AM) | **Monthly Net Worth & Digest** | Captures net worth snapshots and synthesizes monthly review digests. |
+
+---
+
+## 🗄️ Database Models & Entity Architecture
+
+Located in [`Server/models/`](file:///Users/harshalpatil/Desktop/Projects/Personal%20Finance/Server/models/):
+
+- [`User.js`](file:///Users/harshalpatil/Desktop/Projects/Personal%20Finance/Server/models/User.js): Authentication credentials, currency preference, salary day, and profile settings.
+- [`Account.js`](file:///Users/harshalpatil/Desktop/Projects/Personal%20Finance/Server/models/Account.js): Bank, credit card, cash, wallet, and investment accounts with balances and credit limits.
+- [`Transaction.js`](file:///Users/harshalpatil/Desktop/Projects/Personal%20Finance/Server/models/Transaction.js): Ledger entries (`Income`, `Expense`, `Transfer`), accounts, categories, tags, attachment URLs.
+- [`Investment.js`](file:///Users/harshalpatil/Desktop/Projects/Personal%20Finance/Server/models/Investment.js): Multi-asset holdings, ISINs, AMFI scheme codes, SIP configs, funding account, transaction links, value history.
+- [`Budget.js`](file:///Users/harshalpatil/Desktop/Projects/Personal%20Finance/Server/models/Budget.js): Category spending limits, periods, and notification thresholds.
+- [`Goal.js`](file:///Users/harshalpatil/Desktop/Projects/Personal%20Finance/Server/models/Goal.js): Target amounts, target dates, priorities, contributions array with linked transaction IDs.
+- [`Loan.js`](file:///Users/harshalpatil/Desktop/Projects/Personal%20Finance/Server/models/Loan.js): Liabilities, principal, interest rate, tenure, EMI schedules, and payoff history.
+- [`Lending.js`](file:///Users/harshalpatil/Desktop/Projects/Personal%20Finance/Server/models/Lending.js): Peer-to-peer debts (lent or borrowed), debtor/creditor info, and repayment logs.
+- [`RecurringRule.js`](file:///Users/harshalpatil/Desktop/Projects/Personal%20Finance/Server/models/RecurringRule.js): Bills and recurring transaction definitions with frequencies and auto-post settings.
+- [`SalaryDistributionPlan.js`](file:///Users/harshalpatil/Desktop/Projects/Personal%20Finance/Server/models/SalaryDistributionPlan.js): Payday distribution rules (Needs, Goals, Investments, Discretionary).
+- [`NetWorthSnapshot.js`](file:///Users/harshalpatil/Desktop/Projects/Personal%20Finance/Server/models/NetWorthSnapshot.js): Monthly snapshots of total assets, liabilities, and net worth.
+- [`ProactiveNudge.js`](file:///Users/harshalpatil/Desktop/Projects/Personal%20Finance/Server/models/ProactiveNudge.js): System-generated actionable alerts with dismiss and snooze states.
+- [`TaxRecord.js`](file:///Users/harshalpatil/Desktop/Projects/Personal%20Finance/Server/models/TaxRecord.js): Annual tax profiles, deductions under 80C/80D/80CCD, and regime calculations.
+- [`MonthlyReviewDigest.js`](file:///Users/harshalpatil/Desktop/Projects/Personal%20Finance/Server/models/MonthlyReviewDigest.js): AI-generated monthly financial retrospectives.
+
+---
+
+## 🔌 API Reference & Endpoint Map
+
+All routes are secured by JWT token verification (`protect` middleware) except public auth endpoints:
+
+### Authentication (`/api/auth`)
+- `POST /register`: Register user account.
+- `POST /login`: Authenticate user and issue JWT token.
+- `GET /me`: Fetch authenticated user profile.
+- `PUT /profile`: Update profile, currency, or salary settings.
+
+### Accounts (`/api/accounts`)
+- `GET /`: Retrieve all active accounts and total balances.
+- `POST /`: Create a new account (Bank, Card, Cash, Wallet, Investment).
+- `PUT /:id`: Update account details or balance.
+- `DELETE /:id`: Archive account safely.
+
+### Transactions (`/api/transactions`)
+- `GET /`: Fetch transactions with filtering, search, and pagination.
+- `POST /`: Create a manual transaction (with budget guardrail evaluation).
+- `PUT /:id`: Update transaction details.
+- `DELETE /:id`: Delete transaction and adjust account balances atomically.
+- `POST /preview-csv`: Parse bank statement CSV and return preview rows.
+- `POST /import-csv`: Commit bank statement rows with automated deduplication.
+- `POST /scan-receipt`: Gemini multimodal vision OCR receipt scanning.
+
+### Investments (`/api/investments`)
+- `GET /`: Fetch all active investment holdings.
+- `POST /`: Add investment (with automated funding bank account debit & Transfer booking).
+- `PUT /:id`: Update investment parameters.
+- `DELETE /:id`: Archive investment.
+- `PUT /:id/value`: Manually update current valuation.
+- `GET /validate-symbol`: Validate ISIN code, stock ticker, or AMFI code with live market check.
+- `POST /sync-all`: Trigger live market price revaluation for all assets.
+- `POST /:id/sync-price`: Trigger live price sync for a single asset.
+
+### Intelligence & AI Copilot (`/api/intelligence` & `/api/proactive`)
+- `POST /api/intelligence/copilot/chat`: Conversational AI advisor with ground truth financial data.
+- `POST /api/intelligence/copilot/execute-action`: Execute autonomous 1-click financial actions.
+- `POST /api/intelligence/what-if/simulate`: Deterministic compound time machine simulation with Gemini commentary.
+- `GET /api/proactive/nudges`: Fetch active proactive intelligence alerts and health scores.
+- `POST /api/proactive/nudges/:id/dismiss`: Dismiss a nudge.
+- `GET /api/proactive/overdraft-shield`: Run overdraft risk check and get rebalancing plans.
+- `POST /api/proactive/overdraft-shield/execute`: Execute proposed overdraft rebalancing transfer.
+- `GET /api/proactive/salary-distributor`: Get salary distribution blueprint.
+- `POST /api/proactive/salary-distributor/execute`: Execute payday allocations across accounts and goals.
+- `GET /api/proactive/subscription-audit`: Run zombie subscription detection.
+
+### Goals, Loans, Budgets, Reports, Taxes & Calendar
+- `/api/goals`: CRUD goals and deposit contributions (`/api/goals/:id/contribute`).
+- `/api/loans`: CRUD loans, calculate EMIs, and simulate prepayments.
+- `/api/budgets`: Category spending limits and real-time status.
+- `/api/lending`: Peer-to-peer debts and repayment logging.
+- `/api/recurring`: Recurring bills and automated rules.
+- `/api/taxes`: Tax calculators, deductions, and regime comparison.
+- `/api/calendar`: Aggregated financial schedule for any month/year.
+- `/api/reports`: Aggregated cashflow and category distribution summaries.
+- `/api/networth`: Net worth history and asset-to-liability ratios.
+- `/api/dashboard`: Executive snapshot data aggregation.
+
+---
+
+## 💻 Installation & Local Setup
 
 ### Prerequisites
-- **Node.js** v18.0.0 or higher
-- **MongoDB** (Local instance or MongoDB Atlas cluster)
-- **Google Gemini API Key** (from [Google AI Studio](https://aistudio.google.com/))
+- **Node.js**: v18.0.0 or higher (v20+ recommended)
+- **MongoDB**: Local MongoDB instance (`mongodb://localhost:27017`) or MongoDB Atlas URI
+- **Google Gemini API Key**: Free API key from [Google AI Studio](https://aistudio.google.com/)
 
----
-
-### 1. Backend Setup (`Server`)
-
-1. Open your terminal and navigate to `Server/`:
-   ```bash
-   cd Server
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Create a `.env` file in the `Server/` directory:
-   ```env
-   PORT=8080
-   MONGO_URI=mongodb://localhost:27017/personal_finance
-   JWT_SECRET=your_super_secret_jwt_key
-   GEMINI_API_KEY=your_gemini_api_key_from_google_ai_studio
-   ```
-4. Start the backend server:
-   ```bash
-   npm start
-   ```
-   *The backend server will run on `http://localhost:8080`.*
-
----
-
-### 2. Frontend Setup (`Client`)
-
-1. Open a second terminal and navigate to `Client/`:
-   ```bash
-   cd Client
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Create a `.env` file in the `Client/` directory:
-   ```env
-   VITE_API_URL=http://localhost:8080/api
-   ```
-4. Start the Vite development server:
-   ```bash
-   npm run dev
-   ```
-   *The client will start on `http://localhost:5173`.*
-
----
-
-## 🔌 API Route Reference
-
-| Module | Method | Endpoint | Description |
-| :--- | :--- | :--- | :--- |
-| **Auth** | `POST` | `/api/auth/register` | Register new user account |
-| **Auth** | `POST` | `/api/auth/login` | Authenticate user & issue JWT |
-| **Auth** | `GET` | `/api/auth/me` | Fetch authenticated user profile |
-| **Proactive AI** | `POST` | `/api/proactive/copilot/chat` | Query Gemini Copilot with generative tool actions |
-| **Proactive AI** | `POST` | `/api/proactive/copilot/execute-action`| Execute 1-click Copilot action |
-| **Proactive AI** | `GET` | `/api/proactive/safe-to-spend` | Fetch dynamic daily Safe-to-Spend allowance |
-| **Proactive AI** | `GET` | `/api/proactive/nudges` | Fetch active proactive intelligence nudges |
-| **Proactive AI** | `GET` | `/api/proactive/salary-distributor/preview`| Generate 50/30/20 salary distribution plan |
-| **Proactive AI** | `POST` | `/api/proactive/salary-distributor/execute`| Execute salary allocation |
-| **Proactive AI** | `GET` | `/api/proactive/subscriptions/audit` | Run zombie subscription & price-hike audit |
-| **Proactive AI** | `GET` | `/api/proactive/overdraft-shield/forecast`| Run 14-day overdraft forecast |
-| **Proactive AI** | `POST` | `/api/proactive/overdraft-shield/rebalance`| Execute 1-click auto-rebalance |
-| **Proactive AI** | `POST` | `/api/proactive/what-if/simulate` | Run predictive multi-year What-If simulation |
-| **Transactions** | `GET` | `/api/transactions` | Fetch paginated & filtered transactions |
-| **Transactions** | `POST` | `/api/transactions` | Create transaction & check budget guardrails |
-| **Transactions** | `POST` | `/api/transactions/scan-receipt` | Gemini Multimodal Vision OCR receipt scanner |
-| **Transactions** | `POST` | `/api/transactions/preview-csv` | Parse bank statement CSV & auto-categorize |
-| **Transactions** | `POST` | `/api/transactions/ingest-csv` | Bulk ingest statement transactions |
-| **Accounts** | `GET` | `/api/accounts` | Fetch all accounts & credit cards |
-| **Budgets** | `GET` | `/api/budgets` | Fetch active budgets & guardrails |
-| **Investments** | `GET` | `/api/investments` | Fetch investment portfolio & gains |
-| **Loans** | `GET` | `/api/loans` | Fetch loans, EMIs & payment schedules |
-| **Goals** | `GET` | `/api/goals` | Fetch financial goals & progress |
-| **Lending** | `GET` | `/api/lending` | Fetch P2P lending/borrowing records |
-| **Taxes** | `GET` | `/api/taxes/:year` | Fetch tax computation & regime comparison |
-| **Net Worth** | `GET` | `/api/networth/current` | Calculate real-time Net Worth |
-| **Reports** | `GET` | `/api/reports/summary` | Fetch period income/expense summary |
-| **Reports** | `GET` | `/api/reports/export/csv` | Download transaction CSV export |
-
----
-
-## ⚡ Performance Optimizations & Latency Benchmarks
-
-Capise is built with a heavy focus on performance, achieving sub-200ms API latency across all endpoints:
-
-```
-=== MEASURING API LATENCY (LIVE BENCHMARK) ===
-- Safe-to-Spend Daily Allowance      : ~38ms - 42ms
-- Overdraft Shield 14-Day Forecast   : Cold = 196ms | Warm (Cached) = 41ms (🚀 79% faster)
-- Subscription Clean-Up Audit        : Cold = 239ms | Warm (Cached) = 200ms (🚀 16% faster)
-- Live Accounts & Balances           : ~80ms
-- All Transactions (Populated)       : ~198ms
-- Categories                         : ~75ms
-- Budgets & Guardrails               : ~113ms
-
-🎉 ALL ENDPOINTS OPERATING AT SUB-200MS LATENCY!
+### 1. Clone & Setup Repository
+```bash
+git clone https://github.com/HarshalRajendraPatil/Personal-Finance.git
+cd Personal-Finance
 ```
 
-### Key Architectural Optimizations:
-1. **⚡ In-Memory High-Speed TTL Cache (`Server/utils/cache.js`)**: Caches heavy calculations with automatic per-user invalidation on transaction updates.
-2. **⚡ Mongoose `.lean()` Document-Free Queries**: Bypasses Mongoose change-tracking overhead on read endpoints, saving up to 40% CPU/memory.
-3. **⚡ In-Flight HTTP Request Deduplication (`Client/src/services/api.js`)**: Prevents duplicate concurrent requests across mounting React components.
-4. **⚡ Granular Rollup Code Splitting (`vite.config.js`)**: Dedicated chunks for React, Redux, MUI Charts, and Utilities for maximum browser caching.
-5. **⚡ Full Response Compression**: Gzip/Brotli middleware enabled across Express routes.
+### 2. Configure Backend Server
+```bash
+cd Server
+npm install
+```
+
+Create `.env` file in the `Server/` directory:
+```env
+PORT=8080
+NODE_ENV=development
+MONGO_URI=mongodb://localhost:27017/personal-finance
+JWT_SECRET=your_super_secret_jwt_key_here
+GEMINI_API_KEY=your_gemini_api_key_here
+```
+
+Start the backend server:
+```bash
+npm start
+# Server starts on http://localhost:8080
+```
+
+### 3. Configure Frontend Client
+Open a new terminal window:
+```bash
+cd Client
+npm install
+```
+
+Create `.env` file in the `Client/` directory:
+```env
+VITE_API_BASE_URL=http://localhost:8080/api
+```
+
+Start the Vite development server:
+```bash
+npm run dev
+# Web application starts on http://localhost:5173
+```
+
+---
+
+## 🔒 Security & Architecture Standards
+
+1. **State Isolation**: User transactions, accounts, investments, and budgets are partitioned strictly by `user: req.user._id` across all database queries.
+2. **Payload Protection**: Express body parser configured with an explicit `50mb` limit to accommodate high-resolution receipts and lengthy bank statements without memory overflow crashes.
+3. **LLM Grounding Against Hallucinations**: Gemini AI prompts are constructed using pre-computed, verified ground-truth financial figures directly from MongoDB, preventing the model from hallucinating account balances or net worth figures.
+4. **Resilient Multi-Model Fallback Chain**: If the primary Gemini model encounters rate limits or service unavailability, requests automatically failover to secondary lightweight models with automatic backoff retries.
+5. **Non-Expense Capital Flow Accounting**: Goal savings and investment capital deployments are accounted for as transfers (`type: 'Transfer'`), keeping consumer expense charts, tax deductions, and savings rates unpolluted.
 
 ---
 
 ## 📄 License
-This project is licensed under the **ISC License**.
+This project is open-source and available under the **ISC License**.

@@ -68,17 +68,18 @@ export const processScheduledSIPs = async (targetUserId = null) => {
             });
           }
 
-          // Create Transaction
+          // Create Transaction (SIP is a Transfer from bank account to investment holdings)
           const transaction = new Transaction({
             user: inv.user,
-            type: 'Expense',
+            type: 'Transfer',
             amount,
             date: inv.nextSipDate || new Date(),
             account: account._id,
-            category: category._id,
-            merchant: inv.platform || inv.name,
-            notes: `[Auto-SIP] Installment for ${inv.name}`,
-            tags: ['investment', 'sip', 'auto-posted'],
+            toAccount: null,
+            category: null,
+            merchant: inv.name,
+            notes: `[Auto-SIP] Installment for ${inv.name} via ${inv.platform || 'Direct'}`,
+            tags: ['investment', 'sip', 'transfer', 'auto-posted'],
           });
           await transaction.save();
           transactionId = transaction._id;
@@ -113,48 +114,296 @@ export const processScheduledSIPs = async (targetUserId = null) => {
   }
 };
 
-// 2. Fetch Live Price/NAV for automated revaluation
+// 2. Fetch Live Price/NAV for automated revaluation (Supports ISIN codes, Stocks, AMFI Mutual Funds, & Crypto)
 export const fetchLiveAssetPrice = async (symbol, type) => {
-  if (!symbol) return null;
+  if (!symbol || typeof symbol !== 'string') {
+    return { success: false, error: 'No symbol or ISIN code provided.' };
+  }
   const cleanSymbol = symbol.trim();
+  const upperSymbol = cleanSymbol.toUpperCase();
 
   try {
-    // A. Indian Mutual Funds via AMFI API (6-digit numeric scheme code, e.g. 120503)
+    // -------------------------------------------------------------
+    // A. ISIN Code Detection & Live Stock Resolution (e.g. INE002A01018, INE009A01021)
+    // -------------------------------------------------------------
+    const isISIN = /^[A-Z]{2}[A-Z0-9]{9}\d$/i.test(upperSymbol);
+    if (isISIN) {
+      try {
+        const searchUrl = `https://query2.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(upperSymbol)}`;
+        const searchRes = await fetch(searchUrl, {
+          headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)' },
+        });
+
+        if (!searchRes.ok) {
+          return {
+            success: false,
+            error: `ISIN lookup service returned HTTP ${searchRes.status}. Could not resolve "${upperSymbol}".`,
+          };
+        }
+
+        const searchData = await searchRes.json();
+        const quotes = (searchData?.quotes || []).filter(
+          (q) => q.quoteType === 'EQUITY' || q.quoteType === 'ETF' || q.quoteType === 'MUTUALFUND'
+        );
+
+        if (!quotes.length) {
+          return {
+            success: false,
+            error: `Invalid ISIN code: No listed security found matching "${upperSymbol}". Please verify the ISIN.`,
+          };
+        }
+
+        // Prefer NSE (.NS), then BSE (.BO), or primary quote
+        const preferredQuote =
+          quotes.find((q) => q.symbol?.endsWith('.NS')) ||
+          quotes.find((q) => q.symbol?.endsWith('.BO')) ||
+          quotes[0];
+
+        const ticker = preferredQuote.symbol;
+        const resolvedName = preferredQuote.shortname || preferredQuote.longname || ticker;
+
+        // Fetch live quote from Yahoo Chart API
+        const chartUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=1d`;
+        const chartRes = await fetch(chartUrl, {
+          headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)' },
+        });
+
+        if (!chartRes.ok) {
+          return {
+            success: false,
+            error: `Could not fetch live price for ISIN "${upperSymbol}" (Resolved to ticker ${ticker}, HTTP ${chartRes.status}).`,
+          };
+        }
+
+        const chartData = await chartRes.json();
+        const meta = chartData?.chart?.result?.[0]?.meta;
+        if (!meta || meta.regularMarketPrice == null) {
+          return {
+            success: false,
+            error: `Live price is currently unavailable for ISIN "${upperSymbol}" (${ticker}). Market may be closed.`,
+          };
+        }
+
+        return {
+          success: true,
+          price: parseFloat(meta.regularMarketPrice.toFixed(2)),
+          currency: meta.currency || 'INR',
+          symbol: ticker,
+          isin: upperSymbol,
+          assetName: meta.shortName || resolvedName,
+          source: `NSE/BSE (ISIN: ${upperSymbol})`,
+        };
+      } catch (err) {
+        return {
+          success: false,
+          error: `Error resolving ISIN "${upperSymbol}": ${err.message}`,
+        };
+      }
+    }
+
+    // -------------------------------------------------------------
+    // B. Indian Mutual Funds via AMFI API (5-7 digit numeric scheme code, e.g. 120503, 122639)
+    // -------------------------------------------------------------
     if (type === 'Mutual Fund' || /^\d{5,7}$/.test(cleanSymbol)) {
-      const res = await fetch(`https://api.mfapi.in/mf/${cleanSymbol}/latest`);
-      if (res.ok) {
-        const json = await res.json();
-        if (json?.status === 'SUCCESS' && json?.data?.[0]?.nav) {
+      try {
+        const res = await fetch(`https://api.mfapi.in/mf/${cleanSymbol}/latest`);
+        if (res.ok) {
+          const json = await res.json();
+          if (json?.status === 'SUCCESS' && json?.data?.[0]?.nav) {
+            return {
+              success: true,
+              price: parseFloat(json.data[0].nav),
+              date: json.data[0].date,
+              source: 'AMFI (MFAPI)',
+              assetName: json.meta?.scheme_name,
+            };
+          }
+        }
+        if (/^\d{5,7}$/.test(cleanSymbol)) {
           return {
-            price: parseFloat(json.data[0].nav),
-            date: json.data[0].date,
-            source: 'AMFI (MFAPI)',
-            schemeName: json.meta?.scheme_name,
+            success: false,
+            error: `Invalid AMFI Scheme Code: Could not find active mutual fund matching code "${cleanSymbol}".`,
+          };
+        }
+      } catch (e) {
+        if (/^\d{5,7}$/.test(cleanSymbol)) {
+          return {
+            success: false,
+            error: `Failed to query AMFI API for scheme code "${cleanSymbol}": ${e.message}`,
           };
         }
       }
     }
 
-    // B. Crypto via CoinGecko Public API
-    if (type === 'Crypto' || ['bitcoin', 'ethereum', 'solana', 'cardano', 'ripple', 'dogecoin', 'matic-network'].includes(cleanSymbol.toLowerCase())) {
-      const coinId = cleanSymbol.toLowerCase();
-      const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${coinId}&vs_currencies=inr`);
-      if (res.ok) {
-        const json = await res.json();
-        if (json?.[coinId]?.inr) {
-          return {
-            price: parseFloat(json[coinId].inr),
-            date: new Date().toISOString(),
-            source: 'CoinGecko',
-          };
+    // -------------------------------------------------------------
+    // C. Crypto via CoinGecko Public API
+    // -------------------------------------------------------------
+    const CRYPTO_MAP = {
+      eth: 'ethereum',
+      btc: 'bitcoin',
+      sol: 'solana',
+      doge: 'dogecoin',
+      ada: 'cardano',
+      xrp: 'ripple',
+      matic: 'matic-network',
+      dot: 'polkadot',
+      shib: 'shiba-inu',
+      avax: 'avalanche-2',
+      link: 'chainlink',
+    };
+    const lowerSymbol = cleanSymbol.toLowerCase();
+    const isCrypto =
+      type === 'Crypto' ||
+      CRYPTO_MAP[lowerSymbol] ||
+      ['bitcoin', 'ethereum', 'solana', 'cardano', 'ripple', 'dogecoin', 'matic-network'].includes(lowerSymbol);
+
+    if (isCrypto) {
+      const coinId = CRYPTO_MAP[lowerSymbol] || lowerSymbol;
+      try {
+        const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(coinId)}&vs_currencies=inr`);
+        if (res.ok) {
+          const json = await res.json();
+          if (json?.[coinId]?.inr) {
+            return {
+              success: true,
+              price: parseFloat(json[coinId].inr),
+              date: new Date().toISOString(),
+              source: 'CoinGecko',
+              assetName: coinId.toUpperCase(),
+            };
+          }
         }
+        return {
+          success: false,
+          error: `Invalid Crypto ID: Could not fetch price for "${cleanSymbol}". Use valid CoinGecko IDs like "bitcoin", "ethereum", "solana".`,
+        };
+      } catch (e) {
+        return {
+          success: false,
+          error: `CoinGecko API error for crypto "${cleanSymbol}": ${e.message}`,
+        };
       }
     }
 
-    return null;
+    // -------------------------------------------------------------
+    // D. Non-Market Assets Check (Fixed Deposit, PPF, EPF, NPS)
+    // -------------------------------------------------------------
+    if (['Fixed Deposit', 'PPF', 'EPF', 'NPS'].includes(type)) {
+      return {
+        success: false,
+        error: `${type} is an interest-bearing statutory or bank deposit and does not trade on live stock exchanges. Update its value manually or through interest accrual.`,
+        isNonMarketAsset: true,
+      };
+    }
+
+    // -------------------------------------------------------------
+    // E. Stock, Commodity (Gold/Silver), ETF & Bond Ticker Lookup
+    // -------------------------------------------------------------
+    const COMMODITY_BOND_MAP = {
+      'GOLDBEES': 'GOLDBEES.NS',
+      'GOLD': 'GOLDBEES.NS',
+      'HDFCGOLD': 'HDFCGOLD.NS',
+      'SILVERBEES': 'SILVERBEES.NS',
+      'SILVER': 'SILVERBEES.NS',
+      'HDFCSILVER': 'HDFCSILVER.NS',
+      'BHARATBOND': 'EBBETF0430.NS',
+      'GILT': 'GILT5YBEES.NS',
+      'GSEC': 'GILT5YBEES.NS',
+      'LIQUIDBEES': 'LIQUIDBEES.NS',
+      'NIFTYBEES': 'NIFTYBEES.NS',
+      'MON100': 'MON100.NS',
+    };
+
+    let ticker = COMMODITY_BOND_MAP[upperSymbol] || upperSymbol;
+
+    // If type is Silver and ticker is without suffix, try SILVERBEES.NS
+    if (type === 'Silver' && ticker === 'SILVER') {
+      ticker = 'SILVERBEES.NS';
+    }
+
+    // If Indian equity/commodity without exchange suffix, test .NS
+    if (!ticker.includes('.') && !ticker.includes('^')) {
+      try {
+        const testRes = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}.NS?interval=1d&range=1d`, {
+          headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)' },
+        });
+        if (testRes.ok) {
+          ticker = `${ticker}.NS`;
+        }
+      } catch (e) {}
+    }
+
+    const chartUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=1d`;
+    const chartRes = await fetch(chartUrl, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)' },
+    });
+
+    if (chartRes.ok) {
+      const chartData = await chartRes.json();
+      const meta = chartData?.chart?.result?.[0]?.meta;
+      if (meta && meta.regularMarketPrice != null) {
+        return {
+          success: true,
+          price: parseFloat(meta.regularMarketPrice.toFixed(2)),
+          currency: meta.currency || 'INR',
+          symbol: ticker,
+          assetName: meta.shortName || ticker,
+          source: `Yahoo Finance (${ticker})`,
+        };
+      }
+    }
+
+    // If direct ticker failed, try searching by query keyword
+    try {
+      const sUrl = `https://query2.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(cleanSymbol)}`;
+      const sRes = await fetch(sUrl, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)' },
+      });
+      if (sRes.ok) {
+        const sData = await sRes.json();
+        const quotes = (sData?.quotes || []).filter(
+          (q) => q.quoteType === 'EQUITY' || q.quoteType === 'ETF' || q.quoteType === 'MUTUALFUND'
+        );
+        if (quotes.length > 0) {
+          const preferredQuote =
+            quotes.find((q) => q.symbol?.endsWith('.NS')) ||
+            quotes.find((q) => q.symbol?.endsWith('.BO')) ||
+            quotes[0];
+
+          const matchedTicker = preferredQuote.symbol;
+          const matchedChartUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(matchedTicker)}?interval=1d&range=1d`;
+          const matchedChartRes = await fetch(matchedChartUrl, {
+            headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)' },
+          });
+
+          if (matchedChartRes.ok) {
+            const mData = await matchedChartRes.json();
+            const meta = mData?.chart?.result?.[0]?.meta;
+            if (meta && meta.regularMarketPrice != null) {
+              return {
+                success: true,
+                price: parseFloat(meta.regularMarketPrice.toFixed(2)),
+                currency: meta.currency || 'INR',
+                symbol: matchedTicker,
+                assetName: meta.shortName || preferredQuote.shortname || matchedTicker,
+                source: `Yahoo Finance (${matchedTicker})`,
+              };
+            }
+          }
+        }
+      }
+    } catch (e) {}
+
+    return {
+      success: false,
+      error: `Could not fetch live price for "${cleanSymbol}". The code/symbol was invalid or market data is unavailable.`,
+    };
   } catch (err) {
     console.warn(`[Asset Revaluation] Failed to fetch price for ${symbol}:`, err.message);
-    return null;
+    return {
+      success: false,
+      error: `Failed to fetch price for "${cleanSymbol}": ${err.message}`,
+    };
   }
 };
 
@@ -170,10 +419,19 @@ export const syncInvestmentPrices = async (targetUserId = null) => {
 
     let updatedCount = 0;
     const results = [];
+    const failures = [];
 
     for (const inv of syncableInvestments) {
       const assetData = await fetchLiveAssetPrice(inv.symbol, inv.type);
-      if (!assetData || !assetData.price) continue;
+      if (!assetData || !assetData.success || !assetData.price) {
+        failures.push({
+          id: inv._id,
+          name: inv.name,
+          symbol: inv.symbol,
+          error: assetData?.error || `Could not track price for "${inv.symbol}". The code/symbol was invalid.`,
+        });
+        continue;
+      }
 
       const latestPrice = assetData.price;
       let newCurrentValue = inv.currentValue;
@@ -214,7 +472,12 @@ export const syncInvestmentPrices = async (targetUserId = null) => {
       console.log(`[CRON] Revalued ${inv.name} (${inv.symbol}): ₹${oldValue} -> ₹${newCurrentValue}`);
     }
 
-    return { success: true, updatedCount, results };
+    return {
+      success: true,
+      updatedCount,
+      results,
+      failures,
+    };
   } catch (error) {
     console.error('[CRON] Error during portfolio revaluation:', error);
     return { success: false, error: error.message };

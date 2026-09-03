@@ -211,28 +211,34 @@ export const executeCopilotAction = async ({ userId, actionType, payload }) => {
         goal.isCompleted = true;
         goal.completedAt = new Date();
       }
-      goal.contributions.push({
-        amount: numAmount,
-        date: new Date(),
-        note: 'Contributed via Capise AI Copilot',
-      });
-      await goal.save();
 
-      // Deduct balance from funding account
+      let createdTransaction = null;
+      // Deduct balance from funding account and book Transfer transaction
       if (account) {
         account.currentBalance -= numAmount;
         await account.save();
 
-        await Transaction.create({
+        createdTransaction = await Transaction.create({
           user: userId,
-          type: 'Expense',
+          type: 'Transfer', // Goal contribution is a transfer (savings), not an expense
           amount: numAmount,
           date: new Date(),
           account: account._id,
+          toAccount: null,
+          category: null,
           merchant: `Goal Savings: ${goal.name}`,
-          notes: 'Goal auto-contribution via Capise AI Copilot',
+          notes: payload.note || `Goal contribution to "${goal.name}" via Capise AI Copilot`,
+          tags: ['goal', 'contribution'],
         });
       }
+
+      goal.contributions.push({
+        amount: numAmount,
+        date: new Date(),
+        note: payload.note || 'Contributed via Capise AI Copilot',
+        transactionId: createdTransaction ? createdTransaction._id : null,
+      });
+      await goal.save();
 
       return {
         success: true,

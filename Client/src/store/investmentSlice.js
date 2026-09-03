@@ -30,9 +30,22 @@ export const syncInvestmentPrice = createAsyncThunk('investments/syncPrice', asy
 
 const investmentSlice = createSlice({
   name: 'investments',
-  initialState: { investments: [], isLoading: false, isSyncing: false, error: null, syncMessage: null },
+  initialState: {
+    investments: [],
+    isLoading: false,
+    isSyncing: false,
+    error: null,
+    syncMessage: null,
+    syncError: null,
+  },
   reducers: {
-    clearSyncMessage: (s) => { s.syncMessage = null; },
+    clearSyncMessage: (s) => {
+      s.syncMessage = null;
+      s.syncError = null;
+    },
+    clearSyncError: (s) => {
+      s.syncError = null;
+    },
   },
   extraReducers: (builder) => {
     handle(builder, fetchInvestments);
@@ -45,20 +58,35 @@ const investmentSlice = createSlice({
     builder.addCase(deleteInvestment.fulfilled, (s, a) => { s.isLoading = false; s.investments = s.investments.filter(i => i._id !== a.payload); });
     handle(builder, updateCurrentValue);
     builder.addCase(updateCurrentValue.fulfilled, (s, a) => { s.isLoading = false; s.investments = s.investments.map(i => i._id === a.payload._id ? a.payload : i); });
-    builder.addCase(syncAllInvestments.pending, (s) => { s.isSyncing = true; s.syncMessage = null; });
+
+    builder.addCase(syncAllInvestments.pending, (s) => {
+      s.isSyncing = true;
+      s.syncMessage = null;
+      s.syncError = null;
+    });
     builder.addCase(syncAllInvestments.fulfilled, (s, a) => {
       s.isSyncing = false;
       s.investments = a.payload.investments || s.investments;
       s.syncMessage = a.payload.message;
+      s.syncError = a.payload.failureMessage || null;
     });
-    builder.addCase(syncAllInvestments.rejected, (s, a) => { s.isSyncing = false; s.error = a.payload; });
+    builder.addCase(syncAllInvestments.rejected, (s, a) => {
+      s.isSyncing = false;
+      s.syncError = a.payload || 'Failed to synchronize live prices';
+    });
+
     builder.addCase(syncInvestmentPrice.fulfilled, (s, a) => {
       if (a.payload.investment) {
         s.investments = s.investments.map(i => i._id === a.payload.investment._id ? a.payload.investment : i);
       }
       s.syncMessage = a.payload.message;
+      s.syncError = null;
+    });
+    builder.addCase(syncInvestmentPrice.rejected, (s, a) => {
+      s.syncError = a.payload || 'Could not track live price. Invalid code/symbol or market data unavailable.';
+      s.syncMessage = null;
     });
   },
 });
-export const { clearSyncMessage } = investmentSlice.actions;
+export const { clearSyncMessage, clearSyncError } = investmentSlice.actions;
 export default investmentSlice.reducer;

@@ -14,6 +14,7 @@ import { fetchAccounts } from '../store/accountSlice';
 import { fetchInvestments } from '../store/investmentSlice';
 import { fetchGoals } from '../store/goalSlice';
 import { fetchLendings } from '../store/lendingSlice';
+import { fetchTransactions } from '../store/transactionSlice';
 import {
   Sparkles,
   Send,
@@ -37,175 +38,356 @@ import {
 } from 'lucide-react';
 
 /**
- * Modern Markdown Renderer Component for AI Chat
- * Cleanly renders markdown tables, headers, lists, blockquotes, and bold text.
+ * Helper to parse inline markdown: bold (**text**), italics (*text*), inline code (`code`), links ([text](url)), and strikethrough (~~text~~)
  */
-const FormattedMessage = ({ text }) => {
+const InlineText = ({ text }) => {
   if (!text) return null;
-
-  // Split into paragraphs / blocks
-  const blocks = text.split(/\n\n+/);
-
-  return (
-    <div className="space-y-2.5 text-xs sm:text-sm text-gray-800 leading-relaxed">
-      {blocks.map((block, bIdx) => {
-        const trimmed = block.trim();
-
-        // 1. Table Detection
-        if (trimmed.includes('|') && trimmed.includes('\n')) {
-          const lines = trimmed.split('\n').filter((l) => l.trim().startsWith('|') && l.trim().endsWith('|'));
-          if (lines.length >= 2) {
-            const headerLine = lines[0];
-            const dataLines = lines.slice(2); // Skip header separator line (|:---|:---|)
-
-            const headers = headerLine
-              .split('|')
-              .map((c) => c.trim())
-              .filter((c) => c.length > 0);
-
-            return (
-              <div key={bIdx} className="overflow-x-auto my-2 rounded-xl border border-gray-200 shadow-2xs">
-                <table className="min-w-full divide-y divide-gray-200 text-xs text-left">
-                  <thead className="bg-indigo-50/70 text-indigo-950 font-bold uppercase tracking-wider text-[10px]">
-                    <tr>
-                      {headers.map((h, hIdx) => (
-                        <th key={hIdx} className="px-3 py-2 whitespace-nowrap">
-                          {parseInline(h)}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100 bg-white">
-                    {dataLines.map((rowLine, rIdx) => {
-                      const cells = rowLine
-                        .split('|')
-                        .map((c) => c.trim())
-                        .filter((c) => c.length > 0);
-                      return (
-                        <tr key={rIdx} className="hover:bg-gray-50/80 transition-colors">
-                          {cells.map((cell, cIdx) => (
-                            <td key={cIdx} className="px-3 py-2 whitespace-nowrap font-medium text-gray-700">
-                              {parseInline(cell)}
-                            </td>
-                          ))}
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            );
-          }
-        }
-
-        // 2. Headers
-        if (trimmed.startsWith('### ')) {
-          return (
-            <h4 key={bIdx} className="text-sm font-bold text-indigo-950 flex items-center gap-1.5 mt-2">
-              {parseInline(trimmed.replace(/^###\s+/, ''))}
-            </h4>
-          );
-        }
-        if (trimmed.startsWith('## ')) {
-          return (
-            <h3 key={bIdx} className="text-base font-bold text-gray-900 border-b border-gray-100 pb-1 mt-3">
-              {parseInline(trimmed.replace(/^##\s+/, ''))}
-            </h3>
-          );
-        }
-        if (trimmed.startsWith('# ')) {
-          return (
-            <h2 key={bIdx} className="text-base font-extrabold text-gray-900 mt-2">
-              {parseInline(trimmed.replace(/^#\s+/, ''))}
-            </h2>
-          );
-        }
-
-        // 3. Blockquotes / Callout
-        if (trimmed.startsWith('> ')) {
-          return (
-            <div
-              key={bIdx}
-              className="p-3 bg-indigo-50/70 border-l-4 border-indigo-600 rounded-r-xl text-xs text-indigo-950 font-medium my-2"
-            >
-              {parseInline(trimmed.replace(/^>\s+/, ''))}
-            </div>
-          );
-        }
-
-        // 4. Bullet Lists
-        if (trimmed.split('\n').some((l) => l.trim().startsWith('* ') || l.trim().startsWith('- '))) {
-          const items = trimmed.split('\n').map((l) => l.trim().replace(/^[\*\-]\s+/, ''));
-          return (
-            <ul key={bIdx} className="space-y-1 my-1.5 pl-1">
-              {items.map((item, iIdx) => (
-                <li key={iIdx} className="flex items-start gap-2 text-xs sm:text-sm">
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 mt-1.5 shrink-0" />
-                  <span className="flex-1">{parseInline(item)}</span>
-                </li>
-              ))}
-            </ul>
-          );
-        }
-
-        // 5. Default Paragraph with Line breaks
-        const lines = trimmed.split('\n');
-        return (
-          <p key={bIdx} className="text-xs sm:text-sm leading-relaxed">
-            {lines.map((line, lIdx) => (
-              <span key={lIdx}>
-                {parseInline(line)}
-                {lIdx < lines.length - 1 && <br />}
-              </span>
-            ))}
-          </p>
-        );
-      })}
-    </div>
-  );
-};
-
-// Helper to parse bold (**text**), italics (*text*), code (`text`), and rupee symbols
-const parseInline = (str) => {
-  if (!str) return '';
-
+  const regex = /(\[([^\]]+)\]\(([^)]+)\)|\*\*([^*]+)\*\*|`([^`]+)`|\*([^*]+)\*|~~([^~]+)~~)/g;
   const parts = [];
-  const regex = /(\*\*[^*]+\*\*|`[^`]+`|\*[^*]+\*)/g;
-  let match;
   let lastIdx = 0;
+  let match;
 
-  while ((match = regex.exec(str)) !== null) {
+  while ((match = regex.exec(text)) !== null) {
     if (match.index > lastIdx) {
-      parts.push(str.substring(lastIdx, match.index));
+      parts.push(text.substring(lastIdx, match.index));
     }
-    const token = match[0];
-    if (token.startsWith('**') && token.endsWith('**')) {
+
+    if (match[2] && match[3]) {
+      // Link [text](url)
+      parts.push(
+        <a
+          key={match.index}
+          href={match[3]}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-indigo-600 hover:text-indigo-800 underline font-medium"
+        >
+          {match[2]}
+        </a>
+      );
+    } else if (match[4]) {
+      // Bold **text**
       parts.push(
         <strong key={match.index} className="font-bold text-gray-950">
-          {token.slice(2, -2)}
+          {match[4]}
         </strong>
       );
-    } else if (token.startsWith('`') && token.endsWith('`')) {
+    } else if (match[5]) {
+      // Code `text`
       parts.push(
-        <code key={match.index} className="px-1.5 py-0.5 bg-gray-100 text-indigo-700 rounded font-mono text-[11px]">
-          {token.slice(1, -1)}
+        <code key={match.index} className="px-1.5 py-0.5 bg-gray-100 border border-gray-200 text-indigo-700 rounded font-mono text-[11px]">
+          {match[5]}
         </code>
       );
-    } else if (token.startsWith('*') && token.endsWith('*')) {
+    } else if (match[6]) {
+      // Italic *text*
       parts.push(
         <em key={match.index} className="italic text-gray-700">
-          {token.slice(1, -1)}
+          {match[6]}
         </em>
+      );
+    } else if (match[7]) {
+      // Strikethrough ~~text~~
+      parts.push(
+        <del key={match.index} className="line-through text-gray-400">
+          {match[7]}
+        </del>
       );
     }
     lastIdx = regex.lastIndex;
   }
 
-  if (lastIdx < str.length) {
-    parts.push(str.substring(lastIdx));
+  if (lastIdx < text.length) {
+    parts.push(text.substring(lastIdx));
   }
 
-  return parts.length > 0 ? parts : str;
+  return parts.length > 0 ? parts : text;
+};
+
+/**
+ * Parses raw markdown text into structured semantic blocks:
+ * Headings, Code Blocks, Tables, Bullet Lists, Numbered Lists, Blockquotes, Horizontal Rules, and Paragraphs.
+ */
+const parseMarkdownBlocks = (text) => {
+  if (!text) return [];
+  const lines = text.split('\n');
+  const blocks = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i];
+    const trimmed = line.trim();
+
+    // 1. Skip blank lines
+    if (!trimmed) {
+      i++;
+      continue;
+    }
+
+    // 2. Code Block (```lang ... ```)
+    if (trimmed.startsWith('```')) {
+      const lang = trimmed.slice(3).trim();
+      const codeLines = [];
+      i++;
+      while (i < lines.length && !lines[i].trim().startsWith('```')) {
+        codeLines.push(lines[i]);
+        i++;
+      }
+      i++; // Skip closing ```
+      blocks.push({ type: 'code', language: lang, content: codeLines.join('\n') });
+      continue;
+    }
+
+    // 3. Horizontal Rule (---, ***, ___)
+    if (/^(\-{3,}|\*{3,}|_{3,})$/.test(trimmed)) {
+      blocks.push({ type: 'hr' });
+      i++;
+      continue;
+    }
+
+    // 4. Headings (# H1, ## H2, ### H3, #### H4, ##### H5)
+    if (trimmed.startsWith('#')) {
+      const match = trimmed.match(/^(#{1,6})\s+(.*)$/);
+      if (match) {
+        blocks.push({ type: 'heading', level: match[1].length, text: match[2] });
+        i++;
+        continue;
+      }
+    }
+
+    // 5. Blockquote (> ...)
+    if (trimmed.startsWith('>')) {
+      const quoteLines = [];
+      while (i < lines.length && lines[i].trim().startsWith('>')) {
+        quoteLines.push(lines[i].trim().replace(/^>\s?/, ''));
+        i++;
+      }
+      blocks.push({ type: 'blockquote', text: quoteLines.join('\n') });
+      continue;
+    }
+
+    // 6. Markdown Table (header + separator |:---|:---| + data rows)
+    if (
+      trimmed.includes('|') &&
+      i + 1 < lines.length &&
+      lines[i + 1].trim().includes('|') &&
+      /^[|\s:\-]+$/.test(lines[i + 1].trim())
+    ) {
+      const tableLines = [];
+      while (i < lines.length && lines[i].trim().includes('|') && lines[i].trim().length > 0) {
+        tableLines.push(lines[i].trim());
+        i++;
+      }
+      if (tableLines.length >= 2) {
+        const parseRow = (r) => {
+          const cells = r.split('|').map((c) => c.trim());
+          if (cells[0] === '') cells.shift();
+          if (cells[cells.length - 1] === '') cells.pop();
+          return cells;
+        };
+
+        const headers = parseRow(tableLines[0]);
+        const rows = tableLines.slice(2).map(parseRow);
+        blocks.push({ type: 'table', headers, rows });
+        continue;
+      }
+    }
+
+    // 7. Bullet List (- item, * item, • item)
+    if (/^[-*•]\s+/.test(trimmed)) {
+      const items = [];
+      while (i < lines.length && /^[-*•]\s+/.test(lines[i].trim())) {
+        items.push(lines[i].trim().replace(/^[-*•]\s+/, ''));
+        i++;
+      }
+      blocks.push({ type: 'bullet_list', items });
+      continue;
+    }
+
+    // 8. Numbered List (1. item, 2. item)
+    if (/^\d+\.\s+/.test(trimmed)) {
+      const items = [];
+      while (i < lines.length && /^\d+\.\s+/.test(lines[i].trim())) {
+        const itemMatch = lines[i].trim().match(/^\d+\.\s+(.*)$/);
+        items.push(itemMatch ? itemMatch[1] : lines[i].trim());
+        i++;
+      }
+      blocks.push({ type: 'numbered_list', items });
+      continue;
+    }
+
+    // 9. Standard Paragraph (consume continuous text until next block)
+    const paraLines = [];
+    while (
+      i < lines.length &&
+      lines[i].trim().length > 0 &&
+      !lines[i].trim().startsWith('#') &&
+      !lines[i].trim().startsWith('```') &&
+      !/^(\-{3,}|\*{3,}|_{3,})$/.test(lines[i].trim()) &&
+      !lines[i].trim().startsWith('>') &&
+      !/^[-*•]\s+/.test(lines[i].trim()) &&
+      !/^\d+\.\s+/.test(lines[i].trim()) &&
+      !(lines[i].trim().includes('|') && i + 1 < lines.length && /^[|\s:\-]+$/.test(lines[i + 1].trim()))
+    ) {
+      paraLines.push(lines[i].trim());
+      i++;
+    }
+    if (paraLines.length > 0) {
+      blocks.push({ type: 'paragraph', text: paraLines.join('\n') });
+    }
+  }
+
+  return blocks;
+};
+
+/**
+ * Modern, High-Performance Markdown Renderer Component for AI Chat
+ * Cleanly renders markdown tables, headers, lists, blockquotes, code, and bold text.
+ */
+const FormattedMessage = ({ text }) => {
+  if (!text) return null;
+
+  const blocks = parseMarkdownBlocks(text);
+
+  return (
+    <div className="space-y-3 text-xs sm:text-sm text-gray-800 leading-relaxed overflow-hidden">
+      {blocks.map((block, bIdx) => {
+        switch (block.type) {
+          case 'heading': {
+            if (block.level === 1) {
+              return (
+                <h2 key={bIdx} className="text-base sm:text-lg font-extrabold text-gray-950 mt-3 mb-1.5 flex items-center gap-1.5">
+                  <InlineText text={block.text} />
+                </h2>
+              );
+            }
+            if (block.level === 2) {
+              return (
+                <h3 key={bIdx} className="text-sm sm:text-base font-bold text-gray-900 mt-3 mb-1 pb-1 border-b border-gray-100 flex items-center gap-1.5">
+                  <InlineText text={block.text} />
+                </h3>
+              );
+            }
+            if (block.level === 3) {
+              return (
+                <h4 key={bIdx} className="text-xs sm:text-sm font-bold text-indigo-950 mt-2.5 mb-1 flex items-center gap-1.5">
+                  <InlineText text={block.text} />
+                </h4>
+              );
+            }
+            return (
+              <h5 key={bIdx} className="text-xs font-bold text-gray-800 mt-2 mb-0.5 flex items-center gap-1.5">
+                <InlineText text={block.text} />
+              </h5>
+            );
+          }
+
+          case 'table': {
+            return (
+              <div key={bIdx} className="overflow-x-auto my-2.5 rounded-xl border border-gray-200/90 shadow-2xs bg-white">
+                <table className="min-w-full divide-y divide-gray-200 text-xs text-left">
+                  <thead className="bg-indigo-50/80 text-indigo-950 font-bold uppercase tracking-wider text-[10px]">
+                    <tr>
+                      {block.headers.map((h, hIdx) => (
+                        <th key={hIdx} className="px-3.5 py-2.5 whitespace-nowrap">
+                          <InlineText text={h} />
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 bg-white">
+                    {block.rows.map((row, rIdx) => (
+                      <tr key={rIdx} className="hover:bg-indigo-50/30 transition-colors">
+                        {row.map((cell, cIdx) => (
+                          <td key={cIdx} className="px-3.5 py-2 text-gray-700 whitespace-nowrap font-medium">
+                            <InlineText text={cell} />
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            );
+          }
+
+          case 'bullet_list': {
+            return (
+              <ul key={bIdx} className="space-y-1.5 my-2 pl-0.5">
+                {block.items.map((item, iIdx) => (
+                  <li key={iIdx} className="flex items-start gap-2 text-xs sm:text-sm text-gray-800">
+                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 mt-2 shrink-0" />
+                    <span className="flex-1 leading-relaxed">
+                      <InlineText text={item} />
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            );
+          }
+
+          case 'numbered_list': {
+            return (
+              <ol key={bIdx} className="space-y-2 my-2.5 pl-0.5">
+                {block.items.map((item, iIdx) => (
+                  <li key={iIdx} className="flex items-start gap-2.5 text-xs sm:text-sm text-gray-800">
+                    <span className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
+                      {iIdx + 1}
+                    </span>
+                    <span className="flex-1 leading-relaxed">
+                      <InlineText text={item} />
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            );
+          }
+
+          case 'blockquote': {
+            return (
+              <div key={bIdx} className="my-2 p-3 bg-indigo-50/70 border-l-4 border-indigo-600 rounded-r-xl text-xs text-indigo-950 font-medium leading-relaxed">
+                <InlineText text={block.text} />
+              </div>
+            );
+          }
+
+          case 'hr': {
+            return <hr key={bIdx} className="my-3.5 border-t border-gray-200/90" />;
+          }
+
+          case 'code': {
+            return (
+              <div key={bIdx} className="my-2.5 rounded-xl overflow-hidden bg-gray-900 border border-gray-800 shadow-xs">
+                {block.language && (
+                  <div className="px-3 py-1 bg-gray-800/80 text-gray-400 text-[10px] font-mono border-b border-gray-800 uppercase">
+                    {block.language}
+                  </div>
+                )}
+                <pre className="p-3 text-xs text-emerald-400 font-mono overflow-x-auto whitespace-pre">
+                  <code>{block.content}</code>
+                </pre>
+              </div>
+            );
+          }
+
+          case 'paragraph':
+          default: {
+            const lines = block.text.split('\n');
+            return (
+              <p key={bIdx} className="text-xs sm:text-sm text-gray-800 leading-relaxed my-1">
+                {lines.map((line, lIdx) => (
+                  <span key={lIdx}>
+                    <InlineText text={line} />
+                    {lIdx < lines.length - 1 && <br />}
+                  </span>
+                ))}
+              </p>
+            );
+          }
+        }
+      })}
+    </div>
+  );
 };
 
 /**
@@ -370,6 +552,7 @@ const AICopilotDrawer = ({ isOpen, onClose }) => {
       dispatch(fetchDashboardData());
       dispatch(fetchSafeToSpend());
       dispatch(fetchProactiveNudges());
+      dispatch(fetchTransactions());
     }
   };
 

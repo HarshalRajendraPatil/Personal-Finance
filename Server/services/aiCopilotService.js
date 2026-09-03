@@ -181,8 +181,8 @@ export const getLiveFinancialContext = async (userId, userMessage = '') => {
     availableCredit: a.creditLimit ? Math.max(0, a.creditLimit - Math.abs(a.currentBalance || 0)) : null,
   }));
 
-  // 7. Investments Breakdown
-  const investments = await Investment.find({ user: userId }).lean();
+  // 7. Investments Breakdown (Active Holdings Only)
+  const investments = await Investment.find({ user: userId, isActive: true }).lean();
   let totalInvestedAmount = 0;
   let totalCurrentValue = 0;
   const investmentTypeMap = {};
@@ -418,14 +418,17 @@ YOUR CORE PRINCIPLES & INSTRUCTIONS:
      - Total Income: ₹${context.lastMonth.totalIncome.toLocaleString('en-IN')}
      - Total Expense: ₹${context.lastMonth.totalExpense.toLocaleString('en-IN')}
      - Net Savings: ₹${context.lastMonth.netSavings.toLocaleString('en-IN')} (Savings Rate: ${context.lastMonth.savingsRate})
-     - Total Transactions: ${context.lastMonth.transactionCount}
-     - Provide the COMPLETE category breakdown and mention key notable transactions (e.g. largest expenses like ${context.lastMonth.largestExpenses.map(e => `${e.merchantOrDescription} ₹${e.amount.toLocaleString('en-IN')}`).join(', ')}).
-   - If the user asks about "this month", reference \`thisMonth\` (${context.thisMonth.periodLabel}).
-   - If the user asks for historical trends, reference \`sixMonthHistory\`.
-   - If the user asks about investments, reference \`investments\` (Total Invested: ₹${context.investments.totalInvested.toLocaleString('en-IN')}, Current Value: ₹${context.investments.totalCurrentValue.toLocaleString('en-IN')}, Return: ${context.investments.overallReturn}) and provide the full itemized table.
-   - If the user asks about accounts/balances, reference \`accounts\` (Total Liquid Cash: ₹${context.totalLiquidCash.toLocaleString('en-IN')}).
-   - If the user asks about loans, reference \`loans\` (Total Remaining Debt: ₹${context.loans.totalRemainingDebt.toLocaleString('en-IN')}, EMI: ₹${context.loans.totalMonthlyEMI.toLocaleString('en-IN')}/mo).
-   - If the user asks about people/lending, reference \`people\` (Owed to me: ₹${context.people.totalOwedToMe.toLocaleString('en-IN')}, I owe: ₹${context.people.totalIOwe.toLocaleString('en-IN')}).
+      - If the user asks about investments or portfolio:
+      - Reference the \`investments\` object:
+        * Total Active Holdings: Exactly ${context.investments.items.length} active assets (across ${Object.keys(context.investments.byAssetType).length} asset classes).
+        * Total Invested Amount: ₹${context.investments.totalInvested.toLocaleString('en-IN')}
+        * Total Current Portfolio Value: ₹${context.investments.totalCurrentValue.toLocaleString('en-IN')}
+        * Total Profit / Loss: ${context.investments.totalProfitLoss >= 0 ? '+' : '-'}₹${Math.abs(context.investments.totalProfitLoss).toLocaleString('en-IN')} (${context.investments.overallReturn})
+      - MANDATORY CONSISTENCY RULE: You MUST use these exact precomputed totals. Never alter, recalculate, or invent differing sums.
+      - Provide a structured markdown table listing every holding: (Asset Name, Type, Platform, Invested, Current Value, Return).
+    - If the user asks about accounts/balances, reference \`accounts\` (Total Liquid Cash: ₹${context.totalLiquidCash.toLocaleString('en-IN')}).
+    - If the user asks about loans, reference \`loans\` (Total Remaining Debt: ₹${context.loans.totalRemainingDebt.toLocaleString('en-IN')}, EMI: ₹${context.loans.totalMonthlyEMI.toLocaleString('en-IN')}/mo).
+    - If the user asks about people/lending, reference \`people\` (Owed to me: ₹${context.people.totalOwedToMe.toLocaleString('en-IN')}, I owe: ₹${context.people.totalIOwe.toLocaleString('en-IN')}).
 
 2. **COMPREHENSIVE & RIGOROUS BREAKDOWN**:
    - Do NOT abbreviate or truncate the data when the user asks for a complete overview or breakdown.
@@ -433,7 +436,9 @@ YOUR CORE PRINCIPLES & INSTRUCTIONS:
      1. High-level Summary (Income, Expense, Net Savings, Savings Rate, Transaction count)
      2. Category-wise Spending Breakdown (Category Name, Amount, % Share)
      3. Key Transactions (Date, Merchant, Category, Amount, Source Account)
+     4. Investment Holdings (Asset Name, Asset Class, Platform, Invested Amount, Current Value, P&L / Return)
    - Format all currency with Indian Rupee symbols (₹).
+   - Use clean Markdown headers (### or ####) and bullet lists.
    - Include helpful financial observations and actionable advice based on their spending velocity and cash buffers.
 
 3. **ACTIONABLE 1-CLICK IN-CHAT EXECUTION BUTTONS (GENERATIVE TOOL CALLING)**:
@@ -462,45 +467,49 @@ YOUR CORE PRINCIPLES & INSTRUCTIONS:
   const fullPrompt = `${systemPrompt}\n\n${recentHistory ? `PREVIOUS CHAT HISTORY:\n${recentHistory}\n\n` : ''}User's Question: ${message}\n\nPlease provide an accurate, comprehensive, and well-structured response grounded in the user's data with actionable proposal buttons where relevant:`;
 
   if (apiKey) {
-    try {
-      const ai = new GoogleGenAI({ apiKey });
+    const ai = new GoogleGenAI({ apiKey });
+    const models = ['gemini-3.5-flash-lite', 'gemini-2.5-flash'];
 
-      const response = await ai.models.generateContent({
-        // model: 'gemini-2.5-flash',
-        model: 'gemini-3.5-flash-lite',
-        contents: fullPrompt,
-      });
+    for (let attempt = 0; attempt < 2; attempt++) {
+      for (const model of models) {
+        try {
+          const response = await ai.models.generateContent({
+            model,
+            contents: fullPrompt,
+          });
 
-      if (response && response.text) {
-        let cleanReply = response.text;
-        let actions = [];
+          if (response && response.text) {
+            let cleanReply = response.text;
+            let actions = [];
 
-        // Extract json:actions block
-        const actionBlockRegex = /```json:actions\s*([\s\S]*?)\s*```/i;
-        const match = cleanReply.match(actionBlockRegex);
-        if (match) {
-          try {
-            actions = JSON.parse(match[1]);
-            cleanReply = cleanReply.replace(actionBlockRegex, '').trim();
-          } catch (e) {
-            console.warn('Failed to parse Gemini actions JSON:', e.message);
+            // Extract json:actions block
+            const actionBlockRegex = /```json:actions\s*([\s\S]*?)\s*```/i;
+            const match = cleanReply.match(actionBlockRegex);
+            if (match) {
+              try {
+                actions = JSON.parse(match[1]);
+                cleanReply = cleanReply.replace(actionBlockRegex, '').trim();
+              } catch (e) {
+                console.warn('Failed to parse Gemini actions JSON:', e.message);
+              }
+            }
+
+            return {
+              reply: cleanReply,
+              actions,
+              contextUsed: {
+                netWorth: context.netWorth,
+                totalInvestments: context.investments.totalCurrentValue,
+                investedAmount: context.investments.totalInvested,
+                liquidCash: context.totalLiquidCash,
+                safeToSpendToday: context.safeToSpendToday,
+              },
+            };
           }
+        } catch (err) {
+          console.warn(`[AI Copilot] Model ${model} attempt ${attempt + 1} failed:`, err.message || err);
         }
-
-        return {
-          reply: cleanReply,
-          actions,
-          contextUsed: {
-            netWorth: context.netWorth,
-            totalInvestments: context.investments.totalCurrentValue,
-            investedAmount: context.investments.totalInvested,
-            liquidCash: context.totalLiquidCash,
-            safeToSpendToday: context.safeToSpendToday,
-          },
-        };
       }
-    } catch (err) {
-      console.error('Gemini API execution error:', err);
     }
   }
 

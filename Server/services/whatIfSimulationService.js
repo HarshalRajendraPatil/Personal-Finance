@@ -29,6 +29,7 @@ const callGeminiWithFallback = async (userPrompt, systemInstruction = '', maxRet
 
   // Prioritize gemini-2.5-flash with automatic fallback to gemini-3.5-flash-lite
   const models = ['gemini-3.5-flash-lite', 'gemini-2.5-flash'];
+  // const models = ['gemini-2.5-flash', 'gemini-3.5-flash-lite'];
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     for (const model of models) {
@@ -69,7 +70,7 @@ export const buildUserFinancialContext = async (userId) => {
     Account.find({ user: userId, isArchived: false }).lean(),
     Loan.find({ user: userId, isActive: true }).lean(),
     Goal.find({ user: userId, isCompleted: false }).lean(),
-    Investment.find({ user: userId }).lean(),
+    Investment.find({ user: userId, isActive: true }).lean(),
     RecurringRule.find({ user: userId, isActive: true }).lean(),
     Transaction.find({
       user: userId,

@@ -317,25 +317,32 @@ export const executeSalaryPlan = async ({ userId, planId, customizedAllocations 
         goal.isCompleted = true;
         goal.completedAt = new Date();
       }
+      let createdTxn = null;
+      if (sourceAccount) {
+        sourceAccount.currentBalance -= amount;
+        await sourceAccount.save();
+
+        createdTxn = await Transaction.create({
+          user: userId,
+          type: 'Transfer', // Goal contribution is a transfer (savings), not an expense
+          amount,
+          date: new Date(),
+          account: sourceAccount._id,
+          toAccount: null,
+          category: null,
+          merchant: `Salary Allocation: ${goal.name}`,
+          notes: `Automated Salary Day 1-Click Goal Topup (${plan.month})`,
+          tags: ['goal', 'contribution', 'salary-distributor'],
+        });
+      }
+
       goal.contributions.push({
         amount,
         date: new Date(),
         note: `Salary Day Smart Distribution (${plan.month})`,
+        transactionId: createdTxn ? createdTxn._id : null,
       });
       await goal.save();
-
-      if (sourceAccount) {
-        sourceAccount.currentBalance -= amount;
-        await Transaction.create({
-          user: userId,
-          type: 'Expense',
-          amount,
-          date: new Date(),
-          account: sourceAccount._id,
-          merchant: `Salary Allocation: ${goal.name}`,
-          notes: `Automated Salary Day 1-Click Goal Topup (${plan.month})`,
-        });
-      }
 
       goalsFunded.push({
         goalId: goal._id,

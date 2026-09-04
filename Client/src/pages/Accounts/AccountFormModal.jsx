@@ -12,11 +12,20 @@ const accountSchema = z.object({
   openingBalance: z.coerce.number({ invalid_type_error: "Must be a number" }),
   currency: z.string().min(1, "Currency is required"),
   notes: z.string().optional(),
-  creditLimit: z.preprocess((val) => (val === '' || val === null || val === undefined ? null : Number(val)), z.number().nullable().optional()),
+  creditLimit: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined || isNaN(Number(val)) ? null : Number(val)),
+    z.number().min(0, 'Credit limit cannot be negative').nullable().optional()
+  ),
   issuer: z.string().optional(),
   last4Digits: z.string().optional(),
-  billingCycleDay: z.preprocess((val) => (val === '' || val === null || val === undefined ? null : Number(val)), z.number().min(1).max(31).nullable().optional()),
-  paymentDueDay: z.preprocess((val) => (val === '' || val === null || val === undefined ? null : Number(val)), z.number().min(1).max(31).nullable().optional()),
+  billingCycleDay: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined || isNaN(Number(val)) ? null : Number(val)),
+    z.number().min(1).max(31).nullable().optional()
+  ),
+  paymentDueDay: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined || isNaN(Number(val)) ? null : Number(val)),
+    z.number().min(1).max(31).nullable().optional()
+  ),
 });
 
 const CURRENCIES = [
@@ -65,7 +74,7 @@ const AccountFormModal = ({ isOpen, onClose, account = null }) => {
         openingBalance: account.openingBalance,
         currency: account.currency || 'INR',
         notes: account.notes || '',
-        creditLimit: account.creditLimit !== null && account.creditLimit !== undefined ? account.creditLimit : '',
+        creditLimit: account.type === 'Credit Card' && account.creditLimit !== null && account.creditLimit !== undefined ? account.creditLimit : '',
         issuer: account.issuer || '',
         last4Digits: account.last4Digits || '',
         billingCycleDay: account.billingCycleDay || '',
@@ -89,10 +98,26 @@ const AccountFormModal = ({ isOpen, onClose, account = null }) => {
 
   const onSubmit = async (data) => {
     try {
+      const isCreditCard = data.type === 'Credit Card';
+      const cleanData = {
+        name: data.name.trim(),
+        type: data.type,
+        openingBalance: Number(data.openingBalance) || 0,
+        currency: data.currency || 'INR',
+        notes: data.notes || '',
+        creditLimit: isCreditCard && data.creditLimit !== null && data.creditLimit !== undefined && data.creditLimit !== '' && !isNaN(Number(data.creditLimit))
+          ? Math.max(0, Number(data.creditLimit))
+          : null,
+        issuer: isCreditCard ? (data.issuer?.trim() || '') : '',
+        last4Digits: isCreditCard ? (data.last4Digits?.trim() || '') : '',
+        billingCycleDay: isCreditCard && data.billingCycleDay ? parseInt(data.billingCycleDay, 10) : null,
+        paymentDueDay: isCreditCard && data.paymentDueDay ? parseInt(data.paymentDueDay, 10) : null,
+      };
+
       if (account) {
-        await dispatch(updateAccount({ id: account._id, accountData: data })).unwrap();
+        await dispatch(updateAccount({ id: account._id, accountData: cleanData })).unwrap();
       } else {
-        await dispatch(createAccount(data)).unwrap();
+        await dispatch(createAccount(cleanData)).unwrap();
       }
       onClose();
     } catch (err) {

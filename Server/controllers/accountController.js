@@ -32,19 +32,38 @@ const createAccount = async (req, res) => {
       paymentDueDay,
     } = req.body;
 
+    const isCreditCard = type === 'Credit Card';
+
+    const parseNum = (val, fallback = 0) => {
+      if (val === undefined || val === null || val === '') return fallback;
+      const num = Number(val);
+      return isNaN(num) ? fallback : num;
+    };
+
+    const parseDay = (val) => {
+      if (val === undefined || val === null || val === '') return null;
+      const parsed = parseInt(val, 10);
+      return !isNaN(parsed) && parsed >= 1 && parsed <= 31 ? parsed : null;
+    };
+
+    const initialBal = parseNum(openingBalance, 0);
+
+    const numLimit = creditLimit !== undefined && creditLimit !== null && creditLimit !== '' ? Number(creditLimit) : null;
+    const validLimit = isCreditCard && numLimit !== null && !isNaN(numLimit) && numLimit >= 0 ? numLimit : null;
+
     const account = new Account({
       user: req.user._id,
-      name,
-      type,
-      openingBalance: parseFloat(openingBalance) || 0,
-      currentBalance: parseFloat(openingBalance) || 0,
+      name: name?.trim(),
+      type: type || 'Bank',
+      openingBalance: initialBal,
+      currentBalance: initialBal,
       currency: currency || 'INR',
-      notes,
-      creditLimit: creditLimit !== undefined && creditLimit !== '' ? parseFloat(creditLimit) : null,
-      issuer: issuer || '',
-      last4Digits: last4Digits || '',
-      billingCycleDay: billingCycleDay ? parseInt(billingCycleDay, 10) : null,
-      paymentDueDay: paymentDueDay ? parseInt(paymentDueDay, 10) : null,
+      notes: notes || '',
+      creditLimit: validLimit,
+      issuer: isCreditCard ? (issuer?.trim() || '') : '',
+      last4Digits: isCreditCard ? (last4Digits?.trim() || '') : '',
+      billingCycleDay: isCreditCard ? parseDay(billingCycleDay) : null,
+      paymentDueDay: isCreditCard ? parseDay(paymentDueDay) : null,
     });
 
     const createdAccount = await account.save();
@@ -80,27 +99,48 @@ const updateAccount = async (req, res) => {
         return res.status(401).json({ message: 'User not authorized' });
       }
 
-      account.name = name || account.name;
-      account.type = type || account.type;
-      account.currency = currency || account.currency;
+      const parseDay = (val) => {
+        if (val === undefined || val === null || val === '') return null;
+        const parsed = parseInt(val, 10);
+        return !isNaN(parsed) && parsed >= 1 && parsed <= 31 ? parsed : null;
+      };
+
+      if (name) account.name = name.trim();
+      if (type) account.type = type;
+      if (currency) account.currency = currency;
       if (isArchived !== undefined) account.isArchived = isArchived;
       if (notes !== undefined) account.notes = notes;
-      if (creditLimit !== undefined) {
-        account.creditLimit = creditLimit !== '' && creditLimit !== null ? parseFloat(creditLimit) : null;
-      }
-      if (issuer !== undefined) account.issuer = issuer;
-      if (last4Digits !== undefined) account.last4Digits = last4Digits;
-      if (billingCycleDay !== undefined) {
-        account.billingCycleDay = billingCycleDay ? parseInt(billingCycleDay, 10) : null;
-      }
-      if (paymentDueDay !== undefined) {
-        account.paymentDueDay = paymentDueDay ? parseInt(paymentDueDay, 10) : null;
+
+      const isCreditCard = (type || account.type) === 'Credit Card';
+
+      if (!isCreditCard) {
+        account.creditLimit = null;
+        account.issuer = '';
+        account.last4Digits = '';
+        account.billingCycleDay = null;
+        account.paymentDueDay = null;
+      } else {
+        if (creditLimit !== undefined) {
+          const numLimit = creditLimit !== null && creditLimit !== '' ? Number(creditLimit) : null;
+          account.creditLimit = numLimit !== null && !isNaN(numLimit) && numLimit >= 0 ? numLimit : null;
+        }
+        if (issuer !== undefined) account.issuer = issuer ? issuer.trim() : '';
+        if (last4Digits !== undefined) account.last4Digits = last4Digits ? last4Digits.trim() : '';
+        if (billingCycleDay !== undefined) {
+          account.billingCycleDay = parseDay(billingCycleDay);
+        }
+        if (paymentDueDay !== undefined) {
+          account.paymentDueDay = parseDay(paymentDueDay);
+        }
       }
 
-      if (openingBalance !== undefined && parseFloat(openingBalance) !== account.openingBalance) {
-        const netTransactions = account.currentBalance - account.openingBalance;
-        account.openingBalance = parseFloat(openingBalance);
-        account.currentBalance = parseFloat(openingBalance) + netTransactions;
+      if (openingBalance !== undefined && openingBalance !== '' && openingBalance !== null) {
+        const numOpening = Number(openingBalance);
+        if (!isNaN(numOpening) && numOpening !== account.openingBalance) {
+          const netTransactions = account.currentBalance - account.openingBalance;
+          account.openingBalance = numOpening;
+          account.currentBalance = numOpening + netTransactions;
+        }
       }
 
       const updatedAccount = await account.save();

@@ -55,7 +55,15 @@ const Dashboard = () => {
     }));
   }, [dispatch, timeRange]);
 
-  const { snapshot, period, charts, upcoming, budgets, goals, recentTransactions } = data || {};
+  const {
+    snapshot = {},
+    period = {},
+    charts = { cashFlow: [], expenseCategories: [] },
+    upcoming = [],
+    budgets = [],
+    goals = [],
+    recentTransactions = []
+  } = data || {};
 
   // ⚡ Memoize Expensive MUI Chart Datasets
   const barChartSeries = useMemo(() => {
@@ -192,10 +200,10 @@ const Dashboard = () => {
 
       {/* Point-in-Time Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <KpiCard title="Net Worth" amount={snapshot.netWorth} icon={Landmark} colorClass="bg-indigo-100" />
-        <KpiCard title="Cash Available" amount={snapshot.cashAvailable} icon={Wallet} colorClass="bg-emerald-100" />
-        <KpiCard title="Total Debt" amount={snapshot.totalDebt} icon={CreditCard} colorClass="bg-rose-100" />
-        <KpiCard title="Total Investments" amount={snapshot.totalInvestments} icon={TrendingUp} colorClass="bg-blue-100" />
+        <KpiCard title="Net Worth" amount={snapshot?.netWorth || 0} icon={Landmark} colorClass="bg-indigo-100" />
+        <KpiCard title="Cash Available" amount={snapshot?.cashAvailable || 0} icon={Wallet} colorClass="bg-emerald-100" />
+        <KpiCard title="Total Debt" amount={snapshot?.totalDebt || 0} icon={CreditCard} colorClass="bg-rose-100" />
+        <KpiCard title="Total Investments" amount={snapshot?.totalInvestments || 0} icon={TrendingUp} colorClass="bg-blue-100" />
       </div>
 
       {/* Period Flow Metrics + Dynamic Safe-to-Spend Card */}
@@ -222,14 +230,14 @@ const Dashboard = () => {
           </p>
         </div>
 
-        <KpiCard title="Period Income" amount={period.income} icon={TrendingUp} colorClass="bg-emerald-100" trend={period.comparison?.incomeChange} />
-        <KpiCard title="Period Expenses" amount={period.expense} icon={TrendingDown} colorClass="bg-rose-100" trend={period.comparison?.expenseChange} />
+        <KpiCard title="Period Income" amount={period?.income || 0} icon={TrendingUp} colorClass="bg-emerald-100" trend={period?.comparison?.incomeChange} />
+        <KpiCard title="Period Expenses" amount={period?.expense || 0} icon={TrendingDown} colorClass="bg-rose-100" trend={period?.comparison?.expenseChange} />
 
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-between">
           <div className="flex justify-between items-start mb-4">
             <div>
               <p className="text-sm font-medium text-gray-500 mb-1">Savings Rate</p>
-              <h3 className="text-2xl font-bold text-blue-600">{period.savingsRate}%</h3>
+              <h3 className="text-2xl font-bold text-blue-600">{period?.savingsRate || 0}%</h3>
             </div>
             <div className="p-3 rounded-xl bg-blue-100 bg-opacity-10">
               <PiggyBank className="w-6 h-6 text-blue-600" />
@@ -273,7 +281,7 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
           <h3 className="text-lg font-bold text-gray-900 mb-4">Cash Flow</h3>
-          {charts.cashFlow.length > 0 ? (
+          {charts?.cashFlow?.length > 0 ? (
             <div className="h-80 w-full">
               <BarChart
                 series={barChartSeries}
@@ -373,7 +381,7 @@ const Dashboard = () => {
             <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
               <Receipt className="w-5 h-5 text-gray-400" /> Upcoming (30 Days)
             </h3>
-            {upcoming.length > 0 ? (
+            {upcoming && upcoming.length > 0 ? (
               <div className="space-y-4">
                 {upcoming.map(u => (
                   <div key={u.id} className="flex justify-between items-center border-b border-gray-50 pb-3 last:border-0 last:pb-0">
@@ -397,10 +405,10 @@ const Dashboard = () => {
             <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
               <Target className="w-5 h-5 text-gray-400" /> Active Goals
             </h3>
-            {goals.length > 0 ? (
+            {goals && goals.length > 0 ? (
               <div className="space-y-4">
                 {goals.map(g => {
-                  const progress = Math.min(100, Math.round(((g.currentAmount || 0) / g.targetAmount) * 100));
+                  const progress = g.targetAmount ? Math.min(100, Math.round(((g.currentAmount || 0) / g.targetAmount) * 100)) : 0;
                   return (
                     <div key={g._id}>
                       <div className="flex justify-between text-sm mb-1">

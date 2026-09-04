@@ -38,7 +38,8 @@ const BreakdownRow = ({ name, value, type, pct }) => (
 
 const NetWorth = () => {
   const dispatch = useDispatch();
-  const { current, history, isLoading } = useSelector(s => s.netWorth);
+  const { current, history: rawHistory, isLoading } = useSelector(s => s.netWorth);
+  const history = useMemo(() => Array.isArray(rawHistory) ? rawHistory : [], [rawHistory]);
   const [snapping, setSnapping] = useState(false);
   const [autoCapturing, setAutoCapturing] = useState(false);
   const [notifyMsg, setNotifyMsg] = useState(null);

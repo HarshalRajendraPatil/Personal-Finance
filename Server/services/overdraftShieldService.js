@@ -29,10 +29,12 @@ export const get14DayOverdraftForecast = async (userId, customThreshold = 5000) 
   if (liquidAccounts.length === 0) {
     return {
       summary: {
+        forecastHorizonDays: horizonDays,
         totalAccounts: 0,
         breachedAccountsCount: 0,
         totalShortfall: 0,
-        status: 'HEALTHY',
+        minimumBalanceBuffer: customThreshold,
+        status: 'NO_ACCOUNTS',
       },
       accounts: [],
       proposals: [],

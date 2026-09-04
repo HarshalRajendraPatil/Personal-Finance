@@ -27,6 +27,7 @@ import {
   ChevronRight,
   Info,
   DollarSign,
+  Plus,
 } from 'lucide-react';
 
 const OverdraftShieldModal = () => {
@@ -38,11 +39,13 @@ const OverdraftShieldModal = () => {
   const [selectedDonorId, setSelectedDonorId] = useState('');
   const [transferAmount, setTransferAmount] = useState('');
   const [successReceipt, setSuccessReceipt] = useState(null);
+  const [rebalanceError, setRebalanceError] = useState('');
 
   useEffect(() => {
     if (isOverdraftModalOpen) {
       dispatch(fetchOverdraftForecast(5000));
       setSuccessReceipt(null);
+      setRebalanceError('');
     }
   }, [isOverdraftModalOpen, dispatch]);
 
@@ -80,10 +83,11 @@ const OverdraftShieldModal = () => {
   if (!isOverdraftModalOpen) return null;
 
   const currentAccount = accounts.find((a) => a.accountId === selectedAccountId) || accounts[0];
-  const donorAccounts = accounts.filter((a) => a.accountId !== selectedAccountId && a.currentBalance >= 5000);
+  const donorAccounts = accounts.filter((a) => a.accountId !== selectedAccountId && (a.currentBalance || 0) >= 5000);
 
   const handleExecuteRebalance = async () => {
     if (!selectedDonorId || !selectedAccountId || !transferAmount) return;
+    setRebalanceError('');
 
     try {
       const res = await dispatch(
@@ -91,7 +95,7 @@ const OverdraftShieldModal = () => {
           fromAccountId: selectedDonorId,
           toAccountId: selectedAccountId,
           amount: Number(transferAmount),
-          reason: `Autonomous Overdraft Shield Rebalance: Protected ${currentAccount?.accountName} from low-balance breach.`,
+          reason: `Autonomous Overdraft Shield Rebalance: Protected ${currentAccount?.accountName || 'Account'} from low-balance breach.`,
         })
       ).unwrap();
 
@@ -103,7 +107,7 @@ const OverdraftShieldModal = () => {
       dispatch(fetchProactiveNudges());
       dispatch(fetchOverdraftForecast(5000));
     } catch (err) {
-      console.error(err);
+      setRebalanceError(typeof err === 'string' ? err : err?.message || 'Failed to execute auto-rebalance transfer.');
     }
   };
 
@@ -113,18 +117,18 @@ const OverdraftShieldModal = () => {
         
         {/* Header Ribbon */}
         <div className={`p-5 sm:p-6 text-white flex items-start justify-between relative overflow-hidden ${
-          summary.breachedAccountsCount > 0
+          (summary?.breachedAccountsCount || 0) > 0
             ? 'bg-gradient-to-r from-rose-950 via-slate-900 to-indigo-950'
             : 'bg-gradient-to-r from-emerald-950 via-slate-900 to-indigo-950'
         }`}>
           <div className="relative z-10">
             <div className="flex items-center gap-2 mb-1.5 flex-wrap">
               <span className={`p-2 rounded-xl border ${
-                summary.breachedAccountsCount > 0
+                (summary?.breachedAccountsCount || 0) > 0
                   ? 'bg-rose-500/20 border-rose-400/30 text-rose-300'
                   : 'bg-emerald-500/20 border-emerald-400/30 text-emerald-300'
               }`}>
-                {summary.breachedAccountsCount > 0 ? (
+                {(summary?.breachedAccountsCount || 0) > 0 ? (
                   <ShieldAlert className="w-5 h-5" />
                 ) : (
                   <ShieldCheck className="w-5 h-5" />
@@ -134,11 +138,11 @@ const OverdraftShieldModal = () => {
                 🛡️ Autonomous Overdraft & Low-Balance Shield
               </h2>
               <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
-                summary.breachedAccountsCount > 0
+                (summary?.breachedAccountsCount || 0) > 0
                   ? 'bg-rose-500/20 text-rose-300 border-rose-400/30'
                   : 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30'
               }`}>
-                {summary.breachedAccountsCount > 0 ? '⚠️ Breach Risk Detected' : '✅ 14-Day Shield Active'}
+                {(summary?.breachedAccountsCount || 0) > 0 ? '⚠️ Breach Risk Detected' : '✅ 14-Day Shield Active'}
               </span>
             </div>
             <p className="text-xs sm:text-sm text-indigo-200">
@@ -165,7 +169,7 @@ const OverdraftShieldModal = () => {
             </span>
             <div className="mt-2">
               <span className="text-xl font-black font-mono text-gray-900">
-                ₹{summary.minimumBalanceBuffer.toLocaleString('en-IN')}
+                ₹{(summary?.minimumBalanceBuffer ?? 5000).toLocaleString('en-IN')}
               </span>
               <span className="block text-[10px] text-gray-500 font-semibold">safety threshold</span>
             </div>
@@ -173,7 +177,7 @@ const OverdraftShieldModal = () => {
 
           {/* 2. Breach Risk Accounts */}
           <div className={`p-3.5 rounded-2xl border flex flex-col justify-between shadow-2xs ${
-            summary.breachedAccountsCount > 0
+            (summary?.breachedAccountsCount || 0) > 0
               ? 'bg-rose-500/10 border-rose-200 text-rose-900'
               : 'bg-emerald-500/10 border-emerald-200 text-emerald-900'
           }`}>
@@ -183,9 +187,9 @@ const OverdraftShieldModal = () => {
             </span>
             <div className="mt-2">
               <span className="text-xl sm:text-2xl font-black font-mono text-rose-700">
-                {summary.breachedAccountsCount}
+                {summary?.breachedAccountsCount ?? 0}
               </span>
-              <span className="block text-[10px] text-rose-600 font-semibold">of {summary.totalAccounts} accounts</span>
+              <span className="block text-[10px] text-rose-600 font-semibold">of {summary?.totalAccounts ?? 0} accounts</span>
             </div>
           </div>
 
@@ -197,7 +201,7 @@ const OverdraftShieldModal = () => {
             </span>
             <div className="mt-2">
               <span className="text-xl font-black font-mono text-amber-700">
-                ₹{summary.totalShortfall.toLocaleString('en-IN')}
+                ₹{(summary?.totalShortfall ?? 0).toLocaleString('en-IN')}
               </span>
               <span className="block text-[10px] text-gray-500 font-semibold">next 14 days</span>
             </div>
@@ -211,7 +215,7 @@ const OverdraftShieldModal = () => {
             </span>
             <div className="mt-2">
               <span className="text-xl font-black font-mono text-indigo-700">
-                {proposals.length} Ready
+                {proposals?.length || 0} Ready
               </span>
               <span className="block text-[10px] text-gray-500 font-semibold">1-click auto-transfers</span>
             </div>
@@ -233,217 +237,256 @@ const OverdraftShieldModal = () => {
                 {successReceipt.message}
               </p>
               <div className="pt-2 flex items-center gap-4 text-[11px] font-mono font-bold text-emerald-900 flex-wrap">
-                <span>{successReceipt.balances?.fromAccount?.name}: ₹{successReceipt.balances?.fromAccount?.newBalance?.toLocaleString('en-IN')}</span>
+                <span>{successReceipt.balances?.fromAccount?.name}: ₹{(successReceipt.balances?.fromAccount?.newBalance || 0).toLocaleString('en-IN')}</span>
                 <span>➔</span>
-                <span>{successReceipt.balances?.toAccount?.name}: ₹{successReceipt.balances?.toAccount?.newBalance?.toLocaleString('en-IN')}</span>
+                <span>{successReceipt.balances?.toAccount?.name}: ₹{(successReceipt.balances?.toAccount?.newBalance || 0).toLocaleString('en-IN')}</span>
               </div>
             </div>
           )}
 
-          {/* 1-Click Auto-Rebalance Proposal Card */}
-          {activeProposal && !successReceipt && (
-            <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-purple-950 text-white p-5 rounded-3xl border border-indigo-500/30 shadow-lg space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-3">
-                <div className="flex items-center gap-2.5">
-                  <span className="p-2 bg-rose-500/20 text-rose-300 border border-rose-400/30 rounded-xl">
-                    <ShieldAlert className="w-5 h-5" />
-                  </span>
-                  <div>
-                    <h3 className="text-sm font-extrabold text-white">
-                      Action Required: {activeProposal.targetAccountName}
-                    </h3>
-                    <p className="text-xs text-rose-200">
-                      Projected breach on <strong className="text-white">{activeProposal.breachDate}</strong> before <span className="underline font-semibold">{activeProposal.triggeringItem}</span>
-                    </p>
-                  </div>
-                </div>
+          {/* Error State */}
+          {rebalanceError && (
+            <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-center gap-3 text-rose-800 text-xs font-semibold">
+              <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0" />
+              <span>{rebalanceError}</span>
+            </div>
+          )}
 
-                <div className="text-right">
-                  <span className="text-xs font-semibold text-gray-400 block">Shortfall Amount</span>
-                  <span className="text-lg font-black font-mono text-rose-400">
-                    -₹{activeProposal.shortfallAmount.toLocaleString('en-IN')}
-                  </span>
-                </div>
+          {/* Zero Accounts Empty State */}
+          {accounts.length === 0 ? (
+            <div className="bg-white p-8 sm:p-12 rounded-3xl border border-gray-200 text-center shadow-xs space-y-4 my-2">
+              <div className="p-4 bg-indigo-50 border border-indigo-100 text-indigo-600 rounded-2xl w-16 h-16 mx-auto flex items-center justify-center shadow-2xs">
+                <Wallet className="w-8 h-8" />
               </div>
-
-              {/* Rebalance Transfer Form */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-white/5 p-3.5 rounded-2xl border border-white/10 text-xs">
-                
-                {/* Source / Donor Account */}
-                <div>
-                  <label className="block text-[11px] font-bold text-gray-300 mb-1">
-                    Transfer From (Surplus Liquidity):
-                  </label>
-                  <select
-                    value={selectedDonorId}
-                    onChange={(e) => setSelectedDonorId(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-900 border border-white/20 rounded-xl text-white font-medium focus:ring-1 focus:ring-indigo-400 focus:outline-none"
-                  >
-                    {donorAccounts.length === 0 ? (
-                      <option value="">No other account with surplus</option>
-                    ) : (
-                      donorAccounts.map((acc) => (
-                        <option key={acc.accountId} value={acc.accountId}>
-                          {acc.accountName} (₹{acc.currentBalance.toLocaleString('en-IN')})
-                        </option>
-                      ))
-                    )}
-                  </select>
-                </div>
-
-                {/* Target Account */}
-                <div>
-                  <label className="block text-[11px] font-bold text-gray-300 mb-1">
-                    Transfer To (Protected Account):
-                  </label>
-                  <div className="px-3 py-2 bg-white/10 border border-white/20 rounded-xl text-white font-bold flex items-center justify-between">
-                    <span>{currentAccount?.accountName}</span>
-                    <span className="text-rose-300 font-mono">₹{currentAccount?.currentBalance?.toLocaleString('en-IN')}</span>
-                  </div>
-                </div>
-
-                {/* Rebalance Amount */}
-                <div>
-                  <label className="block text-[11px] font-bold text-gray-300 mb-1">
-                    Rebalance Amount (₹):
-                  </label>
-                  <input
-                    type="number"
-                    value={transferAmount}
-                    onChange={(e) => setTransferAmount(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-900 border border-white/20 rounded-xl text-white font-mono font-bold focus:ring-1 focus:ring-indigo-400 focus:outline-none"
-                  />
-                </div>
-
-              </div>
-
-              {/* 1-Click Action Button */}
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1">
-                <p className="text-[11px] text-gray-300 flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                  <span>Atomically tops up checking balance and eliminates bounce risk.</span>
+              <div className="max-w-md mx-auto space-y-1.5">
+                <h3 className="text-base sm:text-lg font-extrabold text-gray-900">
+                  No Liquid Bank Accounts Found
+                </h3>
+                <p className="text-xs sm:text-sm text-gray-500 leading-relaxed">
+                  Overdraft & Low-Balance Shield forecasts cash flows for your Bank, Cash, and UPI accounts to prevent ECS/NACH bounce fees. Please add a bank or cash account first to activate 14-day rolling trajectory protection.
                 </p>
-
+              </div>
+              <div className="pt-2 flex justify-center">
                 <button
-                  onClick={handleExecuteRebalance}
-                  disabled={isExecutingRebalance || !selectedDonorId}
-                  className="w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-emerald-500 via-indigo-500 to-purple-600 hover:from-emerald-600 hover:to-indigo-700 text-white font-extrabold text-xs rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
+                  onClick={() => {
+                    dispatch(closeOverdraftModal());
+                    window.dispatchEvent(new CustomEvent('open-add-account-modal'));
+                  }}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all active:scale-95 cursor-pointer"
                 >
-                  {isExecutingRebalance ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 animate-spin" />
-                      <span>Rebalancing Accounts...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Zap className="w-4 h-4 text-emerald-300" />
-                      <span>Execute 1-Click Auto-Rebalance (₹{Number(transferAmount).toLocaleString('en-IN')})</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </>
-                  )}
+                  <Plus className="w-4 h-4" />
+                  <span>Add Your First Account</span>
                 </button>
               </div>
-
             </div>
-          )}
-
-          {/* Account Selector Tabs */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
-                <Calendar className="w-4 h-4 text-indigo-600" />
-                14-Day Rolling Cash-Flow Forecast by Account
-              </h3>
-              <span className="text-[11px] text-gray-500">
-                Click an account to inspect daily balance trajectory
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2 overflow-x-auto pb-1">
-              {accounts.map((acc) => (
-                <button
-                  key={acc.accountId}
-                  onClick={() => setSelectedAccountId(acc.accountId)}
-                  className={`p-3 rounded-2xl border transition-all text-left shrink-0 min-w-44 ${
-                    selectedAccountId === acc.accountId
-                      ? 'border-indigo-600 bg-indigo-50/60 shadow-2xs'
-                      : 'border-gray-200 bg-white hover:bg-gray-50'
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-1 mb-1">
-                    <span className="font-extrabold text-xs text-gray-900 truncate">
-                      {acc.accountName}
-                    </span>
-                    {acc.isBreached && (
-                      <span className="px-1.5 py-0.5 bg-rose-100 text-rose-800 rounded-md text-[9px] font-black uppercase">
-                        Breach ⚠️
+          ) : (
+            <>
+              {/* 1-Click Auto-Rebalance Proposal Card */}
+              {activeProposal && !successReceipt && (
+                <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-purple-950 text-white p-5 rounded-3xl border border-indigo-500/30 shadow-lg space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-3">
+                    <div className="flex items-center gap-2.5">
+                      <span className="p-2 bg-rose-500/20 text-rose-300 border border-rose-400/30 rounded-xl">
+                        <ShieldAlert className="w-5 h-5" />
                       </span>
-                    )}
-                  </div>
-                  <div className="flex justify-between items-end">
-                    <span className="text-[10px] text-gray-500">Live Balance:</span>
-                    <span className="font-mono font-bold text-xs text-gray-900">
-                      ₹{acc.currentBalance.toLocaleString('en-IN')}
-                    </span>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Day-by-Day Forecast Timeline for Selected Account */}
-          {currentAccount && (
-            <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-200 shadow-2xs space-y-3">
-              <div className="flex items-center justify-between border-b border-gray-100 pb-2.5">
-                <div>
-                  <h4 className="font-extrabold text-sm text-gray-900">
-                    Daily Trajectory: {currentAccount.accountName}
-                  </h4>
-                  <p className="text-xs text-gray-500">
-                    Projected lowest balance: <strong className={`font-mono ${currentAccount.minProjectedBalance < 5000 ? 'text-rose-600' : 'text-emerald-600'}`}>₹{currentAccount.minProjectedBalance.toLocaleString('en-IN')}</strong>
-                  </p>
-                </div>
-                <span className="text-[11px] font-bold text-gray-500">
-                  {currentAccount.accountType} Account
-                </span>
-              </div>
-
-              {/* 14-Day Schedule Grid / Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 max-h-72 overflow-y-auto pr-1">
-                {(currentAccount.dailySchedule || []).map((day) => (
-                  <div
-                    key={day.date}
-                    className={`p-2.5 rounded-xl border text-xs transition-all ${
-                      day.projectedClosingBalance < 5000
-                        ? 'bg-rose-50/50 border-rose-200 text-rose-900'
-                        : 'bg-gray-50/60 border-gray-100 text-gray-800'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between font-bold text-[11px] mb-1">
-                      <span>{day.dayName}</span>
-                      <span className={`font-mono ${day.projectedClosingBalance < 5000 ? 'text-rose-700 font-extrabold' : 'text-gray-700'}`}>
-                        ₹{day.projectedClosingBalance.toLocaleString('en-IN')}
-                      </span>
+                      <div>
+                        <h3 className="text-sm font-extrabold text-white">
+                          Action Required: {activeProposal.targetAccountName}
+                        </h3>
+                        <p className="text-xs text-rose-200">
+                          Projected breach on <strong className="text-white">{activeProposal.breachDate}</strong> before <span className="underline font-semibold">{activeProposal.triggeringItem}</span>
+                        </p>
+                      </div>
                     </div>
 
-                    {day.outflows.length > 0 ? (
-                      <div className="space-y-1 mt-1.5 pt-1.5 border-t border-gray-200/60">
-                        {day.outflows.map((item, idx) => (
-                          <div key={idx} className="flex items-center justify-between text-[10px]">
-                            <span className="truncate text-gray-600">{item.title}</span>
-                            <span className="font-mono font-bold text-rose-600 shrink-0">
-                              -₹{item.amount.toLocaleString('en-IN')}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <span className="text-[10px] text-gray-400 block mt-1">No scheduled debits</span>
-                    )}
+                    <div className="text-right">
+                      <span className="text-xs font-semibold text-gray-400 block">Shortfall Amount</span>
+                      <span className="text-lg font-black font-mono text-rose-400">
+                        -₹{(activeProposal.shortfallAmount || 0).toLocaleString('en-IN')}
+                      </span>
+                    </div>
                   </div>
-                ))}
+
+                  {/* Rebalance Transfer Form */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-white/5 p-3.5 rounded-2xl border border-white/10 text-xs">
+                    
+                    {/* Source / Donor Account */}
+                    <div>
+                      <label className="block text-[11px] font-bold text-gray-300 mb-1">
+                        Transfer From (Surplus Liquidity):
+                      </label>
+                      <select
+                        value={selectedDonorId}
+                        onChange={(e) => setSelectedDonorId(e.target.value)}
+                        className="w-full px-3 py-2 bg-slate-900 border border-white/20 rounded-xl text-white font-medium focus:ring-1 focus:ring-indigo-400 focus:outline-none"
+                      >
+                        {donorAccounts.length === 0 ? (
+                          <option value="">No other account with surplus</option>
+                        ) : (
+                          donorAccounts.map((acc) => (
+                            <option key={acc.accountId} value={acc.accountId}>
+                              {acc.accountName} (₹{(acc.currentBalance || 0).toLocaleString('en-IN')})
+                            </option>
+                          ))
+                        )}
+                      </select>
+                    </div>
+
+                    {/* Target Account */}
+                    <div>
+                      <label className="block text-[11px] font-bold text-gray-300 mb-1">
+                        Transfer To (Protected Account):
+                      </label>
+                      <div className="px-3 py-2 bg-white/10 border border-white/20 rounded-xl text-white font-bold flex items-center justify-between">
+                        <span>{currentAccount?.accountName}</span>
+                        <span className="text-rose-300 font-mono">₹{(currentAccount?.currentBalance || 0).toLocaleString('en-IN')}</span>
+                      </div>
+                    </div>
+
+                    {/* Rebalance Amount */}
+                    <div>
+                      <label className="block text-[11px] font-bold text-gray-300 mb-1">
+                        Rebalance Amount (₹):
+                      </label>
+                      <input
+                        type="number"
+                        value={transferAmount}
+                        onChange={(e) => setTransferAmount(e.target.value)}
+                        className="w-full px-3 py-2 bg-slate-900 border border-white/20 rounded-xl text-white font-mono font-bold focus:ring-1 focus:ring-indigo-400 focus:outline-none"
+                      />
+                    </div>
+
+                  </div>
+
+                  {/* 1-Click Action Button */}
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1">
+                    <p className="text-[11px] text-gray-300 flex items-center gap-1.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span>Atomically tops up checking balance and eliminates bounce risk.</span>
+                    </p>
+
+                    <button
+                      onClick={handleExecuteRebalance}
+                      disabled={isExecutingRebalance || !selectedDonorId}
+                      className="w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-emerald-500 via-indigo-500 to-purple-600 hover:from-emerald-600 hover:to-indigo-700 text-white font-extrabold text-xs rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      {isExecutingRebalance ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 animate-spin" />
+                          <span>Rebalancing Accounts...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Zap className="w-4 h-4 text-emerald-300" />
+                          <span>Execute 1-Click Auto-Rebalance (₹{Number(transferAmount || 0).toLocaleString('en-IN')})</span>
+                          <ArrowRight className="w-4 h-4" />
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                </div>
+              )}
+
+              {/* Account Selector Tabs */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
+                    <Calendar className="w-4 h-4 text-indigo-600" />
+                    14-Day Rolling Cash-Flow Forecast by Account
+                  </h3>
+                  <span className="text-[11px] text-gray-500">
+                    Click an account to inspect daily balance trajectory
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                  {accounts.map((acc) => (
+                    <button
+                      key={acc.accountId}
+                      onClick={() => setSelectedAccountId(acc.accountId)}
+                      className={`p-3 rounded-2xl border transition-all text-left shrink-0 min-w-44 ${
+                        selectedAccountId === acc.accountId
+                          ? 'border-indigo-600 bg-indigo-50/60 shadow-2xs'
+                          : 'border-gray-200 bg-white hover:bg-gray-50'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-1 mb-1">
+                        <span className="font-extrabold text-xs text-gray-900 truncate">
+                          {acc.accountName}
+                        </span>
+                        {acc.isBreached && (
+                          <span className="px-1.5 py-0.5 bg-rose-100 text-rose-800 rounded-md text-[9px] font-black uppercase">
+                            Breach ⚠️
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex justify-between items-end">
+                        <span className="text-[10px] text-gray-500">Live Balance:</span>
+                        <span className="font-mono font-bold text-xs text-gray-900">
+                          ₹{(acc.currentBalance || 0).toLocaleString('en-IN')}
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+
+              {/* Day-by-Day Forecast Timeline for Selected Account */}
+              {currentAccount && (
+                <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-200 shadow-2xs space-y-3">
+                  <div className="flex items-center justify-between border-b border-gray-100 pb-2.5">
+                    <div>
+                      <h4 className="font-extrabold text-sm text-gray-900">
+                        Daily Trajectory: {currentAccount.accountName}
+                      </h4>
+                      <p className="text-xs text-gray-500">
+                        Projected lowest balance: <strong className={`font-mono ${(currentAccount.minProjectedBalance || 0) < 5000 ? 'text-rose-600' : 'text-emerald-600'}`}>₹{(currentAccount.minProjectedBalance != null ? currentAccount.minProjectedBalance : 0).toLocaleString('en-IN')}</strong>
+                      </p>
+                    </div>
+                    <span className="text-[11px] font-bold text-gray-500">
+                      {currentAccount.accountType} Account
+                    </span>
+                  </div>
+
+                  {/* 14-Day Schedule Grid / Cards */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 max-h-72 overflow-y-auto pr-1">
+                    {(currentAccount.dailySchedule || []).map((day) => (
+                      <div
+                        key={day.date}
+                        className={`p-2.5 rounded-xl border text-xs transition-all ${
+                          (day.projectedClosingBalance || 0) < 5000
+                            ? 'bg-rose-50/50 border-rose-200 text-rose-900'
+                            : 'bg-gray-50/60 border-gray-100 text-gray-800'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between font-bold text-[11px] mb-1">
+                          <span>{day.dayName}</span>
+                          <span className={`font-mono ${(day.projectedClosingBalance || 0) < 5000 ? 'text-rose-700 font-extrabold' : 'text-gray-700'}`}>
+                            ₹{(day.projectedClosingBalance != null ? day.projectedClosingBalance : 0).toLocaleString('en-IN')}
+                          </span>
+                        </div>
+
+                        {day.outflows && day.outflows.length > 0 ? (
+                          <div className="space-y-1 mt-1.5 pt-1.5 border-t border-gray-200/60">
+                            {day.outflows.map((item, idx) => (
+                              <div key={idx} className="flex items-center justify-between text-[10px]">
+                                <span className="truncate text-gray-600">{item.title}</span>
+                                <span className="font-mono font-bold text-rose-600 shrink-0">
+                                  -₹{(item.amount || 0).toLocaleString('en-IN')}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-[10px] text-gray-400 block mt-1">No scheduled debits</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
           )}
 
         </div>

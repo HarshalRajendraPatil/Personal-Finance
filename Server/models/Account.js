@@ -64,6 +64,30 @@ const accountSchema = new mongoose.Schema({
 accountSchema.index({ user: 1, isArchived: 1 });
 accountSchema.index({ user: 1, type: 1 });
 
+// Ensure creditLimit and card-specific fields are strictly applied to Credit Cards only
+accountSchema.pre('validate', function() {
+  if (this.type !== 'Credit Card') {
+    this.creditLimit = null;
+    this.issuer = '';
+    this.last4Digits = '';
+    this.billingCycleDay = null;
+    this.paymentDueDay = null;
+  } else {
+    if (this.creditLimit !== null && this.creditLimit !== undefined) {
+      const num = Number(this.creditLimit);
+      this.creditLimit = !isNaN(num) && num >= 0 ? num : null;
+    }
+    if (this.billingCycleDay !== null && this.billingCycleDay !== undefined) {
+      const day = parseInt(this.billingCycleDay, 10);
+      this.billingCycleDay = !isNaN(day) && day >= 1 && day <= 31 ? day : null;
+    }
+    if (this.paymentDueDay !== null && this.paymentDueDay !== undefined) {
+      const day = parseInt(this.paymentDueDay, 10);
+      this.paymentDueDay = !isNaN(day) && day >= 1 && day <= 31 ? day : null;
+    }
+  }
+});
+
 const Account = mongoose.model('Account', accountSchema);
 export default Account;
 

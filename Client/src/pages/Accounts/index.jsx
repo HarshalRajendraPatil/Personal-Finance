@@ -425,6 +425,15 @@ const Accounts = () => {
   useEffect(() => {
     dispatch(fetchAccounts());
     dispatch(fetchOverdraftForecast(5000));
+
+    const handleOpenAddModal = () => {
+      setEditingAccount(null);
+      setIsModalOpen(true);
+    };
+    window.addEventListener('open-add-account-modal', handleOpenAddModal);
+    return () => {
+      window.removeEventListener('open-add-account-modal', handleOpenAddModal);
+    };
   }, [dispatch]);
 
   const handleEdit = (account) => {
@@ -531,7 +540,7 @@ const Accounts = () => {
                 </span>
               </div>
               <p className="text-xs sm:text-sm font-semibold text-white mt-0.5">
-                Projected shortfall of <strong className="font-mono text-rose-300">₹{overdraftForecast.summary?.totalShortfall?.toLocaleString('en-IN')}</strong> in the next 14 days before scheduled EMIs/bills. Avoid ECS/NACH bounce fees in 1-click!
+                Projected shortfall of <strong className="font-mono text-rose-300">₹{(overdraftForecast.summary?.totalShortfall ?? 0).toLocaleString('en-IN')}</strong> in the next 14 days before scheduled EMIs/bills. Avoid ECS/NACH bounce fees in 1-click!
               </p>
             </div>
           </div>

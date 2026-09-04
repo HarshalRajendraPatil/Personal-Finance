@@ -64,13 +64,33 @@ export const updateProfile = createAsyncThunk(
   }
 );
 
+export const googleLogin = createAsyncThunk(
+  'auth/googleLogin',
+  async (credential, thunkAPI) => {
+    try {
+      const response = await authService.googleAuth(credential);
+      localStorage.setItem('user', JSON.stringify(response));
+      return response;
+    } catch (error) {
+      const message = error.response?.data?.message || error.message || error.toString();
+      return thunkAPI.rejectWithValue(message);
+    }
+  }
+);
+
 const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
     clearError: (state) => {
       state.error = null;
-    }
+    },
+    setEmailVerified: (state) => {
+      if (state.user) {
+        state.user.isEmailVerified = true;
+        localStorage.setItem('user', JSON.stringify(state.user));
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -115,9 +135,22 @@ const authSlice = createSlice({
       .addCase(updateProfile.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
+      })
+      .addCase(googleLogin.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(googleLogin.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.isAuthenticated = true;
+        state.user = action.payload;
+      })
+      .addCase(googleLogin.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
       });
   },
 });
 
-export const { clearError } = authSlice.actions;
+export const { clearError, setEmailVerified } = authSlice.actions;
 export default authSlice.reducer;

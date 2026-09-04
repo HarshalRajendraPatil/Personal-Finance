@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../store/authSlice';
+import authService from '../services/authService';
 import { fetchProactiveNudges, fetchSalaryPlan, fetchSubscriptionAudit, fetchOverdraftForecast, openWhatIfModal } from '../store/proactiveSlice';
 import ActionCenterDrawer from '../components/ActionCenterDrawer';
 import AICopilotDrawer from '../components/AICopilotDrawer';
@@ -12,7 +13,7 @@ import WhatIfSimulatorModal from '../components/WhatIfSimulatorModal';
 import {
   User, LogOut, LayoutDashboard, Wallet, Tags, ArrowRightLeft,
   CalendarClock, PiggyBank, Users, Target, BarChart3, TrendingUp,
-  Building2, Scale, Activity, Menu, X, ChevronRight, Bell, Sparkles,
+  Building2, Scale, Activity, Menu, X, ChevronRight, Bell,
   Bot, Compass
 } from 'lucide-react';
 
@@ -26,6 +27,22 @@ const MainLayout = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isActionCenterOpen, setIsActionCenterOpen] = useState(false);
   const [isCopilotOpen, setIsCopilotOpen] = useState(false);
+  const [isResendingVerification, setIsResendingVerification] = useState(false);
+  const [verificationSent, setVerificationSent] = useState(false);
+
+  const handleResendVerification = async () => {
+    if (!user?.email) return;
+    try {
+      setIsResendingVerification(true);
+      await authService.resendVerification(user.email);
+      setVerificationSent(true);
+      setTimeout(() => setVerificationSent(false), 5000);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to send verification email.');
+    } finally {
+      setIsResendingVerification(false);
+    }
+  };
 
   useEffect(() => {
     dispatch(fetchProactiveNudges());
@@ -348,6 +365,29 @@ const MainLayout = () => {
 
       {/* ── Main Content Area (Mobile & Desktop) ── */}
       <main className="flex-1 flex flex-col min-w-0 w-full overflow-x-hidden relative">
+        {/* Email Verification Reminder Banner */}
+        {user && !user.isEmailVerified && user.authProvider !== 'google' && (
+          <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-2.5 sm:px-6 flex flex-wrap items-center justify-between gap-2 text-xs text-amber-900">
+            <div className="flex items-center gap-2">
+              <span className="flex h-2 w-2 rounded-full bg-amber-500 shrink-0" />
+              <span>
+                Your email address <strong>({user.email})</strong> is not verified yet. Please verify your account.
+              </span>
+            </div>
+            <button
+              onClick={handleResendVerification}
+              disabled={isResendingVerification || verificationSent}
+              className="font-semibold text-amber-800 hover:text-amber-950 underline cursor-pointer disabled:opacity-50"
+            >
+              {isResendingVerification
+                ? 'Sending link...'
+                : verificationSent
+                ? 'Verification email sent! ✓'
+                : 'Resend verification email'}
+            </button>
+          </div>
+        )}
+
         <div className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8 max-w-full overflow-x-hidden pb-20 md:pb-8">
           <Outlet />
         </div>

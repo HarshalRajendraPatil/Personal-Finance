@@ -281,9 +281,9 @@ const MainLayout = () => {
       )}
 
       {/* ── Desktop Sidebar (Visible on md and larger) ── */}
-      <aside className="w-64 bg-white border-r border-gray-200 hidden md:flex md:flex-col md:h-screen md:sticky md:top-0">
+      <aside className="w-64 bg-white border-r border-gray-200 hidden md:flex md:flex-col fixed inset-y-0 left-0 z-30">
         {/* Brand Header */}
-        <div className="h-16 flex items-center justify-between px-6 border-b border-gray-200">
+        <div className="h-16 flex items-center justify-between px-6 border-b border-gray-200 shrink-0">
           <Link to="/dashboard" className="flex items-center gap-2">
             <span className="bg-indigo-600 text-white p-1.5 rounded-lg shadow-xs">
               <Activity className="w-5 h-5" />
@@ -339,7 +339,7 @@ const MainLayout = () => {
         </div>
 
         {/* User Profile & Sign Out Footer */}
-        <div className="p-4 border-t border-gray-200">
+        <div className="p-4 border-t border-gray-200 shrink-0">
           <Link to="/profile" className="flex items-center group mb-3 p-1.5 rounded-lg hover:bg-gray-50 transition-colors">
             {user?.profilePic ? (
               <img src={user.profilePic} alt="" className="h-8 w-8 rounded-full bg-gray-200 object-cover" />
@@ -364,7 +364,7 @@ const MainLayout = () => {
       </aside>
 
       {/* ── Main Content Area (Mobile & Desktop) ── */}
-      <main className="flex-1 flex flex-col min-w-0 w-full overflow-x-hidden relative">
+      <main className="flex-1 flex flex-col min-w-0 w-full md:pl-64 overflow-x-hidden relative">
         {/* Email Verification Reminder Banner */}
         {user && !user.isEmailVerified && user.authProvider !== 'google' && (
           <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-2.5 sm:px-6 flex flex-wrap items-center justify-between gap-2 text-xs text-amber-900">

@@ -169,8 +169,8 @@ const Transactions = () => {
       {lastBudgetAlert && (
         <div
           className={`mb-4 p-4 rounded-xl border flex items-start justify-between shadow-2xs transition-all ${lastBudgetAlert.level === 'critical'
-              ? 'bg-rose-50 border-rose-200 text-rose-900'
-              : 'bg-amber-50 border-amber-200 text-amber-900'
+            ? 'bg-rose-50 border-rose-200 text-rose-900'
+            : 'bg-amber-50 border-amber-200 text-amber-900'
             }`}
         >
           <div className="flex items-start space-x-3">
@@ -331,10 +331,10 @@ const Transactions = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       {t.type === 'Transfer' ? (
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${t.tags?.includes('investment')
-                            ? 'bg-purple-100 text-purple-800'
-                            : t.tags?.includes('goal')
-                              ? 'bg-indigo-100 text-indigo-800'
-                              : 'bg-blue-100 text-blue-800'
+                          ? 'bg-purple-100 text-purple-800'
+                          : t.tags?.includes('goal')
+                            ? 'bg-indigo-100 text-indigo-800'
+                            : 'bg-blue-100 text-blue-800'
                           }`}>
                           {t.tags?.includes('investment') ? '💼 Investment' : t.tags?.includes('goal') ? '🎯 Goal Savings' : '🔁 Transfer'}
                         </span>

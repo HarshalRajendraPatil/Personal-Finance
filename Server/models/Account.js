@@ -65,7 +65,7 @@ accountSchema.index({ user: 1, isArchived: 1 });
 accountSchema.index({ user: 1, type: 1 });
 
 // Ensure creditLimit and card-specific fields are strictly applied to Credit Cards only
-accountSchema.pre('validate', function() {
+accountSchema.pre('validate', function () {
   if (this.type !== 'Credit Card') {
     this.creditLimit = null;
     this.issuer = '';

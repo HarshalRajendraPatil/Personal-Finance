@@ -358,9 +358,8 @@ const CreditCardStatementModal = ({ isOpen, onClose, card, onPayClick }) => {
                             <td className="px-3.5 py-2 font-medium text-gray-900">{t.merchant || t.notes || '—'}</td>
                             <td className="px-3.5 py-2 text-gray-500">{t.category?.name || 'Transfer / Other'}</td>
                             <td
-                              className={`px-3.5 py-2 text-right font-bold ${
-                                t.type === 'Expense' ? 'text-red-600' : 'text-green-600'
-                              }`}
+                              className={`px-3.5 py-2 text-right font-bold ${t.type === 'Expense' ? 'text-red-600' : 'text-green-600'
+                                }`}
                             >
                               {t.type === 'Expense' ? '-' : '+'}
                               {formatCurrency(t.amount, card.currency)}
@@ -595,8 +594,8 @@ const Accounts = () => {
                 utilization > 70
                   ? 'bg-red-500'
                   : utilization > 30
-                  ? 'bg-amber-500'
-                  : 'bg-emerald-500';
+                    ? 'bg-amber-500'
+                    : 'bg-emerald-500';
 
               return (
                 <div
@@ -750,9 +749,8 @@ const Accounts = () => {
                     </div>
                     <div className="flex flex-col items-end">
                       <span
-                        className={`text-lg font-bold ${
-                          account.currentBalance < 0 ? 'text-red-600' : 'text-gray-900'
-                        }`}
+                        className={`text-lg font-bold ${account.currentBalance < 0 ? 'text-red-600' : 'text-gray-900'
+                          }`}
                       >
                         {formatCurrency(account.currentBalance, account.currency)}
                       </span>

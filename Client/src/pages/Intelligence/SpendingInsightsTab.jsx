@@ -8,8 +8,24 @@ import {
   Wallet, Coffee, CheckCircle2, Sparkles, Layers, ArrowRight, ShieldAlert,
   Repeat, DollarSign
 } from 'lucide-react';
-import { PieChart } from '@mui/x-charts/PieChart';
-import { BarChart } from '@mui/x-charts/BarChart';
+import {
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  ResponsiveContainer,
+} from 'recharts';
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
+} from '../../components/ui/chart';
 
 import { formatCurrency } from '../../utils/formatCurrency';
 
@@ -209,29 +225,61 @@ const SpendingInsightsTab = () => {
             </div>
           </div>
 
-          <div className="w-full overflow-x-auto min-w-0">
-            <div className="min-w-[320px] h-56 w-full">
+          <div className="w-full min-w-0">
+            <ChartContainer
+              config={{
+                income: { label: 'Income', color: '#10b981' },
+                expense: { label: 'Expense', color: '#f43f5e' },
+                net: { label: 'Net Savings', color: '#6366f1' },
+              }}
+              className="h-60 w-full aspect-auto"
+            >
               {historyView === 'expense' ? (
-                <BarChart
-                  xAxis={[{ scaleType: 'band', data: historyLabels }]}
-                  series={[
-                    { data: historyIncomes, label: 'Income', color: '#10b981' },
-                    { data: historyExpenses, label: 'Expense', color: '#f43f5e' },
-                  ]}
-                  height={220}
-                  margin={{ top: 10, bottom: 25, left: 50, right: 10 }}
-                />
+                <BarChart data={monthlySpendingHistory} margin={{ top: 10, bottom: 15, left: 0, right: 10 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fill: '#64748b', fontSize: 11 }} />
+                  <YAxis tickLine={false} axisLine={false} tickFormatter={(v) => formatCurrency(v)} tick={{ fill: '#64748b', fontSize: 11 }} width={65} />
+                  <ChartTooltip
+                    content={
+                      <ChartTooltipContent
+                        indicator="dot"
+                        formatter={(val, name) => (
+                          <div className="flex items-center justify-between gap-3 w-full">
+                            <span className="text-gray-500 capitalize">{name}</span>
+                            <span className="font-mono font-bold text-gray-900">{formatCurrency(Number(val))}</span>
+                          </div>
+                        )}
+                      />
+                    }
+                  />
+                  <ChartLegend content={<ChartLegendContent />} />
+                  <Bar dataKey="income" name="income" fill="#10b981" radius={[6, 6, 0, 0]} maxBarSize={28} />
+                  <Bar dataKey="expense" name="expense" fill="#f43f5e" radius={[6, 6, 0, 0]} maxBarSize={28} />
+                </BarChart>
               ) : (
-                <BarChart
-                  xAxis={[{ scaleType: 'band', data: historyLabels }]}
-                  series={[
-                    { data: historyNets, label: 'Net Savings', color: '#6366f1' },
-                  ]}
-                  height={220}
-                  margin={{ top: 10, bottom: 25, left: 50, right: 10 }}
-                />
+                <BarChart data={monthlySpendingHistory} margin={{ top: 10, bottom: 15, left: 0, right: 10 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fill: '#64748b', fontSize: 11 }} />
+                  <YAxis tickLine={false} axisLine={false} tickFormatter={(v) => formatCurrency(v)} tick={{ fill: '#64748b', fontSize: 11 }} width={65} />
+                  <ChartTooltip
+                    content={
+                      <ChartTooltipContent
+                        indicator="dot"
+                        formatter={(val) => (
+                          <div className="flex items-center justify-between gap-3 w-full">
+                            <span className="text-gray-500">Net Savings:</span>
+                            <span className={`font-mono font-bold ${Number(val) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                              {Number(val) >= 0 ? '+' : ''}{formatCurrency(Number(val))}
+                            </span>
+                          </div>
+                        )}
+                      />
+                    }
+                  />
+                  <Bar dataKey="net" name="net" fill="#6366f1" radius={[6, 6, 0, 0]} maxBarSize={36} />
+                </BarChart>
               )}
-            </div>
+            </ChartContainer>
           </div>
 
           {/* Month Summary Bar */}
@@ -387,22 +435,45 @@ const SpendingInsightsTab = () => {
               <PieChartIcon className="w-4 h-4 text-emerald-500" /> Essential vs Discretionary Split
             </h3>
             <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
-              <div className="h-48 w-48 flex items-center justify-center flex-shrink-0">
-                <PieChart
-                  series={[{
-                    data: [
-                      { id: 0, value: essentialVsDiscretionary.essential, label: 'Essential', color: '#10b981' },
-                      { id: 1, value: essentialVsDiscretionary.discretionary, label: 'Discretionary', color: '#f59e0b' }
-                    ],
-                    innerRadius: 30,
-                    outerRadius: 80,
-                    paddingAngle: 2,
-                    cornerRadius: 4,
-                  }]}
-                  height={190} width={190}
-                  margin={{ top: 0, bottom: 0, left: 0, right: 0 }}
-                  slotProps={{ legend: { hidden: true } }}
-                />
+              <div className="h-44 w-44 flex items-center justify-center shrink-0">
+                <ChartContainer
+                  config={{
+                    Essential: { label: 'Essential', color: '#10b981' },
+                    Discretionary: { label: 'Discretionary', color: '#f59e0b' }
+                  }}
+                  className="h-44 w-44 aspect-square"
+                >
+                  <PieChart>
+                    <ChartTooltip
+                      content={
+                        <ChartTooltipContent
+                          hideLabel
+                          formatter={(v, n) => (
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="font-medium text-gray-600">{n}:</span>
+                              <span className="font-bold text-gray-900">{formatCurrency(Number(v))}</span>
+                            </div>
+                          )}
+                        />
+                      }
+                    />
+                    <Pie
+                      data={[
+                        { name: 'Essential', value: essentialVsDiscretionary.essential, fill: '#10b981' },
+                        { name: 'Discretionary', value: essentialVsDiscretionary.discretionary, fill: '#f59e0b' }
+                      ]}
+                      dataKey="value"
+                      nameKey="name"
+                      innerRadius={36}
+                      outerRadius={72}
+                      strokeWidth={2}
+                      stroke="#fff"
+                    >
+                      <Cell fill="#10b981" />
+                      <Cell fill="#f59e0b" />
+                    </Pie>
+                  </PieChart>
+                </ChartContainer>
               </div>
               <div className="flex-1 space-y-4 w-full">
                 <div>
@@ -432,15 +503,39 @@ const SpendingInsightsTab = () => {
             <h3 className="font-bold text-gray-900 mb-4 sm:mb-5 flex items-center gap-2 text-sm sm:text-base">
               <Clock className="w-4 h-4 text-blue-500" /> Spending by Time of Day
             </h3>
-            <div className="w-full overflow-x-auto min-w-0">
-              <div className="min-w-[280px] h-48 w-full">
-                <BarChart
-                  series={[{ data: timeOfDayBreakdown.map(t => t.total), color: '#3b82f6', label: 'Amount' }]}
-                  xAxis={[{ scaleType: 'band', data: timeOfDayBreakdown.map(t => t.label) }]}
-                  height={200}
-                  margin={{ top: 10, bottom: 20, left: 50, right: 10 }}
-                />
-              </div>
+            <div className="w-full min-w-0">
+              <ChartContainer
+                config={{
+                  total: { label: 'Spending Amount', color: '#3b82f6' }
+                }}
+                className="h-44 w-full aspect-auto"
+              >
+                <BarChart data={timeOfDayBreakdown} margin={{ top: 10, bottom: 10, left: 0, right: 10 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fill: '#64748b', fontSize: 11 }} />
+                  <YAxis tickLine={false} axisLine={false} tickFormatter={(v) => formatCurrency(v)} tick={{ fill: '#64748b', fontSize: 11 }} width={55} />
+                  <ChartTooltip
+                    content={
+                      <ChartTooltipContent
+                        indicator="dot"
+                        formatter={(val, _, item) => (
+                          <div className="space-y-1">
+                            <div className="flex justify-between gap-3">
+                              <span className="text-gray-500">Amount:</span>
+                              <span className="font-mono font-bold text-gray-900">{formatCurrency(Number(val))}</span>
+                            </div>
+                            <div className="flex justify-between gap-3 text-[11px] text-gray-400">
+                              <span>Volume:</span>
+                              <span>{item?.payload?.count || 0} transactions</span>
+                            </div>
+                          </div>
+                        )}
+                      />
+                    }
+                  />
+                  <Bar dataKey="total" fill="#3b82f6" radius={[6, 6, 0, 0]} maxBarSize={36} />
+                </BarChart>
+              </ChartContainer>
             </div>
             <div className="grid grid-cols-4 gap-1 mt-4 border-t border-gray-100 pt-3">
               {timeOfDayBreakdown.map(t => (

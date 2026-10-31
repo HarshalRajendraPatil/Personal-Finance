@@ -8,6 +8,7 @@ import {
   fetchProactiveNudges,
 } from '../store/proactiveSlice';
 import { fetchRecurringRules } from '../store/recurringSlice';
+import CapiseLoader from './ui/CapiseLoader';
 import {
   Sparkles,
   X,
@@ -239,11 +240,12 @@ const SubscriptionAuditModal = () => {
         {/* Subscription List */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3 bg-gray-50/50">
           {isLoadingSubscriptionAudit ? (
-            <div className="py-16 text-center">
-              <RefreshCw className="w-8 h-8 text-indigo-600 animate-spin mx-auto mb-2" />
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-                Auditing historical charges & analyzing activity...
-              </p>
+            <div className="py-14 text-center">
+              <CapiseLoader
+                size="md"
+                text="Auditing Recurring Subscriptions"
+                subtext="Scanning ledger for hidden fee hikes, dormant trials, and duplicate tools..."
+              />
             </div>
           ) : filteredSubs.length === 0 ? (
             <div className="py-16 text-center text-gray-500">

@@ -4,6 +4,7 @@ import { fetchLoans, createLoan, updateLoan, deleteLoan, addPayment, syncLoanEmi
 import { fetchAccounts } from '../../store/accountSlice';
 import * as loanSvc from '../../services/loanService';
 import Pagination from '../../components/Pagination';
+import CapiseLoader from '../../components/ui/CapiseLoader';
 import { Plus, Building2, ChevronDown, ChevronUp, Edit2, Trash2, CreditCard, Calendar, IndianRupee, X, Zap, CheckCircle2, RefreshCw } from 'lucide-react';
 
 
@@ -304,7 +305,7 @@ const ScheduleModal = ({ isOpen, onClose, loan }) => {
         </div>
         <div className="overflow-y-auto flex-1 p-4 sm:p-6">
           {loading ? (
-            <div className="text-center py-8"><div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-500 border-t-transparent" /></div>
+            <div className="py-8"><CapiseLoader size="sm" text="Amortizing Loan Schedule" subtext="Calculating principal, interest, and payoff curves..." /></div>
           ) : (
             <div className="overflow-hidden rounded-xl border border-gray-100">
               <div className="overflow-x-auto -mx-2 sm:mx-0">
@@ -451,7 +452,13 @@ const Loans = () => {
       )}
 
       {isLoading && loans.length === 0 ? (
-        <div className="text-center py-12"><div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent" /></div>
+        <div className="py-12">
+          <CapiseLoader
+            size="md"
+            text="Loading Debt & Amortization Schedules"
+            subtext="Consolidating active loans, EMIs, and interest burdens..."
+          />
+        </div>
       ) : loans.length === 0 ? (
         <div className="text-center bg-white rounded-xl border border-dashed border-gray-200 py-16">
           <Building2 className="mx-auto h-12 w-12 text-gray-400" />

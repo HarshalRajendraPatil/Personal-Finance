@@ -16,7 +16,12 @@ import { AreaChart, Area, ResponsiveContainer } from 'recharts';
 import CashFlowChart from '../../components/charts/CashFlowChart';
 import CategoryDonutChart from '../../components/charts/CategoryDonutChart';
 import NetWorthTrendChart from '../../components/charts/NetWorthTrendChart';
+import BudgetComparisonChart from '../../components/charts/BudgetComparisonChart';
+import MonthlyCashFlowComparisonChart from '../../components/charts/MonthlyCashFlowComparisonChart';
+import SpendingBurnChart from '../../components/charts/SpendingBurnChart';
+import HealthScoreGaugeChart from '../../components/charts/HealthScoreGaugeChart';
 import { formatCurrency } from '../../utils/formatCurrency';
+import CapiseLoader from '../../components/ui/CapiseLoader';
 
 const Dashboard = () => {
   const dispatch = useDispatch();
@@ -72,13 +77,21 @@ const Dashboard = () => {
     return snapshot.netWorthTrend.map((t, i) => ({ i, val: Number(t.value || 0) }));
   }, [snapshot?.netWorthTrend]);
 
+  const healthScoreVal = healthScore?.score || 78;
+  const healthGrade = healthScoreVal >= 90 ? 'A+' : healthScoreVal >= 80 ? 'A' : healthScoreVal >= 70 ? 'B+' : healthScoreVal >= 50 ? 'B' : 'C';
+  const healthStatus = healthScoreVal >= 90 ? 'Superb Financial Fortress' : healthScoreVal >= 80 ? 'Excellent Resilience' : healthScoreVal >= 70 ? 'Healthy & Stable' : healthScoreVal >= 50 ? 'Fair with Optimization Gaps' : 'Needs Immediate Attention';
+
+  const totalAssets = (snapshot?.cashAvailable || 0) + (snapshot?.totalInvestments || 0) + (snapshot?.owedToMe || 0);
+  const totalLiabilities = (snapshot?.totalDebt || 0) + (snapshot?.iOwe || 0);
+
   if (isLoading && !data) {
     return (
-      <div className="p-12 text-center text-gray-500 flex flex-col justify-center items-center h-80 space-y-3">
-        <div className="w-10 h-10 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-          Syncing Financial Command Center...
-        </p>
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <CapiseLoader
+          size="lg"
+          text="Financial Command Center"
+          subtext="Synthesizing cashflows, safe-to-spend limits, and portfolio health..."
+        />
       </div>
     );
   }
@@ -309,26 +322,36 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* ⚡ ChadCN Professional Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column: Cash Flow or Net Worth Area Chart Toggle */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-xs border border-gray-100 flex flex-col justify-between">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-4 mb-4 border-b border-gray-100 gap-3">
+      {/* ⚡ Financial Command Center Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5">
+        {/* Left Column: Cash Flow, Net Worth Curve, Comparison, or Spending Burn Toggle */}
+        <div className="lg:col-span-2 bg-white p-5 rounded-2xl shadow-xs border border-gray-100 flex flex-col">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-3 mb-3 border-b border-gray-100 gap-2">
             <div>
-              <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
+              <h3 className="text-sm sm:text-base font-bold text-gray-900 flex items-center gap-2">
                 <Activity className="w-4 h-4 text-indigo-600" />
-                {activeChartTab === 'cashflow' ? 'Cash Flow Trajectory' : 'Net Worth Wealth Progression'}
+                {activeChartTab === 'cashflow'
+                  ? 'Cash Flow Trajectory'
+                  : activeChartTab === 'networth'
+                  ? 'Net Worth Wealth Progression'
+                  : activeChartTab === 'comparison'
+                  ? 'Inflow vs Outflow Dynamics'
+                  : 'Spending Velocity Burn Pace'}
               </h3>
-              <p className="text-xs text-gray-500 mt-0.5">
+              <p className="text-[11px] sm:text-xs text-gray-500 mt-0.5">
                 {activeChartTab === 'cashflow'
                   ? 'Interactive inflow, outflow, and net balance dynamics.'
-                  : 'Historical asset accumulation and debt amortization curve.'}
+                  : activeChartTab === 'networth'
+                  ? 'Historical asset accumulation and debt amortization curve.'
+                  : activeChartTab === 'comparison'
+                  ? 'Gross period income vs expenditures and net retained cash flow.'
+                  : 'Cumulative burn rate trajectory against linear budget pace.'}
               </p>
             </div>
-            <div className="flex items-center gap-1.5 p-1 bg-gray-50 rounded-xl border border-gray-200/70">
+            <div className="flex items-center gap-1 p-1 bg-gray-50 rounded-xl border border-gray-200/70 flex-wrap">
               <button
                 onClick={() => setActiveChartTab('cashflow')}
-                className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${
+                className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all ${
                   activeChartTab === 'cashflow'
                     ? 'bg-white text-indigo-600 shadow-2xs'
                     : 'text-gray-500 hover:text-gray-900'
@@ -338,109 +361,298 @@ const Dashboard = () => {
               </button>
               <button
                 onClick={() => setActiveChartTab('networth')}
-                className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${
+                className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all ${
                   activeChartTab === 'networth'
                     ? 'bg-white text-indigo-600 shadow-2xs'
                     : 'text-gray-500 hover:text-gray-900'
                 }`}
               >
-                Net Worth Curve
+                Net Worth
+              </button>
+              <button
+                onClick={() => setActiveChartTab('comparison')}
+                className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all ${
+                  activeChartTab === 'comparison'
+                    ? 'bg-white text-indigo-600 shadow-2xs'
+                    : 'text-gray-500 hover:text-gray-900'
+                }`}
+              >
+                Inflow vs Outflow
+              </button>
+              <button
+                onClick={() => setActiveChartTab('velocity')}
+                className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all ${
+                  activeChartTab === 'velocity'
+                    ? 'bg-white text-indigo-600 shadow-2xs'
+                    : 'text-gray-500 hover:text-gray-900'
+                }`}
+              >
+                Velocity Pace
               </button>
             </div>
           </div>
 
-          {activeChartTab === 'cashflow' ? (
-            <CashFlowChart cashFlow={charts?.cashFlow} />
-          ) : (
-            <NetWorthTrendChart
-              trendData={snapshot?.netWorthTrend}
-              currentNetWorth={snapshot?.netWorth || 0}
-            />
-          )}
+          <div className="flex-1 flex flex-col justify-center">
+            {activeChartTab === 'cashflow' ? (
+              <CashFlowChart cashFlow={charts?.cashFlow} />
+            ) : activeChartTab === 'networth' ? (
+              <NetWorthTrendChart
+                trendData={snapshot?.netWorthTrend}
+                currentNetWorth={snapshot?.netWorth || 0}
+              />
+            ) : activeChartTab === 'comparison' ? (
+              <MonthlyCashFlowComparisonChart
+                totalIncome={period?.income || 0}
+                totalExpense={period?.expense || 0}
+                netCashFlow={(period?.income || 0) - (period?.expense || 0)}
+                savingsRate={period?.savingsRate || 0}
+              />
+            ) : (
+              <SpendingBurnChart
+                cashFlow={charts?.cashFlow}
+                totalDays={period?.spendingVelocity?.totalDaysInPeriod || 30}
+                daysElapsed={period?.spendingVelocity?.daysElapsed || 1}
+                projectedBudget={period?.spendingVelocity?.projectedTotal || period?.expense || 0}
+              />
+            )}
+          </div>
         </div>
 
-        {/* Right Column: ChadCN Donut Chart with Center Metric */}
-        <div className="bg-white p-6 rounded-2xl shadow-xs border border-gray-100 flex flex-col justify-between">
-          <div className="pb-4 mb-2 border-b border-gray-100">
-            <h3 className="text-base font-bold text-gray-900">Expense Allocation</h3>
-            <p className="text-xs text-gray-500 mt-0.5">Categorized proportional breakdown</p>
+        {/* Right Column: Donut Chart with Center Metric & Income/Expense Toggle */}
+        <div className="bg-white p-5 rounded-2xl shadow-xs border border-gray-100 flex flex-col">
+          <div className="pb-3 mb-2 border-b border-gray-100">
+            <h3 className="text-sm sm:text-base font-bold text-gray-900">Capital Flow Allocation</h3>
+            <p className="text-[11px] sm:text-xs text-gray-500 mt-0.5">Categorized proportional breakdown</p>
           </div>
           <CategoryDonutChart
             categories={charts?.expenseCategories}
-            title="Top Expenses"
+            incomeCategories={charts?.incomeCategories}
+            title="Capital Allocation"
             centerSublabel="Total Outflow"
           />
         </div>
       </div>
 
-      {/* Recent Transactions & Widgets Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recent Transactions */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-xs border border-gray-100">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-base font-bold text-gray-900">Recent Ledger Activity</h3>
-            <Link to="/transactions" className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center">
-              View All <ArrowRight className="w-3.5 h-3.5 ml-1" />
+      {/* ⚡ Financial Intelligence, Budget Guardrails & Asset Allocation Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+        {/* 1. Monthly Budget Performance & Headroom */}
+        <div className="bg-white p-5 rounded-2xl shadow-xs border border-gray-100 flex flex-col">
+          <div className="flex justify-between items-center pb-2.5 mb-2.5 border-b border-gray-100">
+            <div>
+              <h3 className="text-sm sm:text-base font-bold text-gray-900 flex items-center gap-2">
+                <Target className="w-4 h-4 text-indigo-600" />
+                Budget Limits & Headroom
+              </h3>
+              <p className="text-[11px] text-gray-500 mt-0.5">Category guardrails vs actual spend</p>
+            </div>
+            <Link to="/budgets" className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center">
+              Manage &rarr;
             </Link>
           </div>
-          {recentTransactions && recentTransactions.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs text-left text-gray-500">
-                <thead className="text-[11px] font-bold text-gray-600 uppercase bg-gray-50/80 rounded-xl">
-                  <tr>
-                    <th className="px-4 py-3 rounded-l-xl">Date</th>
-                    <th className="px-4 py-3">Description</th>
-                    <th className="px-4 py-3">Category</th>
-                    <th className="px-4 py-3 text-right rounded-r-xl">Amount</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {recentTransactions.map(t => (
-                    <tr key={t._id} className="hover:bg-gray-50/70 transition-colors">
-                      <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
-                        {new Date(t.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
-                      </td>
-                      <td className="px-4 py-3 font-semibold text-gray-900">{t.merchant || 'Transfer'}</td>
-                      <td className="px-4 py-3">
-                        {t.category ? (
-                          <span
-                            className="px-2 py-0.5 rounded-md text-[11px] font-semibold"
-                            style={{ backgroundColor: `${t.category.color}15`, color: t.category.color }}
-                          >
-                            {t.category.name}
-                          </span>
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
-                      </td>
-                      <td className={`px-4 py-3 text-right font-bold whitespace-nowrap ${t.type === 'Income' ? 'text-emerald-600' : 'text-gray-900'}`}>
-                        {t.type === 'Income' ? '+' : '-'}{formatCurrency(t.amount)}
-                      </td>
+          <BudgetComparisonChart budgetPerformance={budgets} />
+        </div>
+
+        {/* 2. Financial Health Score & Vital Signs */}
+        <div className="bg-white p-5 rounded-2xl shadow-xs border border-gray-100 flex flex-col">
+          <div className="flex justify-between items-center pb-2.5 mb-2.5 border-b border-gray-100">
+            <div>
+              <h3 className="text-sm sm:text-base font-bold text-gray-900 flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                Financial Health & Resilience
+              </h3>
+              <p className="text-[11px] text-gray-500 mt-0.5">Real-time financial vitality score</p>
+            </div>
+            <Link to="/intelligence" className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center">
+              Audit &rarr;
+            </Link>
+          </div>
+          <div className="flex flex-col items-center justify-center flex-1">
+            <HealthScoreGaugeChart
+              score={healthScoreVal}
+              grade={healthGrade}
+              status={healthStatus}
+              size={175}
+              dark={false}
+            />
+            {/* Quick Vital Indicators */}
+            <div className="grid grid-cols-3 gap-2 w-full mt-3 pt-3 border-t border-gray-100 text-center">
+              <div className="p-2 bg-gray-50 rounded-xl">
+                <p className="text-3xs font-semibold text-gray-400 uppercase">Runway</p>
+                <p className="text-xs font-extrabold text-gray-800 mt-0.5">
+                  {healthScore?.metrics?.emergencyRunwayDays || 45}d
+                </p>
+              </div>
+              <div className="p-2 bg-gray-50 rounded-xl">
+                <p className="text-3xs font-semibold text-gray-400 uppercase">DTI Ratio</p>
+                <p className="text-xs font-extrabold text-gray-800 mt-0.5">
+                  {healthScore?.metrics?.debtToIncomeRatio || 12}%
+                </p>
+              </div>
+              <div className="p-2 bg-gray-50 rounded-xl">
+                <p className="text-3xs font-semibold text-gray-400 uppercase">Savings</p>
+                <p className="text-xs font-extrabold text-indigo-600 mt-0.5">
+                  {period?.savingsRate || 0}%
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 3. Account Liquidity & Asset Allocation Distribution */}
+        <div className="bg-white p-5 rounded-2xl shadow-xs border border-gray-100 flex flex-col">
+          <div className="flex justify-between items-center pb-2.5 mb-2.5 border-b border-gray-100">
+            <div>
+              <h3 className="text-sm sm:text-base font-bold text-gray-900 flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-blue-600" />
+                Asset & Account Distribution
+              </h3>
+              <p className="text-[11px] text-gray-500 mt-0.5">Liquidity across institutions</p>
+            </div>
+            <Link to="/accounts" className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center">
+              Accounts &rarr;
+            </Link>
+          </div>
+
+          <div className="space-y-3 flex-1 flex flex-col justify-between">
+            {/* Asset vs Liability Bar */}
+            <div>
+              <div className="flex justify-between text-xs mb-1 font-medium">
+                <span className="text-gray-500">Assets vs Liabilities</span>
+                <span className="text-gray-700 font-semibold">
+                  Ratio: {totalAssets > 0 ? ((totalLiabilities / totalAssets) * 100).toFixed(0) : 0}% Debt
+                </span>
+              </div>
+              <div className="w-full bg-gray-100 rounded-full h-2.5 flex overflow-hidden p-0.5">
+                <div
+                  className="bg-emerald-500 h-1.5 rounded-l-full transition-all"
+                  style={{
+                    width: `${
+                      totalAssets > 0
+                        ? Math.min(100, Math.round((totalAssets / ((totalAssets + totalLiabilities) || 1)) * 100))
+                        : 100
+                    }%`,
+                  }}
+                  title={`Assets: ${formatCurrency(totalAssets)}`}
+                />
+                <div
+                  className="bg-rose-500 h-1.5 rounded-r-full transition-all"
+                  style={{
+                    width: `${
+                      totalAssets + totalLiabilities > 0
+                        ? Math.min(100, Math.round((totalLiabilities / (totalAssets + totalLiabilities)) * 100))
+                        : 0
+                    }%`,
+                  }}
+                  title={`Liabilities: ${formatCurrency(totalLiabilities)}`}
+                />
+              </div>
+              <div className="flex justify-between text-3xs text-gray-400 mt-1">
+                <span className="text-emerald-700 font-bold">● Assets: {formatCurrency(totalAssets)}</span>
+                <span className="text-rose-600 font-bold">● Debt: {formatCurrency(totalLiabilities)}</span>
+              </div>
+            </div>
+
+            {/* Individual accounts distribution list */}
+            <div className="space-y-1.5 pt-1 border-t border-gray-50 max-h-[175px] overflow-y-auto pr-1">
+              {snapshot?.accountBreakdown && snapshot.accountBreakdown.length > 0 ? (
+                snapshot.accountBreakdown.map((acc, idx) => {
+                  const totalCash = snapshot?.cashAvailable || 1;
+                  const pct = Math.min(100, Math.round(((acc.balance || 0) / totalCash) * 100));
+                  return (
+                    <div key={idx} className="space-y-1 p-1 rounded-lg hover:bg-gray-50 transition-colors">
+                      <div className="flex justify-between text-xs">
+                        <span className="font-semibold text-gray-800 truncate">{acc.name}</span>
+                        <span className="font-bold text-gray-900">{formatCurrency(acc.balance)}</span>
+                      </div>
+                      <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                        <div
+                          className="bg-indigo-600 h-1.5 rounded-full transition-all"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="p-3 text-center text-xs text-gray-400 bg-gray-50 rounded-xl">
+                  No active accounts recorded.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Recent Transactions & Widgets Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5">
+        {/* Recent Transactions */}
+        <div className="lg:col-span-2 bg-white p-5 rounded-2xl shadow-xs border border-gray-100 flex flex-col justify-between">
+          <div>
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-sm sm:text-base font-bold text-gray-900">Recent Ledger Activity</h3>
+              <Link to="/transactions" className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center">
+                View All <ArrowRight className="w-3.5 h-3.5 ml-1" />
+              </Link>
+            </div>
+            {recentTransactions && recentTransactions.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs text-left text-gray-500">
+                  <thead className="text-[11px] font-bold text-gray-600 uppercase bg-gray-50/80 rounded-xl">
+                    <tr>
+                      <th className="px-3.5 py-2.5 rounded-l-xl">Date</th>
+                      <th className="px-3.5 py-2.5">Description</th>
+                      <th className="px-3.5 py-2.5">Category</th>
+                      <th className="px-3.5 py-2.5 text-right rounded-r-xl">Amount</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="p-6 text-center text-xs text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-              No recent transactions found.
-            </div>
-          )}
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {recentTransactions.map(t => (
+                      <tr key={t._id} className="hover:bg-gray-50/70 transition-colors">
+                        <td className="px-3.5 py-2.5 text-gray-600 whitespace-nowrap">
+                          {new Date(t.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                        </td>
+                        <td className="px-3.5 py-2.5 font-semibold text-gray-900">{t.merchant || 'Transfer'}</td>
+                        <td className="px-3.5 py-2.5">
+                          {t.category ? (
+                            <span
+                              className="px-2 py-0.5 rounded-md text-[11px] font-semibold"
+                              style={{ backgroundColor: `${t.category.color}15`, color: t.category.color }}
+                            >
+                              {t.category.name}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
+                        </td>
+                        <td className={`px-3.5 py-2.5 text-right font-bold whitespace-nowrap ${t.type === 'Income' ? 'text-emerald-600' : 'text-gray-900'}`}>
+                          {t.type === 'Income' ? '+' : '-'}{formatCurrency(t.amount)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="p-5 text-center text-xs text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                No recent transactions found.
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Right side widgets column */}
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* Upcoming Obligations */}
-          <div className="bg-white p-6 rounded-2xl shadow-xs border border-gray-100">
-            <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
+          <div className="bg-white p-5 rounded-2xl shadow-xs border border-gray-100">
+            <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
               <Receipt className="w-4 h-4 text-gray-400" /> Upcoming (30 Days)
             </h3>
             {upcoming && upcoming.length > 0 ? (
-              <div className="space-y-3">
+              <div className="space-y-2.5 max-h-40 overflow-y-auto pr-1">
                 {upcoming.map(u => (
-                  <div key={u.id} className="flex justify-between items-center border-b border-gray-50 pb-2.5 last:border-0 last:pb-0">
+                  <div key={u.id} className="flex justify-between items-center border-b border-gray-50 pb-2 last:border-0 last:pb-0">
                     <div>
-                      <p className="font-semibold text-gray-800 text-xs">{u.title}</p>
+                      <p className="font-semibold text-gray-800 text-xs truncate max-w-[170px]">{u.title}</p>
                       <p className="text-[11px] text-gray-400">{new Date(u.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</p>
                     </div>
                     <span className={`text-xs font-bold ${u.type === 'Income' ? 'text-emerald-600' : 'text-rose-600'}`}>
@@ -450,17 +662,17 @@ const Dashboard = () => {
                 ))}
               </div>
             ) : (
-              <div className="p-4 text-center text-xs text-gray-400 bg-gray-50 rounded-xl">No upcoming bills.</div>
+              <div className="p-3 text-center text-xs text-gray-400 bg-gray-50 rounded-xl">No upcoming bills.</div>
             )}
           </div>
 
           {/* Active Goals */}
-          <div className="bg-white p-6 rounded-2xl shadow-xs border border-gray-100">
-            <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
+          <div className="bg-white p-5 rounded-2xl shadow-xs border border-gray-100">
+            <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
               <Target className="w-4 h-4 text-gray-400" /> Active Goals
             </h3>
             {goals && goals.length > 0 ? (
-              <div className="space-y-3.5">
+              <div className="space-y-3 max-h-44 overflow-y-auto pr-1">
                 {goals.map(g => {
                   const progress = g.targetAmount ? Math.min(100, Math.round(((g.currentAmount || 0) / g.targetAmount) * 100)) : 0;
                   return (
@@ -469,9 +681,9 @@ const Dashboard = () => {
                         <span className="font-semibold text-gray-800 truncate pr-2">{g.name}</span>
                         <span className="font-bold text-indigo-600 shrink-0">{progress}%</span>
                       </div>
-                      <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                      <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
                         <div
-                          className="bg-gradient-to-r from-indigo-500 to-purple-600 h-2 rounded-full transition-all duration-500"
+                          className="bg-gradient-to-r from-indigo-500 to-purple-600 h-1.5 rounded-full transition-all duration-500"
                           style={{ width: `${progress}%` }}
                         />
                       </div>
@@ -480,7 +692,7 @@ const Dashboard = () => {
                 })}
               </div>
             ) : (
-              <div className="p-4 text-center text-xs text-gray-400 bg-gray-50 rounded-xl">No active goals.</div>
+              <div className="p-3 text-center text-xs text-gray-400 bg-gray-50 rounded-xl">No active goals.</div>
             )}
           </div>
         </div>

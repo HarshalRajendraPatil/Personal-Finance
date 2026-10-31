@@ -3,6 +3,7 @@ import { OAuth2Client } from 'google-auth-library';
 import User from '../models/User.js';
 import generateToken from '../utils/generateToken.js';
 import { sendPasswordResetEmail, sendVerificationEmail } from '../utils/sendEmail.js';
+import { ensureDefaultCategoriesForUser } from './categoryController.js';
 
 // @desc    Register a new user
 // @route   POST /api/auth/register
@@ -26,6 +27,9 @@ const registerUser = async (req, res) => {
     });
 
     if (user) {
+      // Ensure all standard default categories are automatically present
+      await ensureDefaultCategoriesForUser(user._id);
+
       // Generate email verification token (24 hours expiry)
       const verificationToken = crypto.randomBytes(32).toString('hex');
       user.emailVerificationToken = crypto.createHash('sha256').update(verificationToken).digest('hex');
@@ -153,6 +157,7 @@ const googleAuth = async (req, res) => {
         profilePic: picture || '',
         isEmailVerified: true,
       });
+      await ensureDefaultCategoriesForUser(user._id);
     }
 
     const token = generateToken(res, user._id);

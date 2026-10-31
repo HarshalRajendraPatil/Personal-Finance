@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchCalendarEvents } from '../../store/calendarSlice';
+import CapiseLoader from '../../components/ui/CapiseLoader';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, ArrowRightLeft, Building2, Repeat, Target } from 'lucide-react';
 
 const fmt = (n) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n || 0);
@@ -134,11 +135,14 @@ const Calendar = () => {
           </div>
 
           {/* Calendar Grid */}
-          <div className="grid grid-cols-7 auto-rows-fr relative">
+          <div className="grid grid-cols-7 auto-rows-fr relative min-h-[300px]">
             {isLoading && (
-              <div className="absolute inset-0 bg-white/50 flex items-center justify-center z-10">
-                <div className="animate-spin rounded-full h-8 w-8 border-4 border-indigo-500 border-t-transparent" />
-              </div>
+              <CapiseLoader
+                overlay
+                size="md"
+                text="Syncing Financial Calendar"
+                subtext="Mapping recurring debits, salaries, and milestone dates..."
+              />
             )}
           {calendarGrid.map((date, idx) => {
             const dateStr = getLocalDateStr(date);

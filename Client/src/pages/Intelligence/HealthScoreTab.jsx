@@ -1,18 +1,20 @@
 import { useSelector } from 'react-redux';
-import { Loader2, TrendingUp, AlertTriangle, ShieldCheck, PieChart, Activity, Wallet, CreditCard } from 'lucide-react';
+import { TrendingUp, AlertTriangle, ShieldCheck, PieChart, Activity, Wallet, CreditCard } from 'lucide-react';
 import HealthScoreGaugeChart from '../../components/charts/HealthScoreGaugeChart';
 import { formatCurrency } from '../../utils/formatCurrency';
+import CapiseLoader from '../../components/ui/CapiseLoader';
 
 const HealthScoreTab = () => {
   const { healthScore, isLoading } = useSelector(state => state.intelligence);
 
   if (isLoading || !healthScore) {
     return (
-      <div className="flex flex-col items-center justify-center h-80 space-y-3">
-        <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-          Auditing Financial Health Score...
-        </p>
+      <div className="flex flex-col items-center justify-center py-24">
+        <CapiseLoader
+          size="lg"
+          text="Auditing Financial Health Score"
+          subtext="Calculating multi-pillar solvency, liquidity cushion, and debt resilience..."
+        />
       </div>
     );
   }
@@ -71,6 +73,7 @@ const HealthScoreTab = () => {
               grade={grade}
               status={statusText}
               size={220}
+              dark={true}
             />
           </div>
 

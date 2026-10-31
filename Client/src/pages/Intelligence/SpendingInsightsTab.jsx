@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchSpendingInsights } from '../../store/intelligenceSlice';
+import CapiseLoader from '../../components/ui/CapiseLoader';
 import {
   Loader2, TrendingUp, TrendingDown, Zap, Store, AlertTriangle,
   Calendar, RefreshCw, BarChart2, ArrowUpRight, ArrowDownRight, Minus,
@@ -40,8 +41,12 @@ const SpendingInsightsTab = () => {
 
   if (isLoadingInsights || !data) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
+      <div className="flex justify-center items-center py-20">
+        <CapiseLoader
+          size="md"
+          text="Detecting Spending Patterns & Anomalies"
+          subtext="Auditing merchant velocity, weekend surges, and recurring candidates..."
+        />
       </div>
     );
   }

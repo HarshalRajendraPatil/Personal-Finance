@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchLendings, createLending, updateLending, deleteLending, addRepayment, settleLending } from '../../store/lendingSlice';
 import { fetchAccounts } from '../../store/accountSlice';
 import Pagination from '../../components/Pagination';
+import CapiseLoader from '../../components/ui/CapiseLoader';
 import { Plus, HandCoins, TrendingUp, TrendingDown, CheckCircle2, Edit2, Trash2, ChevronDown, ChevronUp, Clock } from 'lucide-react';
 
 
@@ -22,14 +23,37 @@ const LendingFormModal = ({ isOpen, onClose, entry = null }) => {
 
   useEffect(() => {
     setLocalError('');
-    if (entry) setForm({ person: entry.person, type: entry.type, amount: entry.amount, dueDate: entry.dueDate ? new Date(entry.dueDate).toISOString().split('T')[0] : '', notes: entry.notes || '', account: entry.account?._id || '' });
-    else setForm({ person: '', type: 'lent', amount: '', dueDate: '', notes: '', account: '' });
-  }, [entry, isOpen]);
+    if (entry) {
+      setForm({
+        person: entry.person,
+        type: entry.type,
+        amount: entry.amount,
+        dueDate: entry.dueDate ? new Date(entry.dueDate).toISOString().split('T')[0] : '',
+        notes: entry.notes || '',
+        account: entry.account?._id || (typeof entry.account === 'string' ? entry.account : '') || '',
+      });
+    } else {
+      const defaultAcc = accounts.find(a => !a.isArchived)?._id || accounts[0]?._id || '';
+      setForm({
+        person: '',
+        type: 'lent',
+        amount: '',
+        dueDate: '',
+        notes: '',
+        account: defaultAcc,
+      });
+    }
+  }, [entry, isOpen, accounts]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLocalError('');
     const newAmount = parseFloat(form.amount);
+
+    if (!form.account && accounts.length > 0) {
+      setLocalError('Please select an account for this lending/borrowing transaction.');
+      return;
+    }
 
     // Client-side guard: cannot reduce amount below already-repaid total
     if (entry && newAmount < totalRepaid) {
@@ -41,6 +65,7 @@ const LendingFormModal = ({ isOpen, onClose, entry = null }) => {
       const payload = { ...form, amount: newAmount, dueDate: form.dueDate || null, account: form.account || null };
       if (entry) await dispatch(updateLending({ id: entry._id, data: payload })).unwrap();
       else await dispatch(createLending(payload)).unwrap();
+      dispatch(fetchAccounts());
       onClose();
     } catch (err) {
       setLocalError(typeof err === 'string' ? err : err?.message || 'Something went wrong.');
@@ -76,10 +101,27 @@ const LendingFormModal = ({ isOpen, onClose, entry = null }) => {
             <div><label className="block text-sm font-medium text-gray-700">Due Date</label>
               <input type="date" value={form.dueDate} onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" /></div>
           </div>
-          <div><label className="block text-sm font-medium text-gray-700">Account (optional)</label>
-            <select value={form.account} onChange={e => setForm(f => ({ ...f, account: e.target.value }))} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
-              <option value="">None</option>
-              {accounts.filter(a => !a.isArchived).map(a => <option key={a._id} value={a._id}>{a.name}</option>)}</select></div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Account</label>
+            <select
+              required
+              value={form.account}
+              onChange={e => setForm(f => ({ ...f, account: e.target.value }))}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">Select Account</option>
+              {accounts.filter(a => !a.isArchived).map(a => (
+                <option key={a._id} value={a._id}>
+                  {a.name} ({fmt(a.currentBalance)})
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-gray-500">
+              {form.type === 'lent'
+                ? 'Money will be deducted from this account (booked as an Expense)'
+                : 'Money will be added to this account (booked as Income)'}
+            </p>
+          </div>
           <div><label className="block text-sm font-medium text-gray-700">Notes</label>
             <textarea rows={2} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" /></div>
           {localError && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-md">{localError}</p>}
@@ -106,14 +148,15 @@ const RepayModal = ({ isOpen, onClose, entry, isSettleMode = false }) => {
 
   useEffect(() => {
     setLocalError('');
+    const defaultAcc = entry?.account?._id || (typeof entry?.account === 'string' ? entry.account : '') || accounts.find(a => !a.isArchived)?._id || accounts[0]?._id || '';
     setForm({
       amount: isSettleMode ? outstanding.toFixed(2) : '',
       date: new Date().toISOString().split('T')[0],
       note: '',
-      accountId: '',
+      accountId: defaultAcc,
       bookTransaction: true,
     });
-  }, [isOpen, outstanding, isSettleMode]);
+  }, [isOpen, outstanding, isSettleMode, entry, accounts]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -140,6 +183,7 @@ const RepayModal = ({ isOpen, onClose, entry, isSettleMode = false }) => {
       const payload = { ...form, amount: amt, accountId: form.accountId || null };
       if (isSettleMode) await dispatch(settleLending({ id: entry._id, data: payload })).unwrap();
       else await dispatch(addRepayment({ id: entry._id, data: payload })).unwrap();
+      dispatch(fetchAccounts());
       onClose();
     } catch (err) {
       setLocalError(typeof err === 'string' ? err : err?.message || 'Something went wrong.');
@@ -300,7 +344,12 @@ const People = () => {
   const openRepay = (entry) => { setActiveEntry(entry); setSettleMode(false); setRepayModalOpen(true); };
   const openSettle = (entry) => { setActiveEntry(entry); setSettleMode(true); setRepayModalOpen(true); };
   const openEdit = (entry) => { setEditingEntry(entry); setModalOpen(true); };
-  const handleDelete = (id) => { if (window.confirm('Delete this entry?')) dispatch(deleteLending(id)); };
+  const handleDelete = async (id) => {
+    if (window.confirm('Delete this entry? This will also remove associated transactions and restore your account balance.')) {
+      await dispatch(deleteLending(id));
+      dispatch(fetchAccounts());
+    }
+  };
 
   const [lentPage, setLentPage] = useState(1);
   const [lentPageSize, setLentPageSize] = useState(5);
@@ -362,7 +411,13 @@ const People = () => {
       </div>
 
       {isLoading && lendings.length === 0 ? (
-        <div className="text-center py-12"><div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent"></div></div>
+        <div className="py-12">
+          <CapiseLoader
+            size="md"
+            text="Reconciling People's Ledger"
+            subtext="Tracking lent and borrowed funds and settlement status..."
+          />
+        </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div>

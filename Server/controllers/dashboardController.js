@@ -124,6 +124,7 @@ export const getDashboardData = async (req, res) => {
     let periodIncome = 0;
     let periodExpense = 0;
     const expenseByCategory = {};
+    const incomeByCategory = {};
     const cashFlowByDate = {};
 
     transactions.forEach((t) => {
@@ -133,6 +134,16 @@ export const getDashboardData = async (req, res) => {
       if (t.type === 'Income') {
         periodIncome += t.amount;
         cashFlowByDate[dateStr].Income += t.amount;
+
+        const catName = t.category?.name || 'Uncategorized';
+        if (!incomeByCategory[catName]) {
+          incomeByCategory[catName] = {
+            name: catName,
+            total: 0,
+            color: t.category?.color || '#10b981',
+          };
+        }
+        incomeByCategory[catName].total += t.amount;
       } else if (t.type === 'Expense') {
         periodExpense += t.amount;
         cashFlowByDate[dateStr].Expense += t.amount;
@@ -152,6 +163,9 @@ export const getDashboardData = async (req, res) => {
     const savingsRate = periodIncome > 0 ? Math.round(((periodIncome - periodExpense) / periodIncome) * 100) : 0;
     const cashFlowChart = Object.values(cashFlowByDate).sort((a, b) => new Date(a.date) - new Date(b.date));
     const expenseCategories = Object.values(expenseByCategory)
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 5);
+    const incomeCategories = Object.values(incomeByCategory)
       .sort((a, b) => b.total - a.total)
       .slice(0, 5);
 
@@ -272,7 +286,7 @@ export const getDashboardData = async (req, res) => {
         comparison,
         spendingVelocity,
       },
-      charts: { cashFlow: cashFlowChart, expenseCategories },
+      charts: { cashFlow: cashFlowChart, expenseCategories, incomeCategories },
       upcoming: upcomingBills,
       budgets,
       goals: activeGoals,

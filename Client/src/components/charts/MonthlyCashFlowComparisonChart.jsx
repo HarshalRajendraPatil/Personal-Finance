@@ -53,9 +53,9 @@ export default function MonthlyCashFlowComparisonChart({
   }, [totalIncome, totalExpense, netCashFlow]);
 
   return (
-    <div className={`space-y-4 ${className}`}>
+    <div className={`space-y-3 ${className}`}>
       {/* Visual Chart */}
-      <ChartContainer config={chartConfig} className="h-64 w-full aspect-auto">
+      <ChartContainer config={chartConfig} className="h-[250px] w-full aspect-auto">
         <BarChart
           data={chartData}
           margin={{ top: 20, right: 15, left: 10, bottom: 5 }}

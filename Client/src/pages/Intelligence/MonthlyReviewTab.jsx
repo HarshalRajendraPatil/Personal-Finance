@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchMonthlyReview } from '../../store/intelligenceSlice';
+import CapiseLoader from '../../components/ui/CapiseLoader';
 import {
   Loader2,
   Calendar as CalendarIcon,
@@ -74,11 +75,12 @@ const MonthlyReviewTab = () => {
 
   if (isLoading && !monthlyReview) {
     return (
-      <div className="flex flex-col items-center justify-center h-80 space-y-4">
-        <Loader2 className="w-10 h-10 animate-spin text-indigo-600" />
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-          Synthesizing AI Monthly Financial Review Digest...
-        </p>
+      <div className="flex flex-col items-center justify-center py-24">
+        <CapiseLoader
+          size="lg"
+          text="Synthesizing Monthly Executive Review"
+          subtext="Compiling category spending breakdowns, budget adherence, and anomalous spikes..."
+        />
       </div>
     );
   }

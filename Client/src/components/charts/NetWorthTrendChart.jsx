@@ -61,9 +61,9 @@ export default function NetWorthTrendChart({
 
   if (processedData.length === 0) {
     return (
-      <div className={`flex flex-col items-center justify-center h-64 bg-gray-50/50 rounded-2xl border border-dashed border-gray-200 p-6 text-center ${className}`}>
-        <div className="p-3 bg-white rounded-xl shadow-xs border border-gray-100 text-gray-400 mb-2">
-          <Landmark className="w-8 h-8" />
+      <div className={`flex flex-col items-center justify-center min-h-[220px] bg-gray-50/50 rounded-xl border border-dashed border-gray-200 p-5 text-center ${className}`}>
+        <div className="p-2.5 bg-white rounded-xl shadow-2xs border border-gray-100 text-gray-400 mb-2">
+          <Landmark className="w-6 h-6" />
         </div>
         <h4 className="text-sm font-bold text-gray-700">No Net Worth History Yet</h4>
         <p className="text-xs text-gray-400 mt-1 max-w-xs">
@@ -76,7 +76,7 @@ export default function NetWorthTrendChart({
   const isNetPositive = currentNetWorth >= 0;
 
   return (
-    <div className={`space-y-4 ${className}`}>
+    <div className={`space-y-3 ${className}`}>
       {/* Header with KPI and Delta */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
         <div>
@@ -112,7 +112,7 @@ export default function NetWorthTrendChart({
       </div>
 
       {/* Chart Canvas */}
-      <ChartContainer config={chartConfig} className="h-64 w-full aspect-auto">
+      <ChartContainer config={chartConfig} className="h-[250px] w-full aspect-auto">
         <AreaChart data={processedData} margin={{ top: 15, right: 10, left: 0, bottom: 5 }}>
           <defs>
             <linearGradient id="netWorthGrad" x1="0" y1="0" x2="0" y2="1">

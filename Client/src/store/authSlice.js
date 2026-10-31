@@ -91,6 +91,17 @@ const authSlice = createSlice({
         localStorage.setItem('user', JSON.stringify(state.user));
       }
     },
+    sessionExpired: (state) => {
+      state.user = null;
+      state.isAuthenticated = false;
+      state.error = null;
+      state.isLoading = false;
+      try {
+        localStorage.removeItem('user');
+      } catch (e) {
+        // ignore
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -152,5 +163,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { clearError, setEmailVerified } = authSlice.actions;
+export const { clearError, setEmailVerified, sessionExpired } = authSlice.actions;
 export default authSlice.reducer;

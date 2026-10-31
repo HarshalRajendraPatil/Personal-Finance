@@ -86,9 +86,9 @@ export default function CashFlowChart({ cashFlow = [], className = '' }) {
   // Edge Case: Empty or zero data
   if (processedData.length === 0 || (totals.income === 0 && totals.expense === 0)) {
     return (
-      <div className={`flex flex-col items-center justify-center h-80 bg-gray-50/50 rounded-2xl border border-dashed border-gray-200 p-6 text-center ${className}`}>
-        <div className="p-3 bg-white rounded-xl shadow-xs border border-gray-100 text-gray-400 mb-2">
-          <Inbox className="w-8 h-8" />
+      <div className={`flex flex-col items-center justify-center min-h-[220px] bg-gray-50/50 rounded-xl border border-dashed border-gray-200 p-5 text-center ${className}`}>
+        <div className="p-2.5 bg-white rounded-xl shadow-2xs border border-gray-100 text-gray-400 mb-2">
+          <Inbox className="w-6 h-6" />
         </div>
         <h4 className="text-sm font-bold text-gray-700">No Cash Flow Data Available</h4>
         <p className="text-xs text-gray-400 mt-1 max-w-xs">
@@ -99,15 +99,15 @@ export default function CashFlowChart({ cashFlow = [], className = '' }) {
   }
 
   return (
-    <div className={`space-y-4 ${className}`}>
+    <div className={`space-y-3 ${className}`}>
       {/* Top Controls & Mini Metrics */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <button
             onClick={() => setChartType('bars')}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
               chartType === 'bars'
-                ? 'bg-indigo-600 text-white shadow-xs'
+                ? 'bg-indigo-600 text-white shadow-2xs'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
@@ -116,22 +116,22 @@ export default function CashFlowChart({ cashFlow = [], className = '' }) {
           </button>
           <button
             onClick={() => setChartType('netArea')}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
               chartType === 'netArea'
-                ? 'bg-indigo-600 text-white shadow-xs'
+                ? 'bg-indigo-600 text-white shadow-2xs'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
             <TrendingUp className="w-3.5 h-3.5" />
-            Net Cash Flow Area
+            Net Flow Area
           </button>
         </div>
 
         {/* Aggregate Net Badge */}
-        <div className="flex items-center gap-3 text-xs">
+        <div className="flex items-center gap-2 text-xs">
           <span className="text-gray-500">Period Net:</span>
           <span
-            className={`font-bold px-2.5 py-0.5 rounded-full ${
+            className={`font-bold px-2 py-0.5 rounded-full text-xs ${
               totals.net >= 0
                 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                 : 'bg-rose-50 text-rose-700 border border-rose-200'
@@ -144,7 +144,7 @@ export default function CashFlowChart({ cashFlow = [], className = '' }) {
       </div>
 
       {/* Chart Canvas */}
-      <ChartContainer config={chartConfig} className="h-80 w-full aspect-auto">
+      <ChartContainer config={chartConfig} className="h-[250px] w-full aspect-auto">
         {chartType === 'bars' ? (
           <BarChart data={processedData} margin={{ top: 15, right: 10, left: 0, bottom: 5 }}>
             <defs>

@@ -15,6 +15,7 @@ import { fetchInvestments } from '../store/investmentSlice';
 import { fetchGoals } from '../store/goalSlice';
 import { fetchLendings } from '../store/lendingSlice';
 import { fetchTransactions } from '../store/transactionSlice';
+import CapiseLoader from './ui/CapiseLoader';
 import {
   Sparkles,
   Send,
@@ -672,8 +673,8 @@ const AICopilotDrawer = ({ isOpen, onClose }) => {
                 <Bot className="w-4 h-4" />
               </div>
               <div className="bg-white border border-gray-200 p-3.5 rounded-2xl rounded-tl-xs shadow-xs text-xs text-gray-600 flex items-center gap-2.5">
-                <RefreshCw className="w-4 h-4 animate-spin text-indigo-600" />
-                <span>Capise Copilot is querying live records & preparing action proposals...</span>
+                <CapiseLoader size="xs" />
+                <span className="font-medium text-gray-700">Capise Copilot is querying live records & preparing action proposals...</span>
               </div>
             </div>
           )}

@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchCurrentNetWorth, fetchHistory, takeSnapshot, triggerAutoSnapshot } from '../../store/netWorthSlice';
 import Pagination from '../../components/Pagination';
+import CapiseLoader from '../../components/ui/CapiseLoader';
 import { TrendingUp, TrendingDown, RefreshCw, Camera, ChevronRight, Zap, CheckCircle2, Clock, Sparkles } from 'lucide-react';
 
 
@@ -88,7 +89,15 @@ const NetWorth = () => {
   }, [history]);
 
   if (isLoading && !current) {
-    return <div className="flex items-center justify-center min-h-[60vh]"><div className="animate-spin rounded-full h-10 w-10 border-4 border-blue-500 border-t-transparent" /></div>;
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <CapiseLoader
+          size="lg"
+          text="Calculating Net Worth & Equity"
+          subtext="Aggregating liquid assets, investments, and total liabilities..."
+        />
+      </div>
+    );
   }
 
 

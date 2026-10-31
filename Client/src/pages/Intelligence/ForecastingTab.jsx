@@ -22,6 +22,7 @@ import {
   ChartLegend,
   ChartLegendContent,
 } from '../../components/ui/chart';
+import CapiseLoader from '../../components/ui/CapiseLoader';
 import {
   Loader2, AlertTriangle, CheckCircle, TrendingUp, Calendar,
   SlidersHorizontal, Info, Calculator, Target, Award, Clock,
@@ -190,8 +191,12 @@ const ForecastingTab = () => {
         </div>
 
         {isLoadingForecast && !cashflowForecast ? (
-          <div className="flex justify-center items-center h-48 bg-white rounded-xl border border-gray-100 shadow-xs">
-            <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
+          <div className="py-12 bg-white rounded-xl border border-gray-100 shadow-xs">
+            <CapiseLoader
+              size="md"
+              text="Simulating 90-Day Cashflow Scenarios"
+              subtext="Generating optimistic, base, and pessimistic cash runaways..."
+            />
           </div>
         ) : cashflowForecast ? (
           <div className="space-y-4">
@@ -223,9 +228,7 @@ const ForecastingTab = () => {
                 {/* Chart with Interactive Scenario Selector */}
                 <div className="bg-white rounded-xl border border-gray-100 shadow-xs p-4 sm:p-6 relative">
                   {isLoadingForecast && (
-                    <div className="absolute inset-0 bg-white/50 backdrop-blur-xs z-10 flex items-center justify-center rounded-xl">
-                      <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
-                    </div>
+                    <CapiseLoader overlay size="sm" />
                   )}
 
                   {/* Scenario Switcher Header */}
@@ -496,9 +499,7 @@ const ForecastingTab = () => {
           {/* Assumption & Accelerator Sliders */}
           <div className="bg-white rounded-xl border border-gray-100 shadow-xs p-4 sm:p-6 space-y-4 sm:space-y-5 relative">
             {isLoadingProjection && (
-              <div className="absolute inset-0 bg-white/50 backdrop-blur-xs z-10 flex items-center justify-center rounded-xl">
-                <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
-              </div>
+              <CapiseLoader overlay size="sm" />
             )}
             <h3 className="font-bold text-gray-800 flex items-center gap-2 text-sm sm:text-base">
               <SlidersHorizontal className="w-4 h-4 text-indigo-500" /> Growth Assumptions
@@ -576,8 +577,12 @@ const ForecastingTab = () => {
             {/* Projection Chart & Milestones */}
             <div className="bg-white rounded-xl border border-gray-100 shadow-xs p-4 sm:p-6 relative">
               {isLoadingProjection ? (
-                <div className="flex justify-center items-center h-64">
-                  <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
+                <div className="py-12">
+                  <CapiseLoader
+                    size="md"
+                    text="Computing Long-Term Wealth Projection"
+                    subtext="Compounding salary growth, market yield, and inflation adjustments..."
+                  />
                 </div>
               ) : activeProjections.length > 0 ? (
                 <>

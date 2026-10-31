@@ -20,6 +20,7 @@ const lendingSchema = new mongoose.Schema({
   dueDate: { type: Date, default: null },
   notes: { type: String, default: '' },
   account: { type: mongoose.Schema.Types.ObjectId, ref: 'Account', default: null }, // Account used for the original lending
+  transactionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Transaction', default: null }, // Linked initial transaction
   repayments: [repaymentSchema],
   isSettled: { type: Boolean, default: false },
   settledAt: { type: Date, default: null },
@@ -42,6 +43,8 @@ lendingSchema.set('toObject', { virtuals: true });
 
 lendingSchema.index({ user: 1, isSettled: 1 });
 lendingSchema.index({ user: 1, type: 1, isSettled: 1 });
+lendingSchema.index({ transactionId: 1 });
+lendingSchema.index({ 'repayments.transactionId': 1 });
 
 const Lending = mongoose.model('Lending', lendingSchema);
 export default Lending;

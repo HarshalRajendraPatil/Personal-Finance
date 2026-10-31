@@ -22,63 +22,142 @@ export const calculateSafeToSpend = async (userId) => {
   const month = now.getMonth();
   const dayOfMonth = now.getDate();
   const totalDaysInMonth = new Date(year, month + 1, 0).getDate();
-  const daysRemaining = Math.max(1, totalDaysInMonth - dayOfMonth + 1);
+  const daysRemainingInMonth = Math.max(1, totalDaysInMonth - dayOfMonth + 1);
 
-  // 1. Total Liquid Cash (Bank + Cash accounts)
-  const liquidAccounts = await Account.find({
+  // 1. Fetch Liquid Accounts: Separate Operating Liquid Accounts from Dedicated Emergency/Savings Reserves
+  const accounts = await Account.find({
     user: userId,
-    type: { $in: ['Bank', 'Cash'] },
     isArchived: false,
   }).lean();
-  const liquidBalance = liquidAccounts.reduce((sum, acc) => sum + Math.max(0, acc.currentBalance), 0);
 
-  // 2. Upcoming Scheduled Obligations for the rest of the month
-  const startOfTomorrow = new Date(year, month, dayOfMonth + 1);
-  const endOfMonth = new Date(year, month + 1, 0, 23, 59, 59);
+  let operatingLiquidBalance = 0;
+  let emergencyReserveBalance = 0;
 
-  // Upcoming Recurring Rules (Bills, Subscriptions, Rent)
+  accounts.forEach((acc) => {
+    const isReserve = /emergency|reserve|fixed|fd|provident/i.test(acc.name || '') || acc.type === 'FD';
+    if (['Bank', 'Cash', 'UPI'].includes(acc.type)) {
+      if (isReserve) {
+        emergencyReserveBalance += Math.max(0, acc.currentBalance || 0);
+      } else {
+        operatingLiquidBalance += Math.max(0, acc.currentBalance || 0);
+      }
+    }
+  });
+
+  // If no separate operating account found, use total liquid with a protected 60% cushion
+  if (operatingLiquidBalance === 0 && emergencyReserveBalance > 0) {
+    operatingLiquidBalance = Math.round(emergencyReserveBalance * 0.4);
+    emergencyReserveBalance = Math.round(emergencyReserveBalance * 0.6);
+  }
+
+  const liquidBalance = operatingLiquidBalance + emergencyReserveBalance;
+
+  // 2. Scheduled Obligations over a rolling 30-day forward horizon
+  const windowEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+  // Upcoming Recurring Rules (Bills, Subscriptions, Rent) - exclude SIP/investment rules
   const upcomingBills = await RecurringRule.find({
     user: userId,
     isActive: true,
-    nextRunDate: { $gte: startOfTomorrow, $lte: endOfMonth },
     type: 'Expense',
+    nextRunDate: { $gte: now, $lte: windowEnd },
   }).lean();
-  const totalUpcomingBills = upcomingBills.reduce((sum, b) => sum + b.amount, 0);
+
+  const totalUpcomingBills = upcomingBills
+    .filter((b) => !/sip|fund|invest/i.test(b.name || ''))
+    .reduce((sum, b) => sum + (b.amount || 0), 0);
 
   // Upcoming Loan EMIs
-  const upcomingLoans = await Loan.find({
+  const activeLoans = await Loan.find({
     user: userId,
-    status: 'Active',
-    autoDebit: true,
-    nextDebitDate: { $gte: startOfTomorrow, $lte: endOfMonth },
-  });
-  const totalUpcomingEMIs = upcomingLoans.reduce((sum, l) => sum + (l.emiAmount || 0), 0);
+    isActive: true,
+  }).lean();
 
-  // Monthly Savings Goals target allocation
-  const activeGoals = await Goal.find({ user: userId, status: 'In Progress' });
-  const monthlyGoalTarget = activeGoals.reduce((sum, g) => {
-    // If targetDate exists, calculate monthly required
-    if (g.targetDate) {
-      const monthsLeft = Math.max(1, Math.ceil((new Date(g.targetDate) - now) / (1000 * 60 * 60 * 24 * 30)));
-      const needed = Math.max(0, g.targetAmount - g.currentAmount);
+  let totalUpcomingEMIs = 0;
+  activeLoans.forEach((l) => {
+    if (l.nextEmiDate && new Date(l.nextEmiDate) >= now && new Date(l.nextEmiDate) <= windowEnd) {
+      totalUpcomingEMIs += (l.emiAmount || 0);
+    } else if (!l.nextEmiDate && l.emiAmount) {
+      totalUpcomingEMIs += (l.emiAmount || 0);
+    }
+  });
+
+  // User's monthly recurring income (Salary)
+  const salaryRule = await RecurringRule.findOne({
+    user: userId,
+    isActive: true,
+    type: 'Income',
+  }).lean();
+  const monthlyIncome = salaryRule?.amount || 0;
+
+  // Monthly Savings Goals target allocation (capped at 25% of monthly income to avoid starvation)
+  const activeGoals = await Goal.find({ user: userId, isCompleted: false }).lean();
+  const rawGoalMonthly = activeGoals.reduce((sum, g) => {
+    if (g.deadline) {
+      const monthsLeft = Math.max(1, Math.ceil((new Date(g.deadline) - now) / (1000 * 60 * 60 * 24 * 30)));
+      const needed = Math.max(0, (g.targetAmount || 0) - (g.currentAmount || 0));
       return sum + Math.round(needed / monthsLeft);
     }
-    return sum + 0;
+    return sum;
   }, 0);
+  const monthlyGoalTarget = monthlyIncome > 0
+    ? Math.min(rawGoalMonthly, Math.round(monthlyIncome * 0.2))
+    : Math.round(rawGoalMonthly * 0.25);
 
-  // Safe discretionary cash available for remainder of month
-  const committedExpenditures = totalUpcomingBills + totalUpcomingEMIs + monthlyGoalTarget;
-  const uncommittedBuffer = Math.max(0, liquidBalance - committedExpenditures);
-  const safeToSpendDaily = Math.round(uncommittedBuffer / daysRemaining);
+  // Essential fixed commitments
+  const essentialCommitments = totalUpcomingBills + totalUpcomingEMIs;
+  const committedExpenditures = essentialCommitments + monthlyGoalTarget;
+
+  // Safe uncommitted liquid buffer (from operating cash, after essential commitments)
+  const uncommittedBuffer = Math.max(0, operatingLiquidBalance - essentialCommitments);
+
+  // Active Monthly Budgets
+  const activeBudgets = await Budget.find({ user: userId, isActive: true }).lean();
+  const totalMonthlyBudgets = activeBudgets.reduce((sum, b) => sum + (b.limit || b.amount || 0), 0);
+
+  // Check how much spent so far this month
+  const startOfMonth = new Date(year, month, 1);
+  const endOfMonth = new Date(year, month + 1, 0, 23, 59, 59);
+  const monthTxns = await Transaction.find({
+    user: userId,
+    type: 'Expense',
+    date: { $gte: startOfMonth, $lte: endOfMonth },
+  }).lean();
+  const monthSpent = monthTxns.reduce((sum, t) => sum + (t.amount || 0), 0);
+  const remainingBudget = Math.max(0, totalMonthlyBudgets - monthSpent);
+
+  // Horizon: Clamped to minimum 10 days to avoid end-of-month 1-day spike
+  const daysPacing = Math.max(10, daysRemainingInMonth);
+
+  let safeToSpendDaily = 0;
+  if (remainingBudget > 0) {
+    safeToSpendDaily = Math.round(remainingBudget / daysPacing);
+  } else if (monthlyIncome > 0) {
+    const discretionaryMonthly = Math.max(0, monthlyIncome - committedExpenditures);
+    safeToSpendDaily = Math.round(Math.max(discretionaryMonthly, uncommittedBuffer * 0.5) / 30);
+  } else {
+    safeToSpendDaily = Math.round(uncommittedBuffer / 30);
+  }
+
+  // Safety boundaries:
+  // Cannot exceed uncommittedBuffer / 15
+  if (uncommittedBuffer > 0) {
+    safeToSpendDaily = Math.min(safeToSpendDaily, Math.round(uncommittedBuffer / 15));
+    safeToSpendDaily = Math.max(safeToSpendDaily, 500); // realistic floor
+  } else {
+    safeToSpendDaily = Math.min(safeToSpendDaily, 500);
+  }
 
   const result = {
     safeToSpendDaily,
     liquidBalance,
+    operatingLiquidBalance,
+    emergencyReserveBalance,
     committedExpenditures,
     totalUpcomingBills,
     totalUpcomingEMIs,
     monthlyGoalTarget,
-    daysRemaining,
+    daysRemaining: daysRemainingInMonth,
     totalDaysInMonth,
     dayOfMonth,
   };
@@ -117,7 +196,7 @@ export const runProactiveIntelligenceCheck = async (userId) => {
     }).lean();
 
     const spent = txns.reduce((sum, t) => sum + t.amount, 0);
-    const budgetCap = budget.amount;
+    const budgetCap = budget.limit || budget.amount || 0;
 
     if (dayOfMonth >= 3 && spent > 0) {
       const dailyVelocity = spent / dayOfMonth;

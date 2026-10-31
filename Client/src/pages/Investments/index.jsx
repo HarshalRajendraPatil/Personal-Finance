@@ -15,6 +15,7 @@ import { fetchAccounts } from '../../store/accountSlice';
 import { fetchTransactions } from '../../store/transactionSlice';
 import { validateInvestmentSymbol } from '../../services/investmentService';
 import Pagination from '../../components/Pagination';
+import CapiseLoader from '../../components/ui/CapiseLoader';
 import {
   Plus,
   TrendingUp,
@@ -988,7 +989,13 @@ const Investments = () => {
 
       {/* Investment Cards */}
       {isLoading && investments.length === 0 ? (
-        <div className="text-center py-12"><div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent" /></div>
+        <div className="py-12">
+          <CapiseLoader
+            size="md"
+            text="Valuing Investment Assets"
+            subtext="Fetching latest NAVs, stock quotes, and portfolio gains..."
+          />
+        </div>
       ) : investments.length === 0 ? (
         <div className="text-center bg-white rounded-xl border border-dashed border-gray-200 py-16">
           <TrendingUp className="mx-auto h-12 w-12 text-gray-400" />

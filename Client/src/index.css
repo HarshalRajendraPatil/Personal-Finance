@@ -51,3 +51,126 @@
     -webkit-overflow-scrolling: touch;
   }
 }
+
+/* ==========================================================================
+   Capise Signature Motion Animations (Dynamic Orbital Loading System)
+   ========================================================================== */
+
+@keyframes capiseSpinCW {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes capiseSpinCCW {
+  0% {
+    transform: rotate(360deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes capiseHeartbeat {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.95;
+  }
+  30% {
+    transform: scale(1.06);
+    opacity: 1;
+  }
+  45% {
+    transform: scale(0.98);
+  }
+  60% {
+    transform: scale(1.04);
+    opacity: 1;
+  }
+}
+
+@keyframes capiseNodePulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.45);
+    opacity: 1;
+  }
+}
+
+@keyframes capiseAuraPulse {
+  0%, 100% {
+    transform: scale(0.92);
+    opacity: 0.45;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0.75;
+  }
+}
+
+@keyframes capiseShimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+@keyframes capiseDotBounce {
+  0%, 80%, 100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  40% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
+.capise-spin-clockwise {
+  animation: capiseSpinCW 2.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.capise-spin-counter {
+  animation: capiseSpinCCW 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.capise-emblem-heartbeat {
+  animation: capiseHeartbeat 2.8s ease-in-out infinite;
+}
+
+.capise-node-pulse {
+  animation: capiseNodePulse 1.6s ease-in-out infinite;
+  transform-origin: 59px 40px;
+}
+
+.capise-loader-aura {
+  animation: capiseAuraPulse 3s ease-in-out infinite;
+}
+
+.capise-shimmer-text {
+  background-size: 200% auto;
+  animation: capiseShimmer 3.5s linear infinite;
+}
+
+.capise-dot-1 {
+  animation: capiseDotBounce 1.4s infinite ease-in-out;
+  animation-delay: 0s;
+}
+
+.capise-dot-2 {
+  animation: capiseDotBounce 1.4s infinite ease-in-out;
+  animation-delay: 0.2s;
+}
+
+.capise-dot-3 {
+  animation: capiseDotBounce 1.4s infinite ease-in-out;
+  animation-delay: 0.4s;
+}

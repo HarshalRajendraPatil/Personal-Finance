@@ -1,14 +1,15 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useDispatch, useSelector } from 'react-redux';
 import { createCategory, updateCategory } from '../../store/categorySlice';
-import { Loader2, X } from 'lucide-react';
+import { isCategoryNameReserved } from '../../constants/reservedCategories';
+import { Loader2, X, AlertCircle } from 'lucide-react';
 import * as Icons from 'lucide-react';
 
 const categorySchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters'),
+  name: z.string().trim().min(2, 'Name must be at least 2 characters'),
   type: z.enum(['Income', 'Expense']),
   icon: z.string().min(1, 'Icon is required'),
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Must be a valid hex color'),
@@ -29,6 +30,7 @@ const COLOR_OPTIONS = [
 const CategoryFormModal = ({ isOpen, onClose, category = null, parentId = null, prefilledType = 'Expense' }) => {
   const dispatch = useDispatch();
   const { categories, isLoading } = useSelector((state) => state.categories);
+  const [serverError, setServerError] = useState(null);
 
   const {
     register,
@@ -36,6 +38,8 @@ const CategoryFormModal = ({ isOpen, onClose, category = null, parentId = null, 
     reset,
     watch,
     setValue,
+    setError,
+    clearErrors,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(categorySchema),
@@ -54,6 +58,7 @@ const CategoryFormModal = ({ isOpen, onClose, category = null, parentId = null, 
 
   // Reset form when modal opens or category/parentId changes
   useEffect(() => {
+    setServerError(null);
     if (category) {
       reset({
         name: category.name,
@@ -75,8 +80,36 @@ const CategoryFormModal = ({ isOpen, onClose, category = null, parentId = null, 
 
   const onSubmit = async (data) => {
     try {
+      setServerError(null);
+      const trimmedName = data.name.trim();
+
+      // Check if user is attempting to use a reserved category name
+      const isOriginalName = category && category.name.trim().toLowerCase() === trimmedName.toLowerCase();
+      if (!isOriginalName && isCategoryNameReserved(trimmedName)) {
+        setError('name', {
+          type: 'manual',
+          message: `"${trimmedName}" is a reserved system category name. Please choose a different custom name.`,
+        });
+        return;
+      }
+
+      // Check for duplicates under the same parent and user
+      const duplicate = categories.some((c) =>
+        (!category || c._id !== category._id) &&
+        c.name.trim().toLowerCase() === trimmedName.toLowerCase() &&
+        (c.parent || null) === (data.parent || null)
+      );
+      if (duplicate) {
+        setError('name', {
+          type: 'manual',
+          message: `A category named "${trimmedName}" already exists at this level.`,
+        });
+        return;
+      }
+
       const formattedData = {
         ...data,
+        name: trimmedName,
         parent: data.parent || null,
       };
 
@@ -87,7 +120,7 @@ const CategoryFormModal = ({ isOpen, onClose, category = null, parentId = null, 
       }
       onClose();
     } catch (err) {
-      // Error is handled by global state if needed
+      setServerError(typeof err === 'string' ? err : err?.message || 'Failed to save category');
     }
   };
 
@@ -106,6 +139,13 @@ const CategoryFormModal = ({ isOpen, onClose, category = null, parentId = null, 
         <h2 className="text-2xl font-bold text-gray-900 mb-6">
           {category ? 'Edit Category' : 'Add Category'}
         </h2>
+
+        {serverError && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start space-x-2 text-red-700 text-sm">
+            <AlertCircle className="w-5 h-5 flex-shrink-0 text-red-500 mt-0.5" />
+            <span>{serverError}</span>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
@@ -137,12 +177,17 @@ const CategoryFormModal = ({ isOpen, onClose, category = null, parentId = null, 
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">Name</label>
+            <div className="flex justify-between items-center">
+              <label className="block text-sm font-medium text-gray-700">Name</label>
+              <span className="text-xs text-gray-400 font-normal">Default system names are reserved</span>
+            </div>
             <input
               {...register('name')}
               type="text"
-              placeholder="e.g. Groceries"
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+              placeholder="e.g. Woodworking & Crafts"
+              className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 ${
+                errors.name ? 'border-red-300 bg-red-50/30' : 'border-gray-300'
+              }`}
             />
             {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>}
           </div>

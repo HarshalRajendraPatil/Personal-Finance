@@ -6,6 +6,7 @@ import { fetchCategories } from '../../store/categorySlice';
 import { fetchSubscriptionAudit, openSubscriptionAuditModal } from '../../store/proactiveSlice';
 import RecurringFormModal from './RecurringFormModal';
 import Pagination from '../../components/Pagination';
+import CapiseLoader from '../../components/ui/CapiseLoader';
 import {
   Plus, Edit2, Trash2, CheckCircle2, Pause, Play,
   ArrowRightLeft, TrendingDown, TrendingUp, Calendar, AlertCircle,
@@ -238,8 +239,12 @@ const Bills = () => {
       </div>
 
       {isLoading && rules.length === 0 ? (
-        <div className="text-center py-12">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-500 border-t-transparent"></div>
+        <div className="py-12">
+          <CapiseLoader
+            size="md"
+            text="Tracking Recurring Invoices & Bills"
+            subtext="Analyzing subscription cadence, upcoming debits, and due dates..."
+          />
         </div>
       ) : active.length === 0 && paused.length === 0 ? (
         <div className="text-center bg-white rounded-xl border border-gray-200 border-dashed py-16">

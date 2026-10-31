@@ -59,6 +59,11 @@ const transactionSchema = new mongoose.Schema({
     type: String,
     default: '',
   },
+  lending: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Lending',
+    default: null,
+  },
 }, {
   timestamps: true,
 });

@@ -1,5 +1,6 @@
 import Transaction from '../models/Transaction.js';
 import Account from '../models/Account.js';
+import Lending from '../models/Lending.js';
 import { checkBudgetGuardrails } from '../services/budgetGuardrailService.js';
 import { previewBankStatement, ingestBankStatement } from '../services/csvIngestionService.js';
 import { scanReceiptWithAI } from '../services/ocrReceiptService.js';
@@ -17,6 +18,7 @@ export const getTransactions = async (req, res) => {
     if (req.query.type && req.query.type !== 'All') query.type = req.query.type;
     if (req.query.account) query.account = req.query.account;
     if (req.query.category) query.category = req.query.category;
+    if (req.query.subcategory) query.subcategory = req.query.subcategory;
     if (req.query.startDate || req.query.endDate) {
       query.date = {};
       if (req.query.startDate) query.date.$gte = new Date(req.query.startDate);
@@ -34,7 +36,7 @@ export const getTransactions = async (req, res) => {
           .populate('toAccount', 'name type currency')
           .populate('category', 'name icon color type')
           .populate('subcategory', 'name')
-          .sort({ date: -1, _id: -1 })
+          .sort({ createdAt: -1, _id: -1 })
           .skip(skip)
           .limit(limit)
           .lean(),
@@ -58,7 +60,7 @@ export const getTransactions = async (req, res) => {
       .populate('toAccount', 'name type currency')
       .populate('category', 'name icon color type')
       .populate('subcategory', 'name')
-      .sort({ date: -1, createdAt: -1 })
+      .sort({ createdAt: -1 })
       .lean();
 
     res.json(transactions);
@@ -203,6 +205,42 @@ export const updateTransaction = async (req, res) => {
 
     await Promise.all([transaction.save(), ...balanceUpdates]);
 
+    // ⚡ Sync with linked Lending if applicable
+    if (amount !== undefined && amount !== oldAmount) {
+      // 1. If it was the principal transaction of a lending entry
+      const linkedMainLending = await Lending.findOne({ transactionId: transaction._id, user: req.user._id });
+      if (linkedMainLending) {
+        linkedMainLending.amount = newAmount;
+        const totalRepaid = linkedMainLending.repayments.reduce((s, r) => s + r.amount, 0);
+        if (totalRepaid >= newAmount) {
+          linkedMainLending.isSettled = true;
+          if (!linkedMainLending.settledAt) linkedMainLending.settledAt = new Date();
+        } else {
+          linkedMainLending.isSettled = false;
+          linkedMainLending.settledAt = null;
+        }
+        await linkedMainLending.save();
+      }
+
+      // 2. If it was a repayment transaction
+      const linkedRepaymentLending = await Lending.findOne({ 'repayments.transactionId': transaction._id, user: req.user._id });
+      if (linkedRepaymentLending) {
+        const rep = linkedRepaymentLending.repayments.find(r => r.transactionId?.toString() === transaction._id.toString());
+        if (rep) {
+          rep.amount = newAmount;
+          const totalRepaid = linkedRepaymentLending.repayments.reduce((s, r) => s + r.amount, 0);
+          if (totalRepaid >= linkedRepaymentLending.amount) {
+            linkedRepaymentLending.isSettled = true;
+            if (!linkedRepaymentLending.settledAt) linkedRepaymentLending.settledAt = new Date();
+          } else {
+            linkedRepaymentLending.isSettled = false;
+            linkedRepaymentLending.settledAt = null;
+          }
+          await linkedRepaymentLending.save();
+        }
+      }
+    }
+
     await transaction.populate('account', 'name type currency');
     await transaction.populate('toAccount', 'name type currency');
     await transaction.populate('category', 'name icon color type');
@@ -249,6 +287,28 @@ export const deleteTransaction = async (req, res) => {
       if (transaction.toAccount) {
         balanceUpdates.push(Account.findByIdAndUpdate(transaction.toAccount, { $inc: { currentBalance: -transaction.amount } }));
       }
+    }
+
+    // ⚡ Sync with any linked Lending records
+    // 1. If this was the principal transaction of a lending entry
+    const mainLending = await Lending.findOne({ transactionId: transaction._id, user: req.user._id });
+    if (mainLending) {
+      mainLending.transactionId = null;
+      await mainLending.save();
+    }
+
+    // 2. If this was a repayment transaction
+    const repaymentLending = await Lending.findOne({ 'repayments.transactionId': transaction._id, user: req.user._id });
+    if (repaymentLending) {
+      repaymentLending.repayments = repaymentLending.repayments.filter(
+        r => r.transactionId?.toString() !== transaction._id.toString()
+      );
+      const totalRepaid = repaymentLending.repayments.reduce((sum, r) => sum + r.amount, 0);
+      if (totalRepaid < repaymentLending.amount) {
+        repaymentLending.isSettled = false;
+        repaymentLending.settledAt = null;
+      }
+      await repaymentLending.save();
     }
 
     await Promise.all([transaction.deleteOne(), ...balanceUpdates]);

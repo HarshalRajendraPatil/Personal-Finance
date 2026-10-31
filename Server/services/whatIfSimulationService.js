@@ -27,8 +27,8 @@ const callGeminiWithFallback = async (userPrompt, systemInstruction = '', maxRet
   const ai = getGenAI();
   if (!ai) return null;
 
-  // Prioritize gemini-2.5-flash with automatic fallback to gemini-3.5-flash-lite
-  const models = ['gemini-3.5-flash-lite', 'gemini-2.5-flash'];
+  // Prioritize modern Gemini flash models with automatic fallback
+  const models = ['gemini-2.5-flash', 'gemini-2.0-flash',];
   // const models = ['gemini-2.5-flash', 'gemini-3.5-flash-lite'];
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {

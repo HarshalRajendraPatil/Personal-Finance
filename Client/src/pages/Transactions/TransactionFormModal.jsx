@@ -6,6 +6,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { createTransaction, updateTransaction, scanReceipt } from '../../store/transactionSlice';
 import { fetchBudgets } from '../../store/budgetSlice';
 import { suggestCategoryForInput } from '../../utils/merchantCategorizer';
+import { parseApiError } from '../../utils/errorHandler';
 import { Loader2, X, Upload, Image as ImageIcon, Zap, AlertTriangle, AlertCircle, CheckCircle, Sparkles, ScanLine } from 'lucide-react';
 import axios from 'axios';
 
@@ -51,6 +52,7 @@ const TransactionFormModal = ({ isOpen, onClose, transaction = null }) => {
   const [attachmentUrl, setAttachmentUrl] = useState('');
   const [uploadError, setUploadError] = useState('');
   const [suggestion, setSuggestion] = useState(null);
+  const [submitError, setSubmitError] = useState(null);
 
   const {
     register,
@@ -88,6 +90,7 @@ const TransactionFormModal = ({ isOpen, onClose, transaction = null }) => {
   }, [isOpen, budgets.length, dispatch]);
 
   useEffect(() => {
+    setSubmitError(null);
     if (transaction) {
       reset({
         type: transaction.type,
@@ -277,6 +280,7 @@ const TransactionFormModal = ({ isOpen, onClose, transaction = null }) => {
 
   const onSubmit = async (data) => {
     try {
+      setSubmitError(null);
       const payload = {
         ...data,
         category: data.category || null,
@@ -292,7 +296,8 @@ const TransactionFormModal = ({ isOpen, onClose, transaction = null }) => {
       }
       onClose();
     } catch (err) {
-      // Error handled globally
+      const parsed = parseApiError(err, 'transaction');
+      setSubmitError(parsed);
     }
   };
 
@@ -311,9 +316,30 @@ const TransactionFormModal = ({ isOpen, onClose, transaction = null }) => {
           <X className="w-6 h-6" />
         </button>
 
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">
           {transaction ? 'Edit Transaction' : 'New Transaction'}
         </h2>
+
+        {/* 🚨 Form-Level Advanced Formatted Error Callout */}
+        {submitError && (
+          <div className="mb-5 p-3.5 bg-red-50 border border-red-200 rounded-xl flex items-start space-x-3 text-xs sm:text-sm animate-in fade-in-50">
+            <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-red-900">
+                {submitError.isOffline || submitError.isNetworkError ? 'Network Connection Interrupted' : 'Unable to Save Transaction'}
+              </p>
+              <p className="mt-0.5 text-red-700 leading-relaxed break-words">{submitError.message}</p>
+              {submitError.errorId && (
+                <div className="mt-2 flex items-center space-x-2">
+                  <span className="inline-block px-2 py-0.5 bg-red-100 border border-red-200 rounded text-[10px] font-mono font-medium text-red-900">
+                    Ref: {submitError.errorId}
+                  </span>
+                  <span className="text-[10px] text-gray-500">Share this reference with support if this persists.</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
           {/* Type Selector (Tabs) */}

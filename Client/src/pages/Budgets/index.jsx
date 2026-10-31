@@ -4,6 +4,7 @@ import { fetchBudgets, deleteBudget, fetchBudgetGuardrails } from '../../store/b
 import { fetchCategories } from '../../store/categorySlice';
 import BudgetFormModal from './BudgetFormModal';
 import Pagination from '../../components/Pagination';
+import CapiseLoader from '../../components/ui/CapiseLoader';
 import { Plus, Edit2, Trash2, AlertTriangle, CheckCircle, TrendingUp, Target, Zap, ShieldAlert, Sparkles, AlertCircle } from 'lucide-react';
 import * as Icons from 'lucide-react';
 
@@ -178,8 +179,12 @@ const Budgets = () => {
 
 
       {isLoading && budgets.length === 0 ? (
-        <div className="text-center py-12">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent"></div>
+        <div className="py-12">
+          <CapiseLoader
+            size="md"
+            text="Calculating Guardrails & Spending Velocity"
+            subtext="Evaluating category limits and proactive safety margins..."
+          />
         </div>
       ) : budgets.length === 0 ? (
         <div className="text-center bg-white rounded-xl border border-gray-200 border-dashed py-16">

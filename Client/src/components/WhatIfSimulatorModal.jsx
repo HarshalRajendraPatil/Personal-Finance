@@ -5,6 +5,7 @@ import {
   runWhatIfSimulation,
   clearWhatIfResult,
 } from '../store/proactiveSlice';
+import CapiseLoader from './ui/CapiseLoader';
 import {
   Sparkles,
   X,
@@ -324,14 +325,12 @@ const WhatIfSimulatorModal = () => {
 
           {/* Loading Animation */}
           {isLoadingWhatIf && (
-            <div className="py-16 text-center bg-white rounded-3xl border border-gray-200 shadow-2xs space-y-3">
-              <Compass className="w-10 h-10 text-indigo-600 animate-spin mx-auto" />
-              <p className="text-sm font-extrabold text-gray-900">
-                Simulating Multi-Year Financial Trajectory...
-              </p>
-              <p className="text-xs text-gray-500 max-w-md mx-auto">
-                Analyzing dual-universe cash flows, compounding returns, emergency buffer runway, and goal timelines across {horizonYears} years.
-              </p>
+            <div className="py-14 text-center bg-white rounded-3xl border border-gray-200 shadow-2xs">
+              <CapiseLoader
+                size="lg"
+                text="Projecting Twin Financial Multiverse"
+                subtext={`Simulating dual-universe cashflows, compounding returns, and resilience trajectory over ${horizonYears} years...`}
+              />
             </div>
           )}
 

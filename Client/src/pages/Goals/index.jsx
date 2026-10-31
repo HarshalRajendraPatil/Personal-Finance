@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchGoals, createGoal, updateGoal, deleteGoal, addContribution } from '../../store/goalSlice';
 import { fetchAccounts } from '../../store/accountSlice';
 import Pagination from '../../components/Pagination';
+import CapiseLoader from '../../components/ui/CapiseLoader';
 import * as Icons from 'lucide-react';
 const { Plus, Target, Edit2, Trash2, Sparkles } = Icons;
 
@@ -337,7 +338,13 @@ const Goals = () => {
       )}
 
       {isLoading && goals.length === 0 ? (
-        <div className="text-center py-12"><div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent"></div></div>
+        <div className="py-12">
+          <CapiseLoader
+            size="md"
+            text="Tracking Goal Targets & Milestones"
+            subtext="Forecasting target completion velocity and contribution pace..."
+          />
+        </div>
       ) : activeGoals.length === 0 && completedGoals.length === 0 ? (
         <div className="text-center bg-white rounded-xl border border-dashed border-gray-200 py-16">
           <Target className="mx-auto h-12 w-12 text-gray-400" />

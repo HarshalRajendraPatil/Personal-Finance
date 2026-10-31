@@ -1,12 +1,17 @@
-import { Suspense, lazy } from 'react';
+import { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { sessionExpired } from './store/authSlice';
 import ProtectedRoute from './components/ProtectedRoute';
 import MainLayout from './layouts/MainLayout';
-import { Loader2 } from 'lucide-react';
+import CapiseLoader from './components/ui/CapiseLoader';
 
 // ⚡ Route-Level Code Splitting & Dynamic Lazy Loading
 const Login = lazy(() => import('./pages/Login'));
 const Register = lazy(() => import('./pages/Register'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword'));
+const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Accounts = lazy(() => import('./pages/Accounts'));
 const Categories = lazy(() => import('./pages/Categories'));
@@ -25,24 +30,31 @@ const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Intelligence = lazy(() => import('./pages/Intelligence'));
 
 const PageLoader = () => (
-  <div className="flex h-screen w-full flex-col items-center justify-center bg-gray-50/50">
-    <div className="relative flex items-center justify-center">
-      <div className="w-12 h-12 rounded-full border-3 border-indigo-100 border-t-indigo-600 animate-spin" />
-      <div className="absolute inset-0 flex items-center justify-center">
-        <span className="w-2 h-2 rounded-full bg-indigo-600 animate-pulse" />
-      </div>
-    </div>
-    <p className="mt-4 text-xs font-semibold uppercase tracking-wider text-gray-400">Loading Capise...</p>
+  <div className="flex h-screen w-full flex-col items-center justify-center bg-gray-50/70">
+    <CapiseLoader size="lg" text="Intelligent Finance" subtext="Initializing secure environment..." />
   </div>
 );
 
 function App() {
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    const handleAuthExpired = () => {
+      dispatch(sessionExpired());
+    };
+    window.addEventListener('capise:auth-expired', handleAuthExpired);
+    return () => window.removeEventListener('capise:auth-expired', handleAuthExpired);
+  }, [dispatch]);
+
   return (
     <Router>
       <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password/:token" element={<ResetPassword />} />
+          <Route path="/verify-email/:token" element={<VerifyEmail />} />
           <Route element={<ProtectedRoute />}>
             <Route element={<MainLayout />}>
               <Route path="/dashboard" element={<Dashboard />} />

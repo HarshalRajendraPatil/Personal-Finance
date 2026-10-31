@@ -5,6 +5,7 @@ import { openOverdraftModal, fetchOverdraftForecast } from '../../store/proactiv
 import AccountFormModal from './AccountFormModal';
 import accountService from '../../services/accountService';
 import Pagination from '../../components/Pagination';
+import CapiseLoader from '../../components/ui/CapiseLoader';
 
 import {
   Plus,
@@ -284,9 +285,12 @@ const CreditCardStatementModal = ({ isOpen, onClose, card, onPayClick }) => {
         </div>
 
         {isLoading ? (
-          <div className="py-16 text-center">
-            <Loader2 className="animate-spin h-8 w-8 text-purple-600 mx-auto" />
-            <p className="mt-2 text-sm text-gray-500">Generating statement details...</p>
+          <div className="py-12">
+            <CapiseLoader
+              size="sm"
+              text="Generating Statement"
+              subtext="Aggregating billing cycle transactions..."
+            />
           </div>
         ) : error ? (
           <div className="p-4 bg-red-50 text-red-700 rounded-xl mb-4">{error}</div>
@@ -358,9 +362,8 @@ const CreditCardStatementModal = ({ isOpen, onClose, card, onPayClick }) => {
                             <td className="px-3.5 py-2 font-medium text-gray-900">{t.merchant || t.notes || '—'}</td>
                             <td className="px-3.5 py-2 text-gray-500">{t.category?.name || 'Transfer / Other'}</td>
                             <td
-                              className={`px-3.5 py-2 text-right font-bold ${
-                                t.type === 'Expense' ? 'text-red-600' : 'text-green-600'
-                              }`}
+                              className={`px-3.5 py-2 text-right font-bold ${t.type === 'Expense' ? 'text-red-600' : 'text-green-600'
+                                }`}
                             >
                               {t.type === 'Expense' ? '-' : '+'}
                               {formatCurrency(t.amount, card.currency)}
@@ -595,8 +598,8 @@ const Accounts = () => {
                 utilization > 70
                   ? 'bg-red-500'
                   : utilization > 30
-                  ? 'bg-amber-500'
-                  : 'bg-emerald-500';
+                    ? 'bg-amber-500'
+                    : 'bg-emerald-500';
 
               return (
                 <div
@@ -714,9 +717,12 @@ const Accounts = () => {
         </h2>
 
         {isLoading && accounts.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent"></div>
-            <p className="mt-2 text-gray-500">Loading accounts...</p>
+          <div className="py-12">
+            <CapiseLoader
+              size="md"
+              text="Syncing Bank & Cash Accounts"
+              subtext="Retrieving current balances and credit line telemetry..."
+            />
           </div>
         ) : otherAccounts.length === 0 ? (
           <div className="text-center bg-white rounded-xl border border-gray-200 border-dashed py-12">
@@ -750,9 +756,8 @@ const Accounts = () => {
                     </div>
                     <div className="flex flex-col items-end">
                       <span
-                        className={`text-lg font-bold ${
-                          account.currentBalance < 0 ? 'text-red-600' : 'text-gray-900'
-                        }`}
+                        className={`text-lg font-bold ${account.currentBalance < 0 ? 'text-red-600' : 'text-gray-900'
+                          }`}
                       >
                         {formatCurrency(account.currentBalance, account.currency)}
                       </span>

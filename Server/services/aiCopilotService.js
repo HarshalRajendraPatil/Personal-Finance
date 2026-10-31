@@ -468,7 +468,7 @@ YOUR CORE PRINCIPLES & INSTRUCTIONS:
 
   if (apiKey) {
     const ai = new GoogleGenAI({ apiKey });
-    const models = ['gemini-3.5-flash-lite', 'gemini-2.5-flash'];
+    const models = ['gemini-2.5-flash', 'gemini-2.0-flash'];
 
     for (let attempt = 0; attempt < 2; attempt++) {
       for (const model of models) {

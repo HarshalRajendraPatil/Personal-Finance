@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchMonthlyReview } from '../../store/intelligenceSlice';
+import CapiseLoader from '../../components/ui/CapiseLoader';
 import {
   Loader2,
   Calendar as CalendarIcon,
@@ -19,12 +20,16 @@ import {
   AlertTriangle,
   ArrowRight,
   Sparkles,
-  PieChart,
+  PieChart as PieChartIcon,
+  Activity,
+  Layers,
 } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatCurrency';
 
-const fmt = (n) =>
-  new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n || 0);
+import HealthScoreGaugeChart from '../../components/charts/HealthScoreGaugeChart';
+import CategoryDonutChart from '../../components/charts/CategoryDonutChart';
+import BudgetComparisonChart from '../../components/charts/BudgetComparisonChart';
+import MonthlyCashFlowComparisonChart from '../../components/charts/MonthlyCashFlowComparisonChart';
 
 const MonthlyReviewTab = () => {
   const dispatch = useDispatch();
@@ -70,9 +75,12 @@ const MonthlyReviewTab = () => {
 
   if (isLoading && !monthlyReview) {
     return (
-      <div className="flex flex-col items-center justify-center h-80 space-y-4">
-        <Loader2 className="w-10 h-10 animate-spin text-indigo-600" />
-        <p className="text-sm font-medium text-gray-500">Generating Monthly Financial Review Digest...</p>
+      <div className="flex flex-col items-center justify-center py-24">
+        <CapiseLoader
+          size="lg"
+          text="Synthesizing Monthly Executive Review"
+          subtext="Compiling category spending breakdowns, budget adherence, and anomalous spikes..."
+        />
       </div>
     );
   }
@@ -91,12 +99,12 @@ const MonthlyReviewTab = () => {
     period = {},
   } = monthlyReview || {};
 
-  const score = financialHealthScore.score || 75;
-  const grade = financialHealthScore.grade || 'B+';
-  const status = financialHealthScore.status || 'Good';
+  const score = financialHealthScore?.score ?? 75;
+  const grade = financialHealthScore?.grade || 'B+';
+  const status = financialHealthScore?.status || 'Good';
 
   return (
-    <div className="space-y-6" id="monthly-review-digest">
+    <div className="space-y-6 pb-12" id="monthly-review-digest">
       {/* Header & Controls */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-4 sm:p-5 rounded-2xl shadow-xs border border-gray-100 gap-4">
         <div className="flex items-center gap-3">
@@ -105,15 +113,15 @@ const MonthlyReviewTab = () => {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-lg sm:text-xl font-bold text-gray-900">
+              <h2 className="text-lg sm:text-xl font-black text-gray-900 tracking-tight">
                 Monthly Review Digest: {period.name || 'Current Period'}
               </h2>
-              <span className="text-[10px] font-bold uppercase tracking-wider bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full border border-indigo-100">
-                ⚡ Auto-Digested
+              <span className="text-[10px] font-bold uppercase tracking-wider bg-indigo-50 text-indigo-700 px-2.5 py-0.5 rounded-full border border-indigo-100">
+                ⚡ ChadCN Audited
               </span>
             </div>
             <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
-              Comprehensive performance score, budget audit, anomalies, and wealth trajectory.
+              Comprehensive health metrics, budget audit, anomalies, and wealth trajectory.
             </p>
           </div>
         </div>
@@ -122,7 +130,7 @@ const MonthlyReviewTab = () => {
           <select
             value={currentValue}
             onChange={handleMonthChange}
-            className="flex-1 sm:flex-none border-gray-300 rounded-xl shadow-2xs text-xs sm:text-sm py-2 px-3 bg-gray-50 font-medium focus:ring-indigo-500 focus:border-indigo-500"
+            className="flex-1 sm:flex-none border-gray-300 rounded-xl shadow-2xs text-xs sm:text-sm py-2 px-3 bg-gray-50 font-semibold focus:ring-indigo-500 focus:border-indigo-500"
           >
             {monthOptions.map((opt) => (
               <option key={opt.value} value={opt.value}>
@@ -148,29 +156,32 @@ const MonthlyReviewTab = () => {
         </div>
       </div>
 
-      {/* Top Banner: Financial Health Scorecard & Net Worth Shift */}
+      {/* Top Banner: Financial Health Radial Gauge & Net Worth Shift */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        {/* Scorecard Card */}
+        {/* Scorecard Radial Gauge Card */}
         <div className="bg-gradient-to-br from-indigo-900 via-indigo-800 to-purple-900 text-white rounded-2xl p-6 shadow-md relative overflow-hidden flex flex-col justify-between">
-          <div className="relative z-10">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wider text-indigo-200">
-                Financial Health Score
-              </span>
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-white/20 text-white backdrop-blur-xs">
-                Grade {grade}
-              </span>
-            </div>
-            <div className="mt-4 flex items-baseline gap-2">
-              <span className="text-5xl font-black tracking-tight">{score}</span>
-              <span className="text-indigo-300 text-lg font-medium">/ 100</span>
-            </div>
-            <p className="text-xs text-indigo-200 mt-1 font-medium">{status} · Based on savings &amp; budget adherence</p>
+          <div className="flex items-center justify-between z-10">
+            <span className="text-xs font-semibold uppercase tracking-wider text-indigo-200">
+              Financial Health Score
+            </span>
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-white/20 text-white backdrop-blur-xs">
+              Grade {grade}
+            </span>
           </div>
 
-          <div className="mt-5 pt-4 border-t border-indigo-700/50 flex items-center justify-between text-xs text-indigo-200 relative z-10">
+          {/* ChadCN Semi-Circle Radial Speedometer Gauge */}
+          <div className="my-2 z-10 flex justify-center">
+            <HealthScoreGaugeChart
+              score={score}
+              grade={grade}
+              status={status}
+              size={210}
+            />
+          </div>
+
+          <div className="pt-3 border-t border-indigo-700/50 flex items-center justify-between text-xs text-indigo-200 relative z-10">
             <span>{transactionCount} ledger txns</span>
-            <span>Savings Rate: <strong>{summary.savingsRate || 0}%</strong></span>
+            <span>Savings Rate: <strong className="text-white">{summary.savingsRate || 0}%</strong></span>
           </div>
 
           {/* Decorative blur circle */}
@@ -180,20 +191,12 @@ const MonthlyReviewTab = () => {
         {/* Cashflow & Savings Card */}
         <div className="bg-white rounded-2xl p-6 shadow-xs border border-gray-100 flex flex-col justify-between">
           <div>
-            <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">
-              Net Savings &amp; Cashflow
-            </span>
-            <div className="mt-3 flex items-baseline justify-between">
-              <p
-                className={`text-3xl font-extrabold ${
-                  (summary.netCashFlow || 0) >= 0 ? 'text-emerald-600' : 'text-rose-600'
-                }`}
-              >
-                {(summary.netCashFlow || 0) >= 0 ? '+' : ''}
-                {formatCurrency(summary.netCashFlow || 0)}
-              </p>
+            <div className="flex justify-between items-center">
+              <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+                Net Savings &amp; Cashflow
+              </span>
               <span
-                className={`text-xs font-bold px-2 py-1 rounded-full ${
+                className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
                   (summary.savingsRate || 0) >= 20
                     ? 'bg-emerald-100 text-emerald-800'
                     : (summary.savingsRate || 0) > 0
@@ -204,17 +207,24 @@ const MonthlyReviewTab = () => {
                 {summary.savingsRate || 0}% Savings Rate
               </span>
             </div>
+            <p
+              className={`text-2xl font-black tracking-tight mt-2 ${
+                (summary.netCashFlow || 0) >= 0 ? 'text-emerald-600' : 'text-rose-600'
+              }`}
+            >
+              {(summary.netCashFlow || 0) >= 0 ? '+' : ''}
+              {formatCurrency(summary.netCashFlow || 0)}
+            </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-gray-100 text-xs">
-            <div>
-              <p className="text-gray-400">Total Inflow</p>
-              <p className="text-sm font-bold text-gray-800 mt-0.5">{formatCurrency(summary.totalIncome || 0)}</p>
-            </div>
-            <div>
-              <p className="text-gray-400">Total Outflow</p>
-              <p className="text-sm font-bold text-gray-800 mt-0.5">{formatCurrency(summary.totalExpense || 0)}</p>
-            </div>
+          {/* ChadCN Mini Inflow vs Outflow Bar Chart */}
+          <div className="my-2">
+            <MonthlyCashFlowComparisonChart
+              totalIncome={summary.totalIncome || 0}
+              totalExpense={summary.totalExpense || 0}
+              netCashFlow={summary.netCashFlow || 0}
+              savingsRate={summary.savingsRate || 0}
+            />
           </div>
         </div>
 
@@ -228,11 +238,11 @@ const MonthlyReviewTab = () => {
               <Scale className="w-4 h-4 text-indigo-500" />
             </div>
             <div className="mt-3 flex items-baseline justify-between">
-              <p className="text-3xl font-extrabold text-gray-900">
+              <p className="text-2xl font-black text-gray-900 tracking-tight">
                 {formatCurrency(netWorthChange.endNetWorth || 0)}
               </p>
               <span
-                className={`text-xs font-bold px-2 py-1 rounded-full ${
+                className={`text-xs font-bold px-2 py-0.5 rounded-full ${
                   (netWorthChange.delta || 0) >= 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
                 }`}
               >
@@ -242,12 +252,26 @@ const MonthlyReviewTab = () => {
             </div>
           </div>
 
-          <div className="mt-4 pt-4 border-t border-gray-100 text-xs text-gray-500">
-            <span>
-              Start of Month:{' '}
-              <strong className="text-gray-800">{formatCurrency(netWorthChange.startNetWorth || 0)}</strong>
-            </span>
+          <div className="p-4 bg-gray-50/70 rounded-xl border border-gray-100 space-y-2 text-xs my-3">
+            <div className="flex justify-between text-gray-500">
+              <span>Start of Month:</span>
+              <span className="font-semibold text-gray-800">{formatCurrency(netWorthChange.startNetWorth || 0)}</span>
+            </div>
+            <div className="flex justify-between text-gray-500">
+              <span>Period Net Delta:</span>
+              <span className={`font-bold ${(netWorthChange.delta || 0) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                {(netWorthChange.delta || 0) >= 0 ? '+' : ''}{formatCurrency(netWorthChange.delta || 0)}
+              </span>
+            </div>
+            <div className="flex justify-between text-gray-500 pt-1 border-t border-gray-200">
+              <span>End of Month:</span>
+              <span className="font-extrabold text-gray-900">{formatCurrency(netWorthChange.endNetWorth || 0)}</span>
+            </div>
           </div>
+
+          <p className="text-[11px] text-gray-400 text-center">
+            Computed from active loans, investments, cash reserves &amp; cards.
+          </p>
         </div>
       </div>
 
@@ -292,96 +316,46 @@ const MonthlyReviewTab = () => {
         </div>
       )}
 
-      {/* Top Spending Categories & Budget Guardrail Audit */}
+      {/* Top Spending Categories & Budget Guardrail Audit with ChadCN Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Top Categories */}
-        <div className="bg-white p-6 rounded-2xl shadow-xs border border-gray-100">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
-              <PieChart className="w-4 h-4 text-indigo-600" />
-              Top Spending Categories
-            </h3>
-            <span className="text-xs text-gray-400">Share of Total Outflow</span>
+        {/* Top Categories: Donut Chart with Center Metric */}
+        <div className="bg-white p-6 rounded-2xl shadow-xs border border-gray-100 flex flex-col justify-between">
+          <div className="flex items-center justify-between pb-3 mb-3 border-b border-gray-100">
+            <div>
+              <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                <PieChartIcon className="w-4 h-4 text-indigo-600" />
+                Top Spending Categories
+              </h3>
+              <p className="text-xs text-gray-400 mt-0.5">Share of total monthly expenditure</p>
+            </div>
+            <span className="text-[11px] font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-md">
+              {topCategories.length} Categories
+            </span>
           </div>
 
-          {topCategories.length > 0 ? (
-            <div className="space-y-4">
-              {topCategories.map((cat, idx) => (
-                <div key={idx}>
-                  <div className="flex justify-between text-xs font-semibold mb-1">
-                    <span className="text-gray-800 flex items-center gap-2">
-                      <span
-                        className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: cat.color || '#4f46e5' }}
-                      />
-                      {cat.name}
-                    </span>
-                    <span className="text-gray-900">{formatCurrency(cat.amount)}</span>
-                  </div>
-                  <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
-                    <div
-                      className="h-2 rounded-full transition-all duration-500"
-                      style={{
-                        width: `${Math.min(cat.percentage, 100)}%`,
-                        backgroundColor: cat.color || '#4f46e5',
-                      }}
-                    />
-                  </div>
-                  <p className="text-right text-[10px] text-gray-400 mt-0.5">{cat.percentage}% of expenses</p>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-xs text-gray-400 text-center py-6">No expenses recorded for this month.</p>
-          )}
+          <CategoryDonutChart
+            categories={topCategories}
+            title="Monthly Expense Split"
+            centerSublabel="Month Outflow"
+          />
         </div>
 
-        {/* Budget Guardrail Performance Audit */}
-        <div className="bg-white p-6 rounded-2xl shadow-xs border border-gray-100">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-emerald-600" />
-              Budget Guardrails Audit
-            </h3>
-            <span className="text-xs text-gray-400">Limit Compliance</span>
+        {/* Budget Guardrail Performance: ChadCN Horizontal Bar Chart */}
+        <div className="bg-white p-6 rounded-2xl shadow-xs border border-gray-100 flex flex-col justify-between">
+          <div className="flex items-center justify-between pb-3 mb-3 border-b border-gray-100">
+            <div>
+              <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                Budget Guardrails Audit
+              </h3>
+              <p className="text-xs text-gray-400 mt-0.5">Monthly limit versus actual expenditure</p>
+            </div>
+            <span className="text-[11px] font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-md">
+              Limit Compliance
+            </span>
           </div>
 
-          {budgetPerformance.length > 0 ? (
-            <div className="space-y-3">
-              {budgetPerformance.map((b, idx) => (
-                <div
-                  key={idx}
-                  className={`p-3 rounded-xl border text-xs flex items-center justify-between ${
-                    b.status === 'exceeded'
-                      ? 'bg-rose-50 border-rose-200 text-rose-900'
-                      : b.status === 'near_limit'
-                      ? 'bg-amber-50 border-amber-200 text-amber-900'
-                      : 'bg-gray-50 border-gray-200 text-gray-800'
-                  }`}
-                >
-                  <div>
-                    <p className="font-semibold">{b.name}</p>
-                    <p className="text-[11px] opacity-80 mt-0.5">
-                      {formatCurrency(b.spent)} of {formatCurrency(b.limit)} ({b.percentage}%)
-                    </p>
-                  </div>
-                  <span
-                    className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
-                      b.status === 'exceeded'
-                        ? 'bg-rose-200 text-rose-800'
-                        : b.status === 'near_limit'
-                        ? 'bg-amber-200 text-amber-800'
-                        : 'bg-emerald-100 text-emerald-800'
-                    }`}
-                  >
-                    {b.status === 'exceeded' ? 'Exceeded' : b.status === 'near_limit' ? 'Near Limit' : 'Within Limit'}
-                  </span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-xs text-gray-400 text-center py-6">No active budgets were configured for this month.</p>
-          )}
+          <BudgetComparisonChart budgetPerformance={budgetPerformance} />
         </div>
       </div>
 
@@ -389,7 +363,7 @@ const MonthlyReviewTab = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Anomalies */}
         <div className="bg-white p-6 rounded-2xl shadow-xs border border-gray-100">
-          <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+          <h3 className="text-sm font-bold text-gray-900 mb-1 flex items-center gap-2">
             <AlertCircle className="w-4 h-4 text-amber-500" />
             Spending Spikes &amp; Anomalies
           </h3>
@@ -415,7 +389,7 @@ const MonthlyReviewTab = () => {
               ))}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center py-6 text-center bg-gray-50 rounded-xl border border-gray-100 border-dashed">
+            <div className="flex flex-col items-center justify-center py-8 text-center bg-gray-50 rounded-xl border border-gray-100 border-dashed">
               <ShieldCheck className="w-6 h-6 text-emerald-500 mb-1" />
               <p className="text-xs font-semibold text-gray-700">No Anomalies Detected</p>
               <p className="text-[11px] text-gray-400">Spending remained aligned with your past rolling averages.</p>
@@ -425,9 +399,9 @@ const MonthlyReviewTab = () => {
 
         {/* Largest Transactions */}
         <div className="bg-white p-6 rounded-2xl shadow-xs border border-gray-100">
-          <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+          <h3 className="text-sm font-bold text-gray-900 mb-1 flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-indigo-600" />
-            Top 5 Largest Outflows
+            Top Largest Outflows
           </h3>
           <p className="text-xs text-gray-500 mb-4">Single largest expense items recorded during this review cycle.</p>
 
@@ -441,12 +415,12 @@ const MonthlyReviewTab = () => {
                       {tx.categoryName} · {new Date(tx.date).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}
                     </p>
                   </div>
-                  <span className="font-bold text-gray-900 flex-shrink-0">{formatCurrency(tx.amount)}</span>
+                  <span className="font-bold text-gray-900 shrink-0">{formatCurrency(tx.amount)}</span>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-xs text-gray-400 text-center py-6">No expenses found for this month.</p>
+            <p className="text-xs text-gray-400 text-center py-8">No expenses found for this month.</p>
           )}
         </div>
       </div>

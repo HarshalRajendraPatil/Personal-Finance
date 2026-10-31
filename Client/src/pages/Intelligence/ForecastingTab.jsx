@@ -1,8 +1,28 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchCashflowForecast, fetchLongtermProjection } from '../../store/intelligenceSlice';
-import { LineChart } from '@mui/x-charts/LineChart';
-import { BarChart } from '@mui/x-charts/BarChart';
+import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Cell,
+  ReferenceLine,
+  ResponsiveContainer,
+} from 'recharts';
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
+} from '../../components/ui/chart';
+import CapiseLoader from '../../components/ui/CapiseLoader';
 import {
   Loader2, AlertTriangle, CheckCircle, TrendingUp, Calendar,
   SlidersHorizontal, Info, Calculator, Target, Award, Clock,
@@ -171,8 +191,12 @@ const ForecastingTab = () => {
         </div>
 
         {isLoadingForecast && !cashflowForecast ? (
-          <div className="flex justify-center items-center h-48 bg-white rounded-xl border border-gray-100 shadow-xs">
-            <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
+          <div className="py-12 bg-white rounded-xl border border-gray-100 shadow-xs">
+            <CapiseLoader
+              size="md"
+              text="Simulating 90-Day Cashflow Scenarios"
+              subtext="Generating optimistic, base, and pessimistic cash runaways..."
+            />
           </div>
         ) : cashflowForecast ? (
           <div className="space-y-4">
@@ -204,9 +228,7 @@ const ForecastingTab = () => {
                 {/* Chart with Interactive Scenario Selector */}
                 <div className="bg-white rounded-xl border border-gray-100 shadow-xs p-4 sm:p-6 relative">
                   {isLoadingForecast && (
-                    <div className="absolute inset-0 bg-white/50 backdrop-blur-xs z-10 flex items-center justify-center rounded-xl">
-                      <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
-                    </div>
+                    <CapiseLoader overlay size="sm" />
                   )}
 
                   {/* Scenario Switcher Header */}
@@ -252,22 +274,58 @@ const ForecastingTab = () => {
                   </div>
 
                   {forecastChartData.length > 0 ? (
-                    <div className="w-full overflow-x-auto min-w-0">
-                      <div className="min-w-[280px] w-full">
-                        <LineChart
-                          xAxis={[{ scaleType: 'point', data: forecastDates, tickLabelStyle: { fontSize: 10 } }]}
-                          series={[{
-                            data: forecastBalances,
+                    <div className="w-full min-w-0">
+                      <ChartContainer
+                        config={{
+                          balance: {
                             label: `${activeScenario.charAt(0).toUpperCase() + activeScenario.slice(1)} Balance`,
                             color: activeScenario === 'optimistic' ? '#10b981' : activeScenario === 'pessimistic' ? '#f43f5e' : '#6366f1',
-                            area: true,
-                            showMark: false,
-                          }]}
-                          height={240}
-                          margin={{ top: 10, bottom: 25, left: 50, right: 10 }}
-                          sx={{ '& .MuiAreaElement-root': { opacity: 0.15 } }}
-                        />
-                      </div>
+                          },
+                        }}
+                        className="h-60 w-full aspect-auto"
+                      >
+                        <AreaChart data={forecastChartData} margin={{ top: 15, right: 10, left: 0, bottom: 5 }}>
+                          <defs>
+                            <linearGradient id="forecastFill" x1="0" y1="0" x2="0" y2="1">
+                              <stop
+                                offset="5%"
+                                stopColor={activeScenario === 'optimistic' ? '#10b981' : activeScenario === 'pessimistic' ? '#f43f5e' : '#6366f1'}
+                                stopOpacity={0.35}
+                              />
+                              <stop
+                                offset="95%"
+                                stopColor={activeScenario === 'optimistic' ? '#10b981' : activeScenario === 'pessimistic' ? '#f43f5e' : '#6366f1'}
+                                stopOpacity={0.0}
+                              />
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                          <XAxis dataKey="date" tickLine={false} axisLine={false} tick={{ fill: '#64748b', fontSize: 11 }} />
+                          <YAxis tickLine={false} axisLine={false} tickFormatter={(v) => formatCurrency(v)} tick={{ fill: '#64748b', fontSize: 11 }} width={65} />
+                          <ReferenceLine y={0} stroke="#94a3b8" strokeDasharray="3 3" />
+                          <ChartTooltip
+                            content={
+                              <ChartTooltipContent
+                                indicator="dot"
+                                formatter={(val) => (
+                                  <div className="flex items-center justify-between gap-3 w-full">
+                                    <span className="text-gray-500 font-medium">Projected Balance:</span>
+                                    <span className="font-mono font-bold text-gray-900">{formatCurrency(Number(val))}</span>
+                                  </div>
+                                )}
+                              />
+                            }
+                          />
+                          <Area
+                            type="monotone"
+                            dataKey="balance"
+                            name="balance"
+                            stroke={activeScenario === 'optimistic' ? '#10b981' : activeScenario === 'pessimistic' ? '#f43f5e' : '#6366f1'}
+                            strokeWidth={2.5}
+                            fill="url(#forecastFill)"
+                          />
+                        </AreaChart>
+                      </ChartContainer>
                     </div>
                   ) : (
                     <div className="h-48 flex items-center justify-center text-gray-400 bg-gray-50 rounded-lg border border-dashed text-xs sm:text-sm">
@@ -379,21 +437,39 @@ const ForecastingTab = () => {
             </div>
           </div>
 
-          <div className="w-full overflow-x-auto min-w-0">
-            <div className="min-w-[320px] h-56 w-full">
-              <BarChart
-                xAxis={[{ scaleType: 'band', data: cashflowBridge.map(c => c.label) }]}
-                series={[
-                  {
-                    data: cashflowBridge.map(c => c.net),
-                    label: 'Net Cash Flow',
-                    color: '#6366f1',
+          <div className="w-full min-w-0">
+            <ChartContainer
+              config={{
+                net: { label: 'Net Cash Flow', color: '#6366f1' },
+              }}
+              className="h-56 w-full aspect-auto"
+            >
+              <BarChart data={cashflowBridge} margin={{ top: 10, bottom: 15, left: 0, right: 10 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fill: '#64748b', fontSize: 11 }} />
+                <YAxis tickLine={false} axisLine={false} tickFormatter={(v) => formatCurrency(v)} tick={{ fill: '#64748b', fontSize: 11 }} width={65} />
+                <ChartTooltip
+                  content={
+                    <ChartTooltipContent
+                      indicator="dot"
+                      formatter={(val) => (
+                        <div className="flex items-center justify-between gap-3 w-full">
+                          <span className="text-gray-500 font-medium">Net Flow:</span>
+                          <span className={`font-mono font-bold ${Number(val) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                            {Number(val) >= 0 ? '+' : ''}{formatCurrency(Number(val))}
+                          </span>
+                        </div>
+                      )}
+                    />
                   }
-                ]}
-                height={220}
-                margin={{ top: 10, bottom: 25, left: 50, right: 10 }}
-              />
-            </div>
+                />
+                <Bar dataKey="net" radius={[6, 6, 0, 0]} maxBarSize={36}>
+                  {cashflowBridge.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.type === 'actual' ? '#6366f1' : '#a855f7'} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ChartContainer>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mt-4 pt-4 border-t border-gray-100">
@@ -423,9 +499,7 @@ const ForecastingTab = () => {
           {/* Assumption & Accelerator Sliders */}
           <div className="bg-white rounded-xl border border-gray-100 shadow-xs p-4 sm:p-6 space-y-4 sm:space-y-5 relative">
             {isLoadingProjection && (
-              <div className="absolute inset-0 bg-white/50 backdrop-blur-xs z-10 flex items-center justify-center rounded-xl">
-                <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
-              </div>
+              <CapiseLoader overlay size="sm" />
             )}
             <h3 className="font-bold text-gray-800 flex items-center gap-2 text-sm sm:text-base">
               <SlidersHorizontal className="w-4 h-4 text-indigo-500" /> Growth Assumptions
@@ -503,8 +577,12 @@ const ForecastingTab = () => {
             {/* Projection Chart & Milestones */}
             <div className="bg-white rounded-xl border border-gray-100 shadow-xs p-4 sm:p-6 relative">
               {isLoadingProjection ? (
-                <div className="flex justify-center items-center h-64">
-                  <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
+                <div className="py-12">
+                  <CapiseLoader
+                    size="md"
+                    text="Computing Long-Term Wealth Projection"
+                    subtext="Compounding salary growth, market yield, and inflation adjustments..."
+                  />
                 </div>
               ) : activeProjections.length > 0 ? (
                 <>
@@ -530,19 +608,36 @@ const ForecastingTab = () => {
                     </div>
                   )}
 
-                  <div className="w-full overflow-x-auto min-w-0">
-                    <div className="min-w-[280px] w-full">
-                      <BarChart
-                        xAxis={[{ scaleType: 'band', data: ltLabels }]}
-                        series={[
-                          { data: ltAssets, label: 'Assets', color: '#60a5fa', stack: 'a' },
-                          { data: ltLiabilities.map(v => -v), label: 'Liabilities', color: '#f87171', stack: 'a' },
-                        ]}
-                        height={250}
-                        margin={{ top: 10, bottom: 25, left: 50, right: 10 }}
-                        valueFormatter={(v) => formatCurrency(Math.abs(v))}
-                      />
-                    </div>
+                  <div className="w-full min-w-0">
+                    <ChartContainer
+                      config={{
+                        assets: { label: 'Assets', color: '#3b82f6' },
+                        liabilities: { label: 'Liabilities', color: '#f87171' },
+                      }}
+                      className="h-64 w-full aspect-auto"
+                    >
+                      <BarChart data={activeProjections} margin={{ top: 10, bottom: 15, left: 0, right: 10 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                        <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fill: '#64748b', fontSize: 11 }} />
+                        <YAxis tickLine={false} axisLine={false} tickFormatter={(v) => formatCurrency(v)} tick={{ fill: '#64748b', fontSize: 11 }} width={65} />
+                        <ChartTooltip
+                          content={
+                            <ChartTooltipContent
+                              indicator="dot"
+                              formatter={(val, name) => (
+                                <div className="flex items-center justify-between gap-3 w-full">
+                                  <span className="text-gray-500 font-medium capitalize">{name}:</span>
+                                  <span className="font-mono font-bold text-gray-900">{formatCurrency(Number(val))}</span>
+                                </div>
+                              )}
+                            />
+                          }
+                        />
+                        <ChartLegend content={<ChartLegendContent />} />
+                        <Bar dataKey="assets" name="assets" fill="#3b82f6" radius={[6, 6, 0, 0]} maxBarSize={28} />
+                        <Bar dataKey="liabilities" name="liabilities" fill="#f87171" radius={[6, 6, 0, 0]} maxBarSize={28} />
+                      </BarChart>
+                    </ChartContainer>
                   </div>
                 </>
               ) : null}

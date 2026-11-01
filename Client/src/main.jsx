@@ -8,6 +8,11 @@ import App from './App.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 import { NetworkStatusProvider } from './context/NetworkStatusContext.jsx'
 import { ToastProvider } from './context/ToastContext.jsx'
+import { ThemeProvider } from './context/ThemeContext.jsx'
+import { registerServiceWorker } from './registerServiceWorker'
+
+// Initialize Capise Progressive Web App Service Worker
+registerServiceWorker()
 
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
 
@@ -16,15 +21,17 @@ createRoot(document.getElementById('root')).render(
     <ErrorBoundary>
       <NetworkStatusProvider>
         <ToastProvider>
-          <Provider store={store}>
-            {googleClientId ? (
-              <GoogleOAuthProvider clientId={googleClientId}>
+          <ThemeProvider>
+            <Provider store={store}>
+              {googleClientId ? (
+                <GoogleOAuthProvider clientId={googleClientId}>
+                  <App />
+                </GoogleOAuthProvider>
+              ) : (
                 <App />
-              </GoogleOAuthProvider>
-            ) : (
-              <App />
-            )}
-          </Provider>
+              )}
+            </Provider>
+          </ThemeProvider>
         </ToastProvider>
       </NetworkStatusProvider>
     </ErrorBoundary>

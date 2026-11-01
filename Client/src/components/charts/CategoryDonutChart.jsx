@@ -7,6 +7,7 @@ import {
 } from '../ui/chart';
 import { formatCurrency } from '../../utils/formatCurrency';
 import { PieChart as PieIcon, ArrowDownRight, ArrowUpRight } from 'lucide-react';
+import { useTheme } from '../../context/ThemeContext';
 
 const FALLBACK_COLORS = [
   '#4f46e5', '#06b6d4', '#f59e0b', '#10b981', '#ec4899',
@@ -20,6 +21,7 @@ export default function CategoryDonutChart({
   centerSublabel = 'Total Spent',
   className = '',
 }) {
+  const { isDark } = useTheme();
   const [activeCategory, setActiveCategory] = useState(null);
   const [activeMode, setActiveMode] = useState('expense'); // 'expense' | 'income'
 
@@ -160,7 +162,7 @@ export default function CategoryDonutChart({
                   innerRadius={50}
                   outerRadius={75}
                   strokeWidth={2}
-                  stroke="#ffffff"
+                  stroke={isDark ? '#0f172a' : '#ffffff'}
                   onMouseEnter={(_, index) => setActiveCategory(data[index]?.name)}
                   onMouseLeave={() => setActiveCategory(null)}
                 >
@@ -184,14 +186,14 @@ export default function CategoryDonutChart({
                             <tspan
                               x={viewBox.cx}
                               y={(viewBox.cy || 0) - 4}
-                              className="fill-gray-900 text-base sm:text-lg font-black tracking-tight"
+                              className="fill-gray-900 dark:fill-white text-base sm:text-lg font-black tracking-tight"
                             >
                               {centerDisplayValue}
                             </tspan>
                             <tspan
                               x={viewBox.cx}
                               y={(viewBox.cy || 0) + 14}
-                              className="fill-gray-400 text-[10px] uppercase font-semibold tracking-wider"
+                              className="fill-gray-400 dark:fill-slate-400 text-[10px] uppercase font-semibold tracking-wider"
                             >
                               {centerDisplayText}
                             </tspan>

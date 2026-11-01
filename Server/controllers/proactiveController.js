@@ -3,7 +3,10 @@ import {
   runProactiveIntelligenceCheck,
 } from '../services/proactiveIntelligenceService.js';
 import { askFinancialCopilot } from '../services/aiCopilotService.js';
-import { executeCopilotAction as executeActionService } from '../services/copilotActionExecutionService.js';
+import {
+  executeCopilotAction as executeActionService,
+  getAvailableActions,
+} from '../services/copilotActionExecutionService.js';
 import {
   generateSalaryPlan,
   executeSalaryPlan,
@@ -92,9 +95,10 @@ export const chatWithCopilot = async (req, res) => {
  */
 export const executeCopilotAction = async (req, res) => {
   try {
-    const { actionType, payload } = req.body;
-    if (!actionType || !payload) {
-      return res.status(400).json({ message: 'actionType and payload are required.' });
+    const actionType = req.body.actionType || req.body.type;
+    const payload = req.body.payload || req.body.params || req.body;
+    if (!actionType) {
+      return res.status(400).json({ message: 'actionType is required.' });
     }
 
     const result = await executeActionService({
@@ -106,6 +110,18 @@ export const executeCopilotAction = async (req, res) => {
     res.json(result);
   } catch (err) {
     res.status(500).json({ message: 'Failed to execute Copilot action', error: err.message });
+  }
+};
+
+/**
+ * Returns metadata and schemas for all supported 1-click in-chat action proposals.
+ */
+export const getSupportedCopilotActions = async (req, res) => {
+  try {
+    const actions = getAvailableActions();
+    res.json(actions);
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch supported Copilot actions', error: err.message });
   }
 };
 

@@ -90,17 +90,17 @@ const Budgets = () => {
       </div>
 
       {/* ⚡ Autonomous Budget Guardrails Status Banner */}
-      <div className="mb-6 p-4 bg-gradient-to-r from-indigo-50 via-purple-50 to-blue-50 border border-indigo-100 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
+      <div className="mb-6 p-4 bg-gradient-to-r from-indigo-50 via-purple-50 to-blue-50 dark:from-slate-900 dark:via-indigo-950/60 dark:to-slate-900 border border-indigo-100 dark:border-indigo-900/40 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
         <div className="flex items-center space-x-3">
           <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-xs flex-shrink-0">
             <Zap className="w-5 h-5 fill-white text-white" />
           </div>
           <div>
             <div className="flex items-center space-x-2">
-              <p className="text-sm font-bold text-indigo-950">Event-Driven Budget Guardrails Active</p>
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">Live Interceptor</span>
+              <p className="text-sm font-bold text-indigo-950 dark:text-white">Event-Driven Budget Guardrails Active</p>
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 dark:border dark:border-emerald-800/60">Live Interceptor</span>
             </div>
-            <p className="text-xs text-indigo-800/80 mt-0.5">
+            <p className="text-xs text-indigo-800/80 dark:text-slate-300 mt-0.5">
               Capise automatically intercepts every recorded transaction or bank import in real time, alerting you the instant you cross custom category thresholds.
             </p>
           </div>

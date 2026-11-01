@@ -72,20 +72,20 @@ const CategoryTreeSection = ({
                       <div className="w-4 h-4" />
                     )}
                   </button>
-                  <div className="p-2 rounded-lg bg-gray-50 border border-gray-100 flex-shrink-0">
+                  <div className="p-2 rounded-lg bg-gray-50 dark:bg-slate-800/80 border border-gray-100 dark:border-slate-700 flex-shrink-0">
                     <CategoryIcon name={parent.icon} color={parent.color} />
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center space-x-2">
-                      <h4 className="text-sm font-semibold text-gray-900 truncate">{parent.name}</h4>
+                      <h4 className="text-sm font-semibold text-gray-900 dark:text-white truncate">{parent.name}</h4>
                       {isDefault && (
-                        <span className="px-1.5 py-0.2 text-[9px] font-semibold bg-gray-100 text-gray-500 rounded border border-gray-200 flex-shrink-0">
+                        <span className="px-1.5 py-0.2 text-[9px] font-semibold bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 rounded border border-gray-200 dark:border-slate-700 flex-shrink-0">
                           Default
                         </span>
                       )}
                     </div>
                     {children.length > 0 && (
-                      <p className="text-xs text-gray-400">{children.length} subcategories</p>
+                      <p className="text-xs text-gray-400 dark:text-slate-400">{children.length} subcategories</p>
                     )}
                   </div>
                 </div>
@@ -93,21 +93,21 @@ const CategoryTreeSection = ({
                 <div className="flex items-center space-x-1.5 flex-shrink-0 ml-2">
                   <button
                     onClick={() => handleAddNew(parent.type, parent._id)}
-                    className="p-1.5 text-gray-400 hover:text-emerald-600 rounded-md hover:bg-emerald-50 transition cursor-pointer"
+                    className="p-1.5 text-gray-400 hover:text-emerald-600 rounded-md hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition cursor-pointer"
                     title="Add Subcategory"
                   >
                     <Plus className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => handleEdit(parent)}
-                    className="p-1.5 text-gray-400 hover:text-indigo-600 rounded-md hover:bg-indigo-50 transition cursor-pointer"
+                    className="p-1.5 text-gray-400 hover:text-indigo-600 rounded-md hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition cursor-pointer"
                     title="Edit Category"
                   >
                     <Edit2 className="w-4 h-4" />
                   </button>
                   {isDefault ? (
                     <span
-                      className="p-1.5 text-gray-300 cursor-not-allowed"
+                      className="p-1.5 text-gray-300 dark:text-slate-600 cursor-not-allowed"
                       title="System default category cannot be deleted"
                     >
                       <Trash2 className="w-4 h-4 opacity-30" />
@@ -115,7 +115,7 @@ const CategoryTreeSection = ({
                   ) : (
                     <button
                       onClick={() => handleDelete(parent)}
-                      className="p-1.5 text-gray-400 hover:text-red-600 rounded-md hover:bg-red-50 transition cursor-pointer"
+                      className="p-1.5 text-gray-400 hover:text-red-600 rounded-md hover:bg-red-50 dark:hover:bg-rose-950/30 transition cursor-pointer"
                       title="Delete Custom Category"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -125,16 +125,16 @@ const CategoryTreeSection = ({
               </div>
 
               {isExpanded && children.length > 0 && (
-                <ul className="bg-gray-50/60 border-t border-gray-100 divide-y divide-gray-100/60">
+                <ul className="bg-gray-50/60 dark:bg-slate-900/60 border-t border-gray-100 dark:border-slate-800 divide-y divide-gray-100/60 dark:divide-slate-800">
                   {children.map((child) => {
                     const isChildDefault = isCategoryNameReserved(child.name);
                     return (
-                      <li key={child._id} className="flex items-center justify-between py-2.5 pl-12 pr-4 hover:bg-gray-100/70 transition">
+                      <li key={child._id} className="flex items-center justify-between py-2.5 pl-12 pr-4 hover:bg-gray-100/70 dark:hover:bg-slate-800/60 transition">
                         <div className="flex items-center space-x-2.5 min-w-0">
                           <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: child.color }} />
-                          <span className="text-xs sm:text-sm text-gray-700 truncate">{child.name}</span>
+                          <span className="text-xs sm:text-sm text-gray-700 dark:text-slate-200 truncate">{child.name}</span>
                           {isChildDefault && (
-                            <span className="px-1.5 py-0.2 text-[9px] font-medium bg-gray-100 text-gray-400 rounded border border-gray-200 flex-shrink-0">
+                            <span className="px-1.5 py-0.2 text-[9px] font-medium bg-gray-100 dark:bg-slate-800 text-gray-400 dark:text-slate-400 rounded border border-gray-200 dark:border-slate-700 flex-shrink-0">
                               Default
                             </span>
                           )}
@@ -142,7 +142,7 @@ const CategoryTreeSection = ({
                         <div className="flex items-center space-x-1.5 flex-shrink-0">
                           <button
                             onClick={() => handleEdit(child)}
-                            className="p-1 text-gray-400 hover:text-indigo-600 rounded hover:bg-indigo-50 transition cursor-pointer"
+                            className="p-1 text-gray-400 hover:text-indigo-600 rounded hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition cursor-pointer"
                             title="Edit Subcategory"
                           >
                             <Edit2 className="w-3.5 h-3.5" />

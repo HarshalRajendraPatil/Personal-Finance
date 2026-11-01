@@ -21,7 +21,7 @@ const ChartContainer = React.forwardRef(
           data-chart={chartId}
           ref={ref}
           className={cn(
-            "flex aspect-video justify-center text-xs [&_.recharts-cartesian-axis-tick_text]:fill-gray-500 [&_.recharts-cartesian-grid_line]:stroke-gray-100 [&_.recharts-curve.recharts-tooltip-cursor]:stroke-gray-200 [&_.recharts-polar-grid_[stroke]]:stroke-gray-100 [&_.recharts-radial-bar-background-sector]:fill-gray-100 [&_.recharts-rectangle.recharts-tooltip-cursor]:fill-gray-100/50 [&_.recharts-reference-line_[stroke]]:stroke-gray-200 [&_.recharts-sector[stroke]]:stroke-transparent [&_.recharts-surface]:overflow-visible",
+            "flex aspect-video justify-center text-xs [&_.recharts-cartesian-axis-tick_text]:fill-gray-500 [&_.recharts-cartesian-grid_line]:stroke-gray-100 [&_.recharts-curve.recharts-tooltip-cursor]:stroke-gray-200 [&_.recharts-polar-grid_[stroke]]:stroke-gray-100 [&_.recharts-radial-bar-background-sector]:fill-gray-100 [&_.recharts-rectangle.recharts-tooltip-cursor]:fill-gray-100/50 [&_.recharts-reference-line_[stroke]]:stroke-gray-200 [&_.recharts-sector[stroke]]:stroke-transparent [&_.recharts-surface]:overflow-visible dark:[&_.recharts-cartesian-axis-tick_text]:fill-slate-400 dark:[&_.recharts-cartesian-grid_line]:stroke-slate-800/80 dark:[&_.recharts-curve.recharts-tooltip-cursor]:stroke-slate-700 dark:[&_.recharts-polar-grid_[stroke]]:stroke-slate-800/80 dark:[&_.recharts-radial-bar-background-sector]:fill-slate-800 dark:[&_.recharts-rectangle.recharts-tooltip-cursor]:fill-slate-800/50 dark:[&_.recharts-reference-line_[stroke]]:stroke-slate-700",
             className
           )}
           {...props}
@@ -107,7 +107,7 @@ const ChartTooltipContent = React.forwardRef(
 
       if (labelFormatter) {
         return (
-          <div className={cn('font-semibold text-gray-900', labelClassName)}>
+          <div className={cn('font-semibold text-gray-900 dark:text-white', labelClassName)}>
             {labelFormatter(value, payload)}
           </div>
         );
@@ -117,7 +117,7 @@ const ChartTooltipContent = React.forwardRef(
         return null;
       }
 
-      return <div className={cn('font-semibold text-gray-900', labelClassName)}>{value}</div>;
+      return <div className={cn('font-semibold text-gray-900 dark:text-white', labelClassName)}>{value}</div>;
     }, [label, labelFormatter, payload, hideLabel, labelClassName, config, labelKey]);
 
     if (!active || !payload?.length) {
@@ -130,7 +130,7 @@ const ChartTooltipContent = React.forwardRef(
       <div
         ref={ref}
         className={cn(
-          'grid min-w-[9rem] items-start gap-1.5 rounded-xl border border-gray-100 bg-white/95 p-3 text-xs shadow-xl backdrop-blur-md transition-all ease-in-out',
+          'grid min-w-[9rem] items-start gap-1.5 rounded-xl border border-gray-100 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 p-3 text-xs shadow-xl backdrop-blur-md transition-all ease-in-out text-gray-900 dark:text-slate-100',
           className
         )}
       >
@@ -172,12 +172,12 @@ const ChartTooltipContent = React.forwardRef(
                           }}
                         />
                       )}
-                      <span className="text-gray-500 font-medium">
+                      <span className="text-gray-500 dark:text-slate-400 font-medium">
                         {itemConfig?.label || item.name}
                       </span>
                     </div>
                     {item.value !== undefined && (
-                      <span className="font-mono font-bold text-gray-900 tabular-nums">
+                      <span className="font-mono font-bold text-gray-900 dark:text-white tabular-nums">
                         {typeof item.value === 'number'
                           ? item.value.toLocaleString('en-IN')
                           : item.value}
@@ -222,7 +222,7 @@ const ChartLegendContent = React.forwardRef(
           return (
             <div
               key={item.value}
-              className="flex items-center gap-1.5 text-gray-600 hover:text-gray-900 transition-colors"
+              className="flex items-center gap-1.5 text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white transition-colors"
             >
               {!hideIcon && (
                 <div

@@ -15,6 +15,7 @@ import {
 } from '../ui/chart';
 import { formatCurrency } from '../../utils/formatCurrency';
 import { Flame, CheckCircle2, AlertTriangle, Inbox } from 'lucide-react';
+import { useTheme } from '../../context/ThemeContext';
 
 const chartConfig = {
   actual: {
@@ -34,6 +35,7 @@ export default function SpendingBurnChart({
   projectedBudget = 0,
   className = '',
 }) {
+  const { isDark } = useTheme();
   const { chartData, currentActual, currentExpected, diff, isOnTrack } = useMemo(() => {
     if (!Array.isArray(cashFlow) || cashFlow.length === 0) {
       return {
@@ -155,19 +157,19 @@ export default function SpendingBurnChart({
               <stop offset="95%" stopColor="#6366f1" stopOpacity={0.0} />
             </linearGradient>
           </defs>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? '#1e293b' : '#f1f5f9'} />
           <XAxis
             dataKey="date"
             tickLine={false}
             axisLine={false}
             tickMargin={8}
-            tick={{ fill: '#64748b', fontSize: 10 }}
+            tick={{ fill: isDark ? '#94a3b8' : '#64748b', fontSize: 10 }}
           />
           <YAxis
             tickLine={false}
             axisLine={false}
             tickFormatter={(v) => formatCurrency(v)}
-            tick={{ fill: '#64748b', fontSize: 10 }}
+            tick={{ fill: isDark ? '#94a3b8' : '#64748b', fontSize: 10 }}
             width={65}
           />
           <ChartTooltip

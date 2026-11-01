@@ -18,6 +18,7 @@ import {
 } from '../ui/chart';
 import { formatCurrency } from '../../utils/formatCurrency';
 import { BarChart3, TrendingUp, Inbox } from 'lucide-react';
+import { useTheme } from '../../context/ThemeContext';
 
 const chartConfig = {
   Income: {
@@ -35,6 +36,7 @@ const chartConfig = {
 };
 
 export default function CashFlowChart({ cashFlow = [], className = '' }) {
+  const { isDark } = useTheme();
   const [chartType, setChartType] = useState('bars'); // 'bars' | 'netArea'
 
   // Format and sanitize incoming data
@@ -157,20 +159,20 @@ export default function CashFlowChart({ cashFlow = [], className = '' }) {
                 <stop offset="100%" stopColor="#dc2626" stopOpacity={0.7} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? '#1e293b' : '#f1f5f9'} />
             <XAxis
               dataKey="dateLabel"
               tickLine={false}
               axisLine={false}
               tickMargin={10}
-              tick={{ fill: '#64748b', fontSize: 11 }}
+              tick={{ fill: isDark ? '#94a3b8' : '#64748b', fontSize: 11 }}
             />
             <YAxis
               tickLine={false}
               axisLine={false}
               tickMargin={10}
               tickFormatter={(v) => formatCurrency(v).replace('₹', '₹')}
-              tick={{ fill: '#64748b', fontSize: 11 }}
+              tick={{ fill: isDark ? '#94a3b8' : '#64748b', fontSize: 11 }}
               width={65}
             />
             <ChartTooltip
@@ -210,20 +212,20 @@ export default function CashFlowChart({ cashFlow = [], className = '' }) {
                 <stop offset="95%" stopColor="#6366f1" stopOpacity={0.0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? '#1e293b' : '#f1f5f9'} />
             <XAxis
               dataKey="dateLabel"
               tickLine={false}
               axisLine={false}
               tickMargin={10}
-              tick={{ fill: '#64748b', fontSize: 11 }}
+              tick={{ fill: isDark ? '#94a3b8' : '#64748b', fontSize: 11 }}
             />
             <YAxis
               tickLine={false}
               axisLine={false}
               tickMargin={10}
               tickFormatter={(v) => formatCurrency(v)}
-              tick={{ fill: '#64748b', fontSize: 11 }}
+              tick={{ fill: isDark ? '#94a3b8' : '#64748b', fontSize: 11 }}
               width={65}
             />
             <ReferenceLine y={0} stroke="#94a3b8" strokeDasharray="3 3" />

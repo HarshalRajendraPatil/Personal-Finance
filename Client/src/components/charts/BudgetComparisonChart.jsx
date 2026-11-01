@@ -16,23 +16,25 @@ import {
 import { formatCurrency } from '../../utils/formatCurrency';
 import { ShieldAlert, AlertTriangle, CheckCircle2, Inbox, List, BarChart2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-
-const chartConfig = {
-  spent: {
-    label: 'Spent',
-    color: '#6366f1',
-  },
-  limit: {
-    label: 'Budget Limit',
-    color: '#e2e8f0',
-  },
-};
+import { useTheme } from '../../context/ThemeContext';
 
 export default function BudgetComparisonChart({
   budgetPerformance = [],
   className = '',
 }) {
+  const { isDark } = useTheme();
   const [viewMode, setViewMode] = useState('progress'); // 'progress' | 'chart'
+
+  const chartConfig = useMemo(() => ({
+    spent: {
+      label: 'Spent',
+      color: '#6366f1',
+    },
+    limit: {
+      label: 'Budget Limit',
+      color: isDark ? '#334155' : '#e2e8f0',
+    },
+  }), [isDark]);
 
   const processedData = useMemo(() => {
     if (!Array.isArray(budgetPerformance) || budgetPerformance.length === 0) return [];
@@ -189,20 +191,20 @@ export default function BudgetComparisonChart({
               layout="vertical"
               margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
             >
-              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke={isDark ? '#1e293b' : '#f1f5f9'} />
               <XAxis
                 type="number"
                 tickLine={false}
                 axisLine={false}
                 tickFormatter={(v) => formatCurrency(v)}
-                tick={{ fill: '#64748b', fontSize: 10 }}
+                tick={{ fill: isDark ? '#94a3b8' : '#64748b', fontSize: 10 }}
               />
               <YAxis
                 type="category"
                 dataKey="name"
                 tickLine={false}
                 axisLine={false}
-                tick={{ fill: '#1e293b', fontSize: 11, fontWeight: 600 }}
+                tick={{ fill: isDark ? '#f8fafc' : '#1e293b', fontSize: 11, fontWeight: 600 }}
                 width={85}
               />
               <ChartTooltip

@@ -14,6 +14,10 @@ export const fetchTaxRecordByYear = createAsyncThunk('taxes/fetchByYear', async 
   try { return (await svc.fetchTaxRecordByYear(year)).data; } catch (e) { return rejectWithValue(e.response?.data?.message || e.message); }
 });
 
+export const fetchTaxAutoSummary = createAsyncThunk('taxes/fetchAutoSummary', async (year, { rejectWithValue }) => {
+  try { return (await svc.fetchTaxAutoSummary(year)).data; } catch (e) { return rejectWithValue(e.response?.data?.message || e.message); }
+});
+
 export const updateTaxRecord = createAsyncThunk('taxes/update', async ({ year, data }, { rejectWithValue }) => {
   try { return (await svc.updateTaxRecord(year, data)).data; } catch (e) { return rejectWithValue(e.response?.data?.message || e.message); }
 });
@@ -24,18 +28,36 @@ export const deleteTaxRecord = createAsyncThunk('taxes/delete', async (id, { rej
 
 const taxSlice = createSlice({
   name: 'taxes',
-  initialState: { records: [], currentRecord: null, isLoading: false, error: null },
-  reducers: {},
+  initialState: {
+    records: [],
+    currentRecord: null,
+    autoSummary: null,
+    isSyncing: false,
+    isLoading: false,
+    error: null,
+  },
+  reducers: {
+    clearAutoSummary: (state) => {
+      state.autoSummary = null;
+    },
+  },
   extraReducers: (builder) => {
     handle(builder, fetchTaxRecords);
     builder.addCase(fetchTaxRecords.fulfilled, (s, a) => { s.isLoading = false; s.records = a.payload; });
-    
+
     handle(builder, fetchTaxRecordByYear);
     builder.addCase(fetchTaxRecordByYear.fulfilled, (s, a) => { s.isLoading = false; s.currentRecord = a.payload; });
-    
+
+    builder.addCase(fetchTaxAutoSummary.pending, (s) => { s.isSyncing = true; });
+    builder.addCase(fetchTaxAutoSummary.rejected, (s, a) => { s.isSyncing = false; s.error = a.payload; });
+    builder.addCase(fetchTaxAutoSummary.fulfilled, (s, a) => {
+      s.isSyncing = false;
+      s.autoSummary = a.payload;
+    });
+
     handle(builder, updateTaxRecord);
-    builder.addCase(updateTaxRecord.fulfilled, (s, a) => { 
-      s.isLoading = false; 
+    builder.addCase(updateTaxRecord.fulfilled, (s, a) => {
+      s.isLoading = false;
       s.currentRecord = a.payload;
       const idx = s.records.findIndex(r => r._id === a.payload._id);
       if (idx !== -1) s.records[idx] = a.payload;
@@ -43,12 +65,13 @@ const taxSlice = createSlice({
     });
 
     handle(builder, deleteTaxRecord);
-    builder.addCase(deleteTaxRecord.fulfilled, (s, a) => { 
-      s.isLoading = false; 
+    builder.addCase(deleteTaxRecord.fulfilled, (s, a) => {
+      s.isLoading = false;
       s.records = s.records.filter(r => r._id !== a.payload);
       if (s.currentRecord?._id === a.payload) s.currentRecord = null;
     });
   },
 });
 
+export const { clearAutoSummary } = taxSlice.actions;
 export default taxSlice.reducer;

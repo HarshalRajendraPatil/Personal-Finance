@@ -47,6 +47,7 @@ import {
 } from 'lucide-react';
 
 import { formatCurrency } from '../../utils/formatCurrency';
+import { useTheme } from '../../context/ThemeContext';
 
 const formatDate = (dateString) => {
   if (!dateString) return '—';
@@ -67,6 +68,7 @@ const formatTime = (dateString) => {
 };
 
 const Transactions = () => {
+  const { isDark } = useTheme();
   const dispatch = useDispatch();
   const { transactions, isLoading, lastBudgetAlert } = useSelector((state) => state.transactions);
   const { accounts } = useSelector((state) => state.accounts);
@@ -367,19 +369,19 @@ const Transactions = () => {
       hover
       key={t._id}
       sx={{
-        '&:hover': { backgroundColor: 'rgba(59, 130, 246, 0.04)' },
+        '&:hover': { backgroundColor: isDark ? 'rgba(99, 102, 241, 0.08)' : 'rgba(59, 130, 246, 0.04)' },
         transition: 'background-color 0.15s ease',
       }}
     >
       {/* Date */}
       <TableCell sx={{ py: 1.5, px: 2, whiteSpace: 'nowrap' }}>
-        <Typography variant="body2" sx={{ fontWeight: 600, color: '#1e293b', fontSize: '0.85rem' }}>
+        <Typography variant="body2" sx={{ fontWeight: 600, color: isDark ? '#f8fafc' : '#1e293b', fontSize: '0.85rem' }}>
           {formatDate(t.date)}
         </Typography>
         {t.createdAt && (
           <Tooltip title={`Created at: ${new Date(t.createdAt).toLocaleString()}`}>
-            <Typography variant="caption" sx={{ color: '#94a3b8', display: 'flex', alignItems: 'center', fontSize: '0.7rem', mt: 0.25 }}>
-              <Clock className="w-2.5 h-2.5 mr-1 text-gray-400" />
+            <Typography variant="caption" sx={{ color: isDark ? '#94a3b8' : '#94a3b8', display: 'flex', alignItems: 'center', fontSize: '0.7rem', mt: 0.25 }}>
+              <Clock className="w-2.5 h-2.5 mr-1 text-gray-400 dark:text-slate-500" />
               {formatTime(t.createdAt)}
             </Typography>
           </Tooltip>
@@ -391,26 +393,26 @@ const Transactions = () => {
         <span
           className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
             t.type === 'Income'
-              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/70 dark:text-emerald-300 dark:border-emerald-800/60'
               : t.type === 'Expense'
-              ? 'bg-rose-50 text-rose-700 border border-rose-200'
-              : 'bg-blue-50 text-blue-700 border border-blue-200'
+              ? 'bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/70 dark:text-rose-300 dark:border-rose-800/60'
+              : 'bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/70 dark:text-blue-300 dark:border-blue-800/60'
           }`}
         >
-          {t.type === 'Income' && <ArrowDownRight className="w-3 h-3 mr-1 text-emerald-600" />}
-          {t.type === 'Expense' && <ArrowUpRight className="w-3 h-3 mr-1 text-rose-600" />}
-          {t.type === 'Transfer' && <ArrowRightLeft className="w-3 h-3 mr-1 text-blue-600" />}
+          {t.type === 'Income' && <ArrowDownRight className="w-3 h-3 mr-1 text-emerald-600 dark:text-emerald-400" />}
+          {t.type === 'Expense' && <ArrowUpRight className="w-3 h-3 mr-1 text-rose-600 dark:text-rose-400" />}
+          {t.type === 'Transfer' && <ArrowRightLeft className="w-3 h-3 mr-1 text-blue-600 dark:text-blue-400" />}
           {t.type}
         </span>
       </TableCell>
 
       {/* Details */}
       <TableCell sx={{ py: 1.5, px: 2 }}>
-        <div className="text-sm font-semibold text-gray-900">
+        <div className="text-sm font-semibold text-gray-900 dark:text-white">
           {t.merchant || (t.type === 'Transfer' ? 'Transfer' : t.category?.name || 'Uncategorized')}
         </div>
         {t.notes && (
-          <div className="text-xs text-gray-500 truncate max-w-[200px] mt-0.5" title={t.notes}>
+          <div className="text-xs text-gray-500 dark:text-slate-400 truncate max-w-[200px] mt-0.5" title={t.notes}>
             {t.notes}
           </div>
         )}
@@ -422,21 +424,21 @@ const Transactions = () => {
           <span
             className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
               t.tags?.includes('investment')
-                ? 'bg-purple-100 text-purple-800'
+                ? 'bg-purple-100 text-purple-800 dark:bg-purple-950/70 dark:text-purple-300 dark:border dark:border-purple-800/60'
                 : t.tags?.includes('goal')
-                ? 'bg-indigo-100 text-indigo-800'
-                : 'bg-blue-100 text-blue-800'
+                ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950/70 dark:text-indigo-300 dark:border dark:border-indigo-800/60'
+                : 'bg-blue-100 text-blue-800 dark:bg-blue-950/70 dark:text-blue-300 dark:border dark:border-blue-800/60'
             }`}
           >
             {t.tags?.includes('investment') ? '💼 Investment' : t.tags?.includes('goal') ? '🎯 Goal Savings' : '🔁 Transfer'}
           </span>
         ) : (
           <div className="flex items-center">
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-slate-800 dark:text-slate-200 dark:border dark:border-slate-700">
               {t.category?.name || 'None'}
             </span>
             {t.subcategory && (
-              <span className="ml-1.5 text-xs text-gray-500 hidden md:inline">
+              <span className="ml-1.5 text-xs text-gray-500 dark:text-slate-400 hidden md:inline">
                 → {t.subcategory.name}
               </span>
             )}
@@ -445,16 +447,16 @@ const Transactions = () => {
       </TableCell>
 
       {/* Account */}
-      <TableCell sx={{ py: 1.5, px: 2, whiteSpace: 'nowrap', color: '#475569', fontSize: '0.85rem' }}>
+      <TableCell sx={{ py: 1.5, px: 2, whiteSpace: 'nowrap', color: isDark ? '#cbd5e1' : '#475569', fontSize: '0.85rem' }}>
         {t.type === 'Transfer' ? (
           <span>
             {t.account?.name} →{' '}
             {t.toAccount ? (
               t.toAccount.name
             ) : t.tags?.includes('investment') ? (
-              <span className="font-semibold text-purple-700">{t.merchant || 'Investment'}</span>
+              <span className="font-semibold text-purple-700 dark:text-purple-300">{t.merchant || 'Investment'}</span>
             ) : t.tags?.includes('goal') ? (
-              <span className="font-semibold text-indigo-700">{t.merchant || 'Goal Savings'}</span>
+              <span className="font-semibold text-indigo-700 dark:text-indigo-300">{t.merchant || 'Goal Savings'}</span>
             ) : (
               t.merchant || 'External Transfer'
             )}
@@ -468,7 +470,7 @@ const Transactions = () => {
       <TableCell align="right" sx={{ py: 1.5, px: 2, whiteSpace: 'nowrap' }}>
         <span
           className={`font-semibold text-sm ${
-            t.type === 'Expense' ? 'text-rose-600' : t.type === 'Income' ? 'text-emerald-600' : 'text-gray-900'
+            t.type === 'Expense' ? 'text-rose-600 dark:text-rose-400' : t.type === 'Income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-900 dark:text-slate-100'
           }`}
         >
           {t.type === 'Expense' ? '-' : t.type === 'Income' ? '+' : ''}
@@ -812,12 +814,12 @@ const Transactions = () => {
             <p className="text-gray-500">No transactions found.</p>
           </div>
         ) : (
-          <TableContainer component={Paper} elevation={0} sx={{ border: 'none', borderRadius: '0.75rem', overflowX: 'auto' }}>
+          <TableContainer component={Paper} elevation={0} sx={{ border: 'none', borderRadius: '0.75rem', overflowX: 'auto', backgroundColor: isDark ? '#0f172a' : '#ffffff' }}>
             <Table sx={{ minWidth: 700 }} aria-label="transactions table">
-              <TableHead sx={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+              <TableHead sx={{ backgroundColor: isDark ? '#131c31' : '#f8fafc', borderBottom: isDark ? '1px solid #1e293b' : '1px solid #e2e8f0' }}>
                 <TableRow>
                   {/* Date Column */}
-                  <TableCell sx={{ py: 1.5, px: 2, fontWeight: 700, color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <TableCell sx={{ py: 1.5, px: 2, fontWeight: 700, color: isDark ? '#94a3b8' : '#475569', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     <TableSortLabel
                       active={orderBy === 'date' || orderBy === 'createdAt'}
                       direction={orderBy === 'date' || orderBy === 'createdAt' ? order : 'desc'}
@@ -825,13 +827,13 @@ const Transactions = () => {
                     >
                       Date
                       {orderBy === 'createdAt' && (
-                        <span className="ml-1 text-2xs font-normal lowercase text-indigo-600 font-sans">(created)</span>
+                        <span className="ml-1 text-2xs font-normal lowercase text-indigo-600 dark:text-indigo-400 font-sans">(created)</span>
                       )}
                     </TableSortLabel>
                   </TableCell>
 
                   {/* Type Column */}
-                  <TableCell sx={{ py: 1.5, px: 2, fontWeight: 700, color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <TableCell sx={{ py: 1.5, px: 2, fontWeight: 700, color: isDark ? '#94a3b8' : '#475569', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     <TableSortLabel
                       active={orderBy === 'type'}
                       direction={orderBy === 'type' ? order : 'asc'}
@@ -842,7 +844,7 @@ const Transactions = () => {
                   </TableCell>
 
                   {/* Details Column */}
-                  <TableCell sx={{ py: 1.5, px: 2, fontWeight: 700, color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <TableCell sx={{ py: 1.5, px: 2, fontWeight: 700, color: isDark ? '#94a3b8' : '#475569', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     <TableSortLabel
                       active={orderBy === 'merchant'}
                       direction={orderBy === 'merchant' ? order : 'asc'}
@@ -853,7 +855,7 @@ const Transactions = () => {
                   </TableCell>
 
                   {/* Category Column */}
-                  <TableCell sx={{ py: 1.5, px: 2, fontWeight: 700, color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <TableCell sx={{ py: 1.5, px: 2, fontWeight: 700, color: isDark ? '#94a3b8' : '#475569', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     <TableSortLabel
                       active={orderBy === 'category'}
                       direction={orderBy === 'category' ? order : 'asc'}
@@ -864,7 +866,7 @@ const Transactions = () => {
                   </TableCell>
 
                   {/* Account Column */}
-                  <TableCell sx={{ py: 1.5, px: 2, fontWeight: 700, color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <TableCell sx={{ py: 1.5, px: 2, fontWeight: 700, color: isDark ? '#94a3b8' : '#475569', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     <TableSortLabel
                       active={orderBy === 'account'}
                       direction={orderBy === 'account' ? order : 'asc'}
@@ -875,7 +877,7 @@ const Transactions = () => {
                   </TableCell>
 
                   {/* Amount Column */}
-                  <TableCell align="right" sx={{ py: 1.5, px: 2, fontWeight: 700, color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <TableCell align="right" sx={{ py: 1.5, px: 2, fontWeight: 700, color: isDark ? '#94a3b8' : '#475569', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     <TableSortLabel
                       active={orderBy === 'amount'}
                       direction={orderBy === 'amount' ? order : 'desc'}
@@ -886,13 +888,13 @@ const Transactions = () => {
                   </TableCell>
 
                   {/* Actions Column */}
-                  <TableCell align="right" sx={{ py: 1.5, px: 2, fontWeight: 700, color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <TableCell align="right" sx={{ py: 1.5, px: 2, fontWeight: 700, color: isDark ? '#94a3b8' : '#475569', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Actions
                   </TableCell>
                 </TableRow>
               </TableHead>
 
-              <TableBody sx={{ divideY: '1px solid #f1f5f9' }}>
+              <TableBody sx={{ divideY: isDark ? '1px solid #1e293b' : '1px solid #f1f5f9' }}>
                 {groupBy === 'none' ? (
                   paginatedTransactions.map((t) => renderTransactionRow(t, false))
                 ) : (
@@ -904,41 +906,41 @@ const Transactions = () => {
                         <TableRow
                           onClick={() => toggleGroup(group.key)}
                           sx={{
-                            backgroundColor: '#f8fafc',
+                            backgroundColor: isDark ? '#162036' : '#f8fafc',
                             cursor: 'pointer',
-                            borderTop: '2px solid #e2e8f0',
-                            borderBottom: '1px solid #e2e8f0',
-                            '&:hover': { backgroundColor: '#f1f5f9' },
+                            borderTop: isDark ? '2px solid #1e293b' : '2px solid #e2e8f0',
+                            borderBottom: isDark ? '1px solid #1e293b' : '1px solid #e2e8f0',
+                            '&:hover': { backgroundColor: isDark ? '#1e293b' : '#f1f5f9' },
                           }}
                         >
                           <TableCell colSpan={7} sx={{ py: 1.5, px: 2.5 }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                                <span className="p-1 text-gray-500">
-                                  {isCollapsed ? <ChevronRight className="w-4 h-4 text-gray-500" /> : <ChevronDown className="w-4 h-4 text-gray-500" />}
+                                <span className="p-1 text-gray-500 dark:text-slate-400">
+                                  {isCollapsed ? <ChevronRight className="w-4 h-4 text-gray-500 dark:text-slate-400" /> : <ChevronDown className="w-4 h-4 text-gray-500 dark:text-slate-400" />}
                                 </span>
-                                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.875rem' }}>
+                                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: isDark ? '#f8fafc' : '#0f172a', fontSize: '0.875rem' }}>
                                   {group.label}
                                 </Typography>
                                 <Chip
                                   label={`${group.items.length} ${group.items.length === 1 ? 'transaction' : 'transactions'}`}
                                   size="small"
-                                  sx={{ height: 22, fontSize: '0.725rem', backgroundColor: '#e2e8f0', color: '#334155', fontWeight: 600 }}
+                                  sx={{ height: 22, fontSize: '0.725rem', backgroundColor: isDark ? '#1e293b' : '#e2e8f0', color: isDark ? '#cbd5e1' : '#334155', fontWeight: 600 }}
                                 />
                               </Box>
 
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5 }}>
                                 {group.incomeTotal > 0 && (
-                                  <Typography variant="caption" sx={{ color: '#16a34a', fontWeight: 600, fontSize: '0.75rem' }}>
+                                  <Typography variant="caption" sx={{ color: '#10b981', fontWeight: 600, fontSize: '0.75rem' }}>
                                     +{formatCurrency(group.incomeTotal)}
                                   </Typography>
                                 )}
                                 {group.expenseTotal > 0 && (
-                                  <Typography variant="caption" sx={{ color: '#dc2626', fontWeight: 600, fontSize: '0.75rem' }}>
+                                  <Typography variant="caption" sx={{ color: '#f43f5e', fontWeight: 600, fontSize: '0.75rem' }}>
                                     -{formatCurrency(group.expenseTotal)}
                                   </Typography>
                                 )}
-                                <Typography variant="caption" sx={{ color: '#334155', fontWeight: 700, fontSize: '0.75rem' }}>
+                                <Typography variant="caption" sx={{ color: isDark ? '#cbd5e1' : '#334155', fontWeight: 700, fontSize: '0.75rem' }}>
                                   Net: {group.netTotal >= 0 ? '+' : ''}{formatCurrency(group.netTotal)}
                                 </Typography>
                               </Box>

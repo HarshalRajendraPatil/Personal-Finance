@@ -312,7 +312,7 @@ const InvestmentFormModal = ({ isOpen, onClose, investment = null, onOpenGuide }
 
           {/* Funding Bank Account (Recorded as Transfer in Transactions) */}
           {!investment && (
-            <div className="bg-indigo-50/70 border border-indigo-100 rounded-xl p-3.5 space-y-3">
+            <div className="bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/50 rounded-xl p-3.5 space-y-3">
               <label className="flex items-center space-x-2.5 cursor-pointer">
                 <input
                   type="checkbox"
@@ -320,14 +320,14 @@ const InvestmentFormModal = ({ isOpen, onClose, investment = null, onOpenGuide }
                   onChange={e => setForm(f => ({ ...f, bookTransaction: e.target.checked }))}
                   className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
                 />
-                <span className="text-sm font-semibold text-indigo-950">💸 Record as Transfer in Transactions Tab</span>
+                <span className="text-sm font-semibold text-indigo-950 dark:text-white">💸 Record as Transfer in Transactions Tab</span>
               </label>
-              <p className="text-xs text-indigo-700/90 leading-relaxed">
+              <p className="text-xs text-indigo-700/90 dark:text-slate-300 leading-relaxed">
                 Automatically logs a <strong>Transfer</strong> transaction and deducts this capital from your selected bank account.
               </p>
               {form.bookTransaction && (
                 <div>
-                  <label className="block text-xs font-medium text-indigo-900 mb-1">
+                  <label className="block text-xs font-medium text-indigo-900 dark:text-slate-300 mb-1">
                     Funding Bank Account <span className="text-rose-500">*</span>
                   </label>
                   <select

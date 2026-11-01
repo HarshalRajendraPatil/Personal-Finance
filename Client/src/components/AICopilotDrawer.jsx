@@ -397,16 +397,40 @@ const FormattedMessage = ({ text }) => {
 const ActionProposalCard = ({ action, onExecute, isExecuting, isExecuted }) => {
   const getActionIcon = (type) => {
     switch (type) {
-      case 'UPDATE_BUDGET_LIMIT':
-        return <Tags className="w-4 h-4 text-amber-600" />;
-      case 'LOG_INVESTMENT_TOPUP':
-        return <TrendingUp className="w-4 h-4 text-emerald-600" />;
+      case 'CREATE_GOAL':
       case 'CONTRIBUTE_TO_GOAL':
+      case 'UPDATE_GOAL':
         return <PiggyBank className="w-4 h-4 text-indigo-600" />;
+      case 'CREATE_BUDGET':
+      case 'UPDATE_BUDGET_LIMIT':
+      case 'BUDGET_GUARD':
+        return <Tags className="w-4 h-4 text-amber-600" />;
+      case 'CREATE_INVESTMENT':
+      case 'LOG_INVESTMENT_TOPUP':
+      case 'UPDATE_INVESTMENT_SIP':
+      case 'ADJUST_SIP':
+        return <TrendingUp className="w-4 h-4 text-emerald-600" />;
+      case 'TRANSFER_MONEY':
+      case 'EXECUTE_AUTO_REBALANCE':
+        return <ArrowRight className="w-4 h-4 text-cyan-600" />;
+      case 'CREATE_RECURRING_RULE':
+      case 'CANCEL_SUBSCRIPTION':
+      case 'ACKNOWLEDGE_PRICE_HIKE':
+        return <Zap className="w-4 h-4 text-purple-600" />;
+      case 'CREATE_LOAN':
+      case 'PREPAY_LOAN_PRINCIPAL':
+      case 'RECORD_LOAN_EMI_PAYMENT':
+        return <CreditCard className="w-4 h-4 text-rose-600" />;
+      case 'CREATE_LENDING':
+      case 'RECORD_LENDING_REPAYMENT':
+      case 'SETTLE_LENDING':
+        return <Wallet className="w-4 h-4 text-violet-600" />;
       case 'GENERATE_WHATSAPP_REMINDER':
         return <MessageSquare className="w-4 h-4 text-emerald-600" />;
-      case 'PREPAY_LOAN_PRINCIPAL':
-        return <CreditCard className="w-4 h-4 text-rose-600" />;
+      case 'BUFFER_RESERVE':
+        return <ShieldCheck className="w-4 h-4 text-teal-600" />;
+      case 'CREATE_ACCOUNT':
+        return <Landmark className="w-4 h-4 text-blue-600" />;
       default:
         return <Sparkles className="w-4 h-4 text-indigo-600" />;
     }

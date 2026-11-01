@@ -4,7 +4,12 @@ import {
   closeWhatIfModal,
   runWhatIfSimulation,
   clearWhatIfResult,
+  executeCopilotAction,
 } from '../store/proactiveSlice';
+import { fetchGoals } from '../store/goalSlice';
+import { fetchBudgets } from '../store/budgetSlice';
+import { fetchInvestments } from '../store/investmentSlice';
+import { fetchAccounts } from '../store/accountSlice';
 import CapiseLoader from './ui/CapiseLoader';
 import {
   Sparkles,
@@ -72,6 +77,31 @@ const WhatIfSimulatorModal = () => {
   const [monthlyInvestmentDelta, setMonthlyInvestmentDelta] = useState('');
   const [durationMonths, setDurationMonths] = useState(36);
   const [horizonYears, setHorizonYears] = useState(3);
+  const [executingPropId, setExecutingPropId] = useState(null);
+  const [executedProps, setExecutedProps] = useState({});
+
+  const handleExecuteProp = async (prop) => {
+    if (!prop || executedProps[prop.id] || executingPropId === prop.id) return;
+    setExecutingPropId(prop.id);
+    try {
+      const res = await dispatch(
+        executeCopilotAction({
+          actionId: prop.id,
+          actionType: prop.type,
+          payload: prop.payload || { name: prop.title, targetAmount: 50000 },
+        })
+      );
+      if (executeCopilotAction.fulfilled.match(res)) {
+        setExecutedProps((prev) => ({ ...prev, [prop.id]: true }));
+        dispatch(fetchGoals());
+        dispatch(fetchBudgets());
+        dispatch(fetchInvestments());
+        dispatch(fetchAccounts());
+      }
+    } finally {
+      setExecutingPropId(null);
+    }
+  };
 
   useEffect(() => {
     if (isWhatIfModalOpen && !whatIfResult && !promptText) {
@@ -515,18 +545,53 @@ const WhatIfSimulatorModal = () => {
                     {actionProposals.map((prop) => (
                       <div
                         key={prop.id}
-                        className="p-3.5 bg-gray-50/80 border border-gray-200 rounded-xl flex flex-col justify-between"
+                        className={`p-3.5 border rounded-xl flex flex-col justify-between transition-all ${
+                          executedProps[prop.id]
+                            ? 'bg-emerald-50/80 border-emerald-300'
+                            : 'bg-gray-50/80 border-gray-200'
+                        }`}
                       >
                         <div>
-                          <h5 className="text-xs font-bold text-gray-900">{prop.title}</h5>
+                          <div className="flex items-center justify-between gap-2">
+                            <h5 className="text-xs font-bold text-gray-900">{prop.title}</h5>
+                            {executedProps[prop.id] && (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                Applied ✅
+                              </span>
+                            )}
+                          </div>
                           <p className="text-[11px] text-gray-600 mt-0.5 leading-relaxed">
                             {prop.description}
                           </p>
                         </div>
                         <div className="mt-3 flex justify-end">
-                          <span className="px-3 py-1 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg text-[11px] font-bold">
-                            {prop.actionLabel || 'Recommended'}
-                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleExecuteProp(prop)}
+                            disabled={executingPropId === prop.id || executedProps[prop.id]}
+                            className={`px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition-all shadow-2xs ${
+                              executedProps[prop.id]
+                                ? 'bg-emerald-100 text-emerald-800 cursor-default'
+                                : 'bg-indigo-600 hover:bg-indigo-700 text-white active:scale-95 disabled:opacity-50'
+                            }`}
+                          >
+                            {executingPropId === prop.id ? (
+                              <>
+                                <RefreshCw className="w-3 h-3 animate-spin" />
+                                <span>Applying...</span>
+                              </>
+                            ) : executedProps[prop.id] ? (
+                              <>
+                                <CheckCircle2 className="w-3 h-3 text-emerald-700" />
+                                <span>Applied</span>
+                              </>
+                            ) : (
+                              <>
+                                <Zap className="w-3 h-3 text-amber-300" />
+                                <span>{prop.actionLabel || 'Apply 1-Click'}</span>
+                              </>
+                            )}
+                          </button>
                         </div>
                       </div>
                     ))}

@@ -14,6 +14,7 @@ import {
 } from '../ui/chart';
 import { formatCurrency } from '../../utils/formatCurrency';
 import { Landmark, ArrowUpRight, ArrowDownRight, Inbox } from 'lucide-react';
+import { useTheme } from '../../context/ThemeContext';
 
 const chartConfig = {
   netWorth: {
@@ -27,6 +28,7 @@ export default function NetWorthTrendChart({
   currentNetWorth = 0,
   className = '',
 }) {
+  const { isDark } = useTheme();
   const processedData = useMemo(() => {
     if (!Array.isArray(trendData) || trendData.length === 0) return [];
 
@@ -120,20 +122,20 @@ export default function NetWorthTrendChart({
               <stop offset="95%" stopColor={isNetPositive ? '#10b981' : '#6366f1'} stopOpacity={0.0} />
             </linearGradient>
           </defs>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? '#1e293b' : '#f1f5f9'} />
           <XAxis
             dataKey="dateLabel"
             tickLine={false}
             axisLine={false}
             tickMargin={10}
-            tick={{ fill: '#64748b', fontSize: 11 }}
+            tick={{ fill: isDark ? '#94a3b8' : '#64748b', fontSize: 11 }}
           />
           <YAxis
             tickLine={false}
             axisLine={false}
             tickMargin={10}
             tickFormatter={(v) => formatCurrency(v)}
-            tick={{ fill: '#64748b', fontSize: 11 }}
+            tick={{ fill: isDark ? '#94a3b8' : '#64748b', fontSize: 11 }}
             width={70}
           />
           <ReferenceLine y={0} stroke="#94a3b8" strokeDasharray="3 3" />

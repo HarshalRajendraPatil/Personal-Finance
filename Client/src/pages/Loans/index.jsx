@@ -140,7 +140,7 @@ const LoanFormModal = ({ isOpen, onClose, loan = null }) => {
           </div>
 
           {/* Automated EMI Section */}
-          <div className="bg-indigo-50/70 border border-indigo-100 rounded-lg p-3.5 space-y-3">
+          <div className="bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/50 rounded-lg p-3.5 space-y-3">
             <label className="flex items-center space-x-2.5 cursor-pointer">
               <input
                 type="checkbox"
@@ -148,15 +148,15 @@ const LoanFormModal = ({ isOpen, onClose, loan = null }) => {
                 onChange={e => setForm(f => ({ ...f, autoDebit: e.target.checked }))}
                 className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
               />
-              <span className="text-sm font-semibold text-indigo-950">⚡ Enable Automated EMI Auto-Debit</span>
+              <span className="text-sm font-semibold text-indigo-950 dark:text-white">⚡ Enable Automated EMI Auto-Debit</span>
             </label>
-            <p className="text-xs text-indigo-700/90 leading-relaxed">
+            <p className="text-xs text-indigo-700/90 dark:text-slate-300 leading-relaxed">
               When enabled, Capise's daemon automatically posts your EMI expense on the scheduled day, calculates reducing-balance interest vs principal split, and debits your bank account.
             </p>
             {form.autoDebit && (
               <div className="grid grid-cols-2 gap-3 pt-1">
                 <div>
-                  <label className="block text-xs font-medium text-indigo-900">Debit Day of Month (1-31)</label>
+                  <label className="block text-xs font-medium text-indigo-900 dark:text-slate-300">Debit Day of Month (1-31)</label>
                   <input
                     type="number"
                     min="1"

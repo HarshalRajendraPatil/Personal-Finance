@@ -54,6 +54,10 @@ const recurringRuleSchema = new mongoose.Schema({
     enum: ['daily', 'weekly', 'monthly', 'yearly'],
     required: true,
   },
+  time: {
+    type: String,
+    default: '09:00',
+  },
   nextRunDate: {
     type: Date,
     required: true,

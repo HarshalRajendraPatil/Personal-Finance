@@ -5,6 +5,7 @@ import {
   getSafeToSpendData,
   chatWithCopilot,
   executeCopilotAction,
+  getSupportedCopilotActions,
   getLatestSalaryDistributionPlan,
   generateSalaryDistributionPlan,
   executeSalaryDistributionPlan,
@@ -23,6 +24,7 @@ const router = express.Router();
 router.get('/nudges', protect, getProactiveNudges);
 router.post('/nudges/:nudgeId/dismiss', protect, dismissNudge);
 router.get('/safe-to-spend', protect, getSafeToSpendData);
+router.get('/copilot/actions', protect, getSupportedCopilotActions);
 router.post('/copilot/chat', protect, chatWithCopilot);
 router.post('/copilot/execute-action', protect, executeCopilotAction);
 

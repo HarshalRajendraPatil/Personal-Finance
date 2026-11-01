@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@variant dark (&:where(.dark, .dark *));
+
 @layer base {
   html {
     scroll-behavior: smooth;
@@ -10,7 +12,7 @@
   }
 
   body {
-    @apply bg-gray-50 text-gray-900 overflow-x-hidden;
+    @apply bg-gray-50 text-gray-900 dark:bg-[#090d16] dark:text-slate-100 overflow-x-hidden;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     min-height: 100vh;
     padding-bottom: env(safe-area-inset-bottom, 0px);
@@ -173,4 +175,558 @@
 .capise-dot-3 {
   animation: capiseDotBounce 1.4s infinite ease-in-out;
   animation-delay: 0.4s;
+}
+
+/* ==========================================================================
+   Capise Futuristic High-Contrast Dark Theme Engine (Capise Pro)
+   ========================================================================== */
+
+html.dark {
+  color-scheme: dark;
+}
+
+html.dark body {
+  background-color: #090d16;
+  color: #f8fafc;
+}
+
+/* Base Surfaces & Elevated Cards */
+html.dark .bg-white:not([data-keep-theme]) {
+  background-color: #0f172a;
+}
+
+html.dark .bg-gray-50:not([data-keep-theme]) {
+  background-color: #090d16;
+}
+
+html.dark .bg-gray-100:not([data-keep-theme]) {
+  background-color: #1e293b;
+}
+
+html.dark .bg-gray-200:not([data-keep-theme]) {
+  background-color: #334155;
+}
+
+html.dark .bg-white\/95,
+html.dark .bg-white\/90,
+html.dark .bg-white\/80 {
+  background-color: rgba(15, 23, 42, 0.92);
+}
+
+html.dark .bg-gray-50\/50,
+html.dark .bg-gray-50\/60,
+html.dark .bg-gray-50\/80 {
+  background-color: rgba(11, 17, 32, 0.85);
+}
+
+/* Borders */
+html.dark .border-gray-50:not([data-keep-theme]),
+html.dark .border-gray-100:not([data-keep-theme]),
+html.dark .border-gray-200:not([data-keep-theme]),
+html.dark .border-gray-100\/80,
+html.dark .border-gray-200\/70,
+html.dark .border-gray-200\/90 {
+  border-color: #1e293b;
+}
+
+html.dark .border-gray-300:not([data-keep-theme]) {
+  border-color: #334155;
+}
+
+/* Typography & Contrast */
+html.dark .text-gray-950,
+html.dark .text-gray-900,
+html.dark .text-gray-800 {
+  color: #f8fafc;
+}
+
+html.dark .text-gray-700,
+html.dark .text-gray-600 {
+  color: #cbd5e1;
+}
+
+html.dark .text-gray-500 {
+  color: #94a3b8;
+}
+
+html.dark .text-gray-400 {
+  color: #64748b;
+}
+
+/* Hover States */
+html.dark .hover\:bg-gray-50:hover {
+  background-color: #1e293b;
+}
+
+html.dark .hover\:bg-gray-100:hover {
+  background-color: #334155;
+}
+
+html.dark .hover\:bg-gray-200\/60:hover {
+  background-color: #334155;
+}
+
+html.dark .hover\:text-gray-900:hover {
+  color: #ffffff;
+}
+
+/* Form Controls (Inputs, Selects, Textareas) */
+html.dark input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="range"]):not([type="file"]),
+html.dark select,
+html.dark textarea {
+  background-color: #0b1120;
+  border-color: #334155;
+  color: #f8fafc;
+}
+
+html.dark input:focus,
+html.dark select:focus,
+html.dark textarea:focus {
+  border-color: #6366f1;
+  background-color: #0f172a;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.35);
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #64748b;
+}
+
+/* Disabled Form Controls */
+html.dark input:disabled,
+html.dark select:disabled,
+html.dark textarea:disabled {
+  background-color: #131c31;
+  border-color: #1e293b;
+  color: #64748b;
+  cursor: not-allowed;
+}
+
+/* Custom Checkbox & Radio Accents */
+html.dark input[type="checkbox"],
+html.dark input[type="radio"] {
+  accent-color: #6366f1;
+  background-color: #0b1120;
+  border-color: #334155;
+}
+
+/* Badges, Chips & Soft Accent Cards */
+html.dark .bg-indigo-50,
+html.dark .bg-indigo-50\/60,
+html.dark .bg-indigo-50\/80,
+html.dark .bg-indigo-50\/90,
+html.dark .bg-indigo-100,
+html.dark .bg-indigo-200 {
+  background-color: rgba(99, 102, 241, 0.18) !important;
+  border-color: rgba(99, 102, 241, 0.35) !important;
+  color: #a5b4fc !important;
+}
+
+html.dark .text-indigo-600,
+html.dark .text-indigo-700,
+html.dark .text-indigo-800,
+html.dark .text-indigo-900,
+html.dark .text-indigo-950 {
+  color: #a5b4fc !important;
+}
+
+html.dark .bg-purple-50,
+html.dark .bg-purple-50\/80,
+html.dark .bg-purple-100,
+html.dark .bg-purple-200 {
+  background-color: rgba(168, 85, 247, 0.18) !important;
+  border-color: rgba(168, 85, 247, 0.35) !important;
+  color: #d8b4fe !important;
+}
+
+html.dark .text-purple-600,
+html.dark .text-purple-700,
+html.dark .text-purple-800,
+html.dark .text-purple-900,
+html.dark .text-purple-950 {
+  color: #d8b4fe !important;
+}
+
+html.dark .bg-blue-50,
+html.dark .bg-blue-50\/80,
+html.dark .bg-blue-100,
+html.dark .bg-blue-200 {
+  background-color: rgba(59, 130, 246, 0.18) !important;
+  border-color: rgba(59, 130, 246, 0.35) !important;
+  color: #93c5fd !important;
+}
+
+html.dark .text-blue-600,
+html.dark .text-blue-700,
+html.dark .text-blue-800,
+html.dark .text-blue-900 {
+  color: #93c5fd !important;
+}
+
+html.dark .bg-emerald-50,
+html.dark .bg-emerald-50\/80,
+html.dark .bg-emerald-100,
+html.dark .bg-emerald-200 {
+  background-color: rgba(16, 185, 129, 0.18) !important;
+  border-color: rgba(16, 185, 129, 0.35) !important;
+  color: #6ee7b7 !important;
+}
+
+html.dark .text-emerald-700,
+html.dark .text-emerald-800,
+html.dark .text-emerald-900 {
+  color: #6ee7b7 !important;
+}
+
+html.dark .bg-rose-50,
+html.dark .bg-rose-50\/80,
+html.dark .bg-rose-100,
+html.dark .bg-rose-200 {
+  background-color: rgba(244, 63, 94, 0.18) !important;
+  border-color: rgba(244, 63, 94, 0.35) !important;
+  color: #fda4af !important;
+}
+
+html.dark .text-rose-700,
+html.dark .text-rose-800,
+html.dark .text-rose-900 {
+  color: #fda4af !important;
+}
+
+html.dark .bg-amber-50,
+html.dark .bg-amber-50\/80,
+html.dark .bg-amber-100,
+html.dark .bg-amber-200 {
+  background-color: rgba(245, 158, 11, 0.18) !important;
+  border-color: rgba(245, 158, 11, 0.35) !important;
+  color: #fcd34d !important;
+}
+
+html.dark .text-amber-700,
+html.dark .text-amber-800,
+html.dark .text-amber-900 {
+  color: #fcd34d !important;
+}
+
+html.dark .bg-cyan-50,
+html.dark .bg-cyan-50\/80,
+html.dark .bg-cyan-100,
+html.dark .bg-cyan-200 {
+  background-color: rgba(6, 182, 212, 0.18) !important;
+  border-color: rgba(6, 182, 212, 0.35) !important;
+  color: #67e8f9 !important;
+}
+
+html.dark .text-cyan-700,
+html.dark .text-cyan-800,
+html.dark .text-cyan-900 {
+  color: #67e8f9 !important;
+}
+
+html.dark .bg-green-50,
+html.dark .bg-green-50\/80,
+html.dark .bg-green-100,
+html.dark .bg-green-200 {
+  background-color: rgba(34, 197, 94, 0.18) !important;
+  border-color: rgba(34, 197, 94, 0.35) !important;
+  color: #86efac !important;
+}
+
+html.dark .text-green-700,
+html.dark .text-green-800,
+html.dark .text-green-900 {
+  color: #86efac !important;
+}
+
+/* Light pastel gradient stops adaptation in dark mode */
+html.dark .from-indigo-50 {
+  --tw-gradient-from: #131b31 var(--tw-gradient-from-position) !important;
+}
+
+html.dark .via-purple-50 {
+  --tw-gradient-stops: var(--tw-gradient-from), #1f1538 var(--tw-gradient-via-position), var(--tw-gradient-to) !important;
+}
+
+html.dark .to-blue-50 {
+  --tw-gradient-to: #111d33 var(--tw-gradient-to-position) !important;
+}
+
+html.dark .from-blue-500 {
+  --tw-gradient-from: #1e3a8a var(--tw-gradient-from-position) !important;
+}
+
+html.dark .to-indigo-600 {
+  --tw-gradient-to: #312e81 var(--tw-gradient-to-position) !important;
+}
+
+/* Modals & Dialog Depth */
+html.dark [role="dialog"],
+html.dark [aria-modal="true"],
+html.dark .modal-content {
+  background-color: #0f172a;
+  border-color: #1e293b;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75), 0 0 1px 1px rgba(255, 255, 255, 0.05);
+}
+
+/* Tables & Dividers */
+html.dark hr {
+  border-color: #1e293b;
+}
+
+/* ==========================================================================
+   Progressive Web App (PWA) Standalone Display & Safe Area Optimization
+   ========================================================================== */
+
+@supports (padding-top: env(safe-area-inset-top)) {
+  .pwa-safe-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .pwa-safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+
+@media all and (display-mode: standalone) {
+  html, body {
+    overscroll-behavior-y: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+html.dark .divide-gray-100 > :not([hidden]) ~ :not([hidden]),
+html.dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #1e293b;
+}
+
+/* Glassmorphism & Translucent Overlays */
+html.dark .backdrop-blur-xs,
+html.dark .backdrop-blur-sm,
+html.dark .backdrop-blur-md {
+  background-color: rgba(15, 23, 42, 0.82);
+}
+
+/* Futuristic Card Glow */
+html.dark .shadow-xs,
+html.dark .shadow-sm,
+html.dark .shadow {
+  box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+html.dark .shadow-md,
+html.dark .shadow-lg,
+html.dark .shadow-xl,
+html.dark .shadow-2xl {
+  box-shadow: 0 10px 30px -4px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+/* Custom Scrollbars in Dark Mode */
+html.dark ::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.25);
+}
+
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.45);
+}
+
+/* ==========================================================================
+   Executive PDF & Print Stylesheet (Capise Institutional Dossier Standard)
+   ========================================================================== */
+
+.print-only {
+  display: none !important;
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm 12mm 12mm 12mm;
+  }
+
+  /* Force exact color and background rendering */
+  *,
+  *::before,
+  *::after {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  html,
+  html.dark,
+  body,
+  html.dark body {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    font-size: 10pt !important;
+    line-height: 1.4 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  /* Hide app navigation chrome, headers, banners, floating widgets & buttons */
+  aside,
+  header,
+  nav,
+  button,
+  .no-print,
+  .floating-action-buttons,
+  [role="dialog"],
+  [aria-modal="true"] {
+    display: none !important;
+  }
+
+  /* Reset main layout margins, padding and widths */
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    left: 0 !important;
+  }
+
+  /* Display curated print-only elements */
+  .print-only {
+    display: block !important;
+  }
+
+  /* Reset dark mode overrides in print so text is high contrast on white paper */
+  html.dark .bg-white,
+  html.dark .bg-gray-50,
+  html.dark .bg-gray-100,
+  html.dark .bg-gray-200 {
+    background-color: #ffffff !important;
+  }
+
+  html.dark .text-gray-950,
+  html.dark .text-gray-900,
+  html.dark .text-gray-800,
+  .print-card .text-gray-950,
+  .print-card .text-gray-900,
+  .print-card .text-gray-800 {
+    color: #0f172a !important;
+  }
+
+  html.dark .text-gray-700,
+  html.dark .text-gray-600,
+  .print-card .text-gray-700,
+  .print-card .text-gray-600 {
+    color: #334155 !important;
+  }
+
+  html.dark .text-gray-500,
+  .print-card .text-gray-500 {
+    color: #64748b !important;
+  }
+
+  html.dark .text-gray-400,
+  .print-card .text-gray-400 {
+    color: #94a3b8 !important;
+  }
+
+  html.dark .text-indigo-950,
+  html.dark .text-indigo-900,
+  html.dark .text-indigo-800,
+  html.dark .text-indigo-700 {
+    color: #312e81 !important;
+  }
+
+  html.dark .text-purple-950,
+  html.dark .text-purple-900,
+  html.dark .text-purple-800,
+  html.dark .text-purple-700 {
+    color: #581c87 !important;
+  }
+
+  html.dark .text-emerald-900,
+  html.dark .text-emerald-800,
+  html.dark .text-emerald-700 {
+    color: #065f46 !important;
+  }
+
+  html.dark .text-rose-900,
+  html.dark .text-rose-800,
+  html.dark .text-rose-700 {
+    color: #9f1239 !important;
+  }
+
+  html.dark .text-amber-900,
+  html.dark .text-amber-800,
+  html.dark .text-amber-700 {
+    color: #92400e !important;
+  }
+
+  html.dark .border-gray-50,
+  html.dark .border-gray-100,
+  html.dark .border-gray-200,
+  html.dark .border-gray-300 {
+    border-color: #e2e8f0 !important;
+  }
+
+  .print-avoid-break {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  .print-page-break {
+    break-before: page !important;
+    page-break-before: always !important;
+  }
+
+  .print-card {
+    border: 1px solid #e2e8f0 !important;
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    border-radius: 12px !important;
+    padding: 14px 18px !important;
+    margin-bottom: 14px !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* Executive Dark Hero Scorecard for Print */
+  .print-card-dark {
+    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 60%, #4c1d95 100%) !important;
+    color: #ffffff !important;
+    border: 1px solid #1e1b4b !important;
+    border-radius: 12px !important;
+    padding: 16px 20px !important;
+    margin-bottom: 14px !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    -webkit-print-color-adjust: exact !important;
+  }
+
+  .print-card-dark span,
+  .print-card-dark p,
+  .print-card-dark div {
+    color: #ffffff !important;
+  }
+
+  .print-card-dark .text-indigo-200,
+  .print-card-dark .text-indigo-300 {
+    color: #c7d2fe !important;
+  }
+
+  table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+  }
+
+  tr {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  th, td {
+    border-bottom: 1px solid #e2e8f0 !important;
+  }
+
+  a {
+    text-decoration: none !important;
+    color: inherit !important;
+  }
 }

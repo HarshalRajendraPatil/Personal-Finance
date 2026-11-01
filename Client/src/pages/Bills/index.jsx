@@ -274,8 +274,21 @@ const Bills = () => {
                             <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                               <span className="text-sm font-semibold text-gray-900 truncate">{rule.name}</span>
                               <DueBadge daysLeft={daysLeft} />
+                              {rule.autoPost ? (
+                                <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200/80 px-2 py-0.5 rounded-full flex items-center gap-1" title={`Executes automatically at ${rule.time || '09:00'}`}>
+                                  <Zap className="w-3 h-3 text-indigo-500" /> Auto @ {rule.time || '09:00'}
+                                </span>
+                              ) : (
+                                <span className="text-[10px] font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                                  Manual Confirm
+                                </span>
+                              )}
                             </div>
                             <div className="flex flex-wrap items-center gap-1 mt-0.5 text-xs text-gray-500">
+                              <span className="font-semibold text-gray-700">
+                                {new Date(rule.nextRunDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} at {rule.time || new Date(rule.nextRunDate).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                              </span>
+                              <span>·</span>
                               <span>{FREQ_LABELS[rule.frequency]}</span>
                               {rule.category && <><span>·</span><span>{rule.category.name}</span></>}
                               {rule.merchant && <><span>·</span><span>{rule.merchant}</span></>}
@@ -283,17 +296,18 @@ const Bills = () => {
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center justify-between sm:justify-end space-x-4 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100">
+                        <div className="flex items-center justify-between sm:justify-end space-x-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100">
                           <span className={`text-base font-bold ${rule.type === 'Income' ? 'text-green-600' : rule.type === 'Expense' ? 'text-red-600' : 'text-gray-900'}`}>
                             {formatCurrency(rule.amount)}
                           </span>
                           <div className="flex items-center space-x-1 sm:space-x-1.5">
                             <button
                               onClick={() => handlePayNow(rule)}
-                              title="Mark as Paid"
-                              className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition"
+                              title="Mark as Paid Now (Manual Override)"
+                              className="px-2 py-1 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg flex items-center gap-1 transition"
                             >
-                              <CheckCircle2 className="w-4 h-4" />
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                              <span className="hidden sm:inline">Pay</span>
                             </button>
                             <button onClick={() => handleToggleActive(rule)} title="Pause" className="p-1.5 text-gray-400 hover:text-yellow-600 hover:bg-yellow-50 rounded-lg transition">
                               <Pause className="w-4 h-4" />

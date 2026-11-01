@@ -315,20 +315,20 @@ Synthesize professional, deeply personalized financial intelligence strictly in 
   "actionProposals": [
     {
       "id": "prop_1",
-      "type": "BUDGET_GUARD" | "ADJUST_SIP" | "CREATE_GOAL" | "STAGGER_PURCHASE",
+      "type": "CREATE_GOAL" | "BUDGET_GUARD" | "ADJUST_SIP" | "BUFFER_RESERVE",
       "title": "Action title",
       "description": "Short actionable description",
-      "actionLabel": "Executable button label"
-    },
-    {
-      "id": "prop_2",
-      "type": "BUFFER_RESERVE",
-      "title": "Second Action title",
-      "description": "Short actionable description",
-      "actionLabel": "Executable button label"
+      "actionLabel": "Executable button label",
+      "payload": {
+        "name": "Goal name or target title",
+        "targetAmount": 100000,
+        "amount": 10000,
+        "categoryName": "Category name if budget"
+      }
     }
   ]
-}`;
+}
+Return ONLY valid raw JSON matching this schema without markdown code blocks.`;
 
   const aiSynthesis = await callGeminiWithFallback(prompt);
   if (aiSynthesis && aiSynthesis.verdict && aiSynthesis.verdictTitle) {
@@ -368,6 +368,10 @@ Synthesize professional, deeply personalized financial intelligence strictly in 
         title: 'Calibrate Discretionary Spending',
         description: `Temporarily reduce non-essential daily allowance by ₹${Math.round((scenarioParams.monthlyExpenseDelta || scenarioParams.lumpsumOutflow / 12) * 0.5).toLocaleString('en-IN')}/mo.`,
         actionLabel: 'Calibrate Budget',
+        payload: {
+          categoryName: 'General & Discretionary',
+          limit: Math.max(5000, Math.round((userContext.baselineMonthlyExpense || 30000) * 0.7)),
+        },
       },
       {
         id: 'prop_sinking_fund',
@@ -375,6 +379,10 @@ Synthesize professional, deeply personalized financial intelligence strictly in 
         title: `Create Sinking Fund for "${scenarioParams.title}"`,
         description: `Automate monthly savings of ₹${Math.round((scenarioParams.lumpsumOutflow || 50000) / 6).toLocaleString('en-IN')}/mo prior to executing.`,
         actionLabel: 'Set Up Goal',
+        payload: {
+          name: `Sinking Fund: ${scenarioParams.title}`,
+          targetAmount: scenarioParams.lumpsumOutflow || 50000,
+        },
       },
     ],
   };

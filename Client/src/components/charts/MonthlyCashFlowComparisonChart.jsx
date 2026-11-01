@@ -14,6 +14,7 @@ import {
 } from '../ui/chart';
 import { formatCurrency } from '../../utils/formatCurrency';
 import { TrendingUp, TrendingDown, PiggyBank } from 'lucide-react';
+import { useTheme } from '../../context/ThemeContext';
 
 const chartConfig = {
   amount: {
@@ -29,6 +30,7 @@ export default function MonthlyCashFlowComparisonChart({
   savingsRate = 0,
   className = '',
 }) {
+  const { isDark } = useTheme();
   const chartData = useMemo(() => {
     return [
       {
@@ -60,18 +62,18 @@ export default function MonthlyCashFlowComparisonChart({
           data={chartData}
           margin={{ top: 20, right: 15, left: 10, bottom: 5 }}
         >
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? '#1e293b' : '#f1f5f9'} />
           <XAxis
             dataKey="name"
             tickLine={false}
             axisLine={false}
-            tick={{ fill: '#475569', fontSize: 11, fontWeight: 500 }}
+            tick={{ fill: isDark ? '#cbd5e1' : '#475569', fontSize: 11, fontWeight: 500 }}
           />
           <YAxis
             tickLine={false}
             axisLine={false}
             tickFormatter={(v) => formatCurrency(v)}
-            tick={{ fill: '#64748b', fontSize: 11 }}
+            tick={{ fill: isDark ? '#94a3b8' : '#64748b', fontSize: 11 }}
             width={65}
           />
           <ChartTooltip

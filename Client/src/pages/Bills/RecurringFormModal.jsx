@@ -17,9 +17,10 @@ const ruleSchema = z.object({
   notes: z.string().optional(),
   frequency: z.enum(['daily', 'weekly', 'monthly', 'yearly']),
   nextRunDate: z.string().min(1, 'Next due date is required'),
+  time: z.string().min(1, 'Time is required').default('09:00'),
   endDate: z.string().optional(),
   isActive: z.boolean().default(true),
-  autoPost: z.boolean().default(false),
+  autoPost: z.boolean().default(true),
 }).superRefine((data, ctx) => {
   if (data.type === 'Transfer' && !data.toAccount) {
     ctx.addIssue({ path: ['toAccount'], message: 'Destination account required for transfers', code: z.ZodIssueCode.custom });
@@ -51,9 +52,10 @@ const RecurringFormModal = ({ isOpen, onClose, rule = null }) => {
       notes: '',
       frequency: 'monthly',
       nextRunDate: new Date().toISOString().split('T')[0],
+      time: '09:00',
       endDate: '',
       isActive: true,
-      autoPost: false,
+      autoPost: true,
     },
   });
 
@@ -61,6 +63,16 @@ const RecurringFormModal = ({ isOpen, onClose, rule = null }) => {
 
   useEffect(() => {
     if (rule) {
+      let defaultTime = '09:00';
+      if (rule.time) {
+        defaultTime = rule.time;
+      } else if (rule.nextRunDate) {
+        try {
+          const d = new Date(rule.nextRunDate);
+          defaultTime = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+        } catch (e) {}
+      }
+
       reset({
         name: rule.name,
         type: rule.type,
@@ -72,9 +84,10 @@ const RecurringFormModal = ({ isOpen, onClose, rule = null }) => {
         notes: rule.notes || '',
         frequency: rule.frequency,
         nextRunDate: new Date(rule.nextRunDate).toISOString().split('T')[0],
+        time: defaultTime,
         endDate: rule.endDate ? new Date(rule.endDate).toISOString().split('T')[0] : '',
-        isActive: rule.isActive,
-        autoPost: rule.autoPost,
+        isActive: rule.isActive ?? true,
+        autoPost: rule.autoPost ?? true,
       });
     } else {
       reset({
@@ -88,17 +101,27 @@ const RecurringFormModal = ({ isOpen, onClose, rule = null }) => {
         notes: '',
         frequency: 'monthly',
         nextRunDate: new Date().toISOString().split('T')[0],
+        time: '09:00',
         endDate: '',
         isActive: true,
-        autoPost: false,
+        autoPost: true,
       });
     }
   }, [rule, reset, isOpen, accounts]);
 
   const onSubmit = async (data) => {
     try {
+      const timeStr = data.time || '09:00';
+      const [h, m] = timeStr.split(':').map(Number);
+      const combinedDate = new Date(data.nextRunDate);
+      if (!isNaN(h) && !isNaN(m)) {
+        combinedDate.setHours(h, m, 0, 0);
+      }
+
       const payload = {
         ...data,
+        time: timeStr,
+        nextRunDate: combinedDate.toISOString(),
         toAccount: data.type === 'Transfer' ? data.toAccount : null,
         category: data.type !== 'Transfer' ? data.category || null : null,
         endDate: data.endDate || null,
@@ -240,7 +263,7 @@ const RecurringFormModal = ({ isOpen, onClose, rule = null }) => {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700">Next Due Date</label>
               <input
@@ -249,6 +272,15 @@ const RecurringFormModal = ({ isOpen, onClose, rule = null }) => {
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
               />
               {errors.nextRunDate && <p className="mt-1 text-sm text-red-600">{errors.nextRunDate.message}</p>}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Execution Time</label>
+              <input
+                {...register('time')}
+                type="time"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 font-mono"
+              />
+              {errors.time && <p className="mt-1 text-sm text-red-600">{errors.time.message}</p>}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">End Date (Optional)</label>
@@ -269,14 +301,19 @@ const RecurringFormModal = ({ isOpen, onClose, rule = null }) => {
             />
           </div>
 
-          <div className="flex items-center space-x-6">
-            <label className="flex items-center">
-              <input type="checkbox" {...register('isActive')} className="mr-2 rounded" />
-              <span className="text-sm text-gray-700">Active</span>
+          <div className="bg-indigo-50/60 border border-indigo-100 rounded-xl p-3.5 space-y-2.5">
+            <label className="flex items-start cursor-pointer">
+              <input type="checkbox" {...register('autoPost')} className="mt-0.5 mr-2.5 rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4" />
+              <div>
+                <span className="text-sm font-semibold text-gray-900">Auto-execute on exact scheduled time</span>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  When enabled, Capise will automatically record this transaction and debit/credit your account at the exact date and time specified above without needing manual intervention.
+                </p>
+              </div>
             </label>
-            <label className="flex items-center">
-              <input type="checkbox" {...register('autoPost')} className="mr-2 rounded" />
-              <span className="text-sm text-gray-700">Auto-post on due date</span>
+            <label className="flex items-center cursor-pointer pt-1 border-t border-indigo-100/70">
+              <input type="checkbox" {...register('isActive')} className="mr-2.5 rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4" />
+              <span className="text-xs font-medium text-gray-700">Rule Active</span>
             </label>
           </div>
 

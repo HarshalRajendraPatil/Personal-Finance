@@ -7,11 +7,19 @@ import { generateMonthlyReviewDigests } from './jobs/reviewJob.js';
 import { runProactiveGuardianDaemon } from './jobs/proactiveGuardianJob.js';
 
 export const initCronJobs = () => {
-  // 1. Midnight Engine (00:00 AM daily) — Auto-Post Recurring Bills, Auto-Debit Loan EMIs, Auto-Execute SIPs, Run Proactive Guardian
+  // 0. Minute Precision Engine (* * * * *) — Executes Recurring Rules & Bills at their exact scheduled time
+  cron.schedule('* * * * *', async () => {
+    try {
+      await processRecurringTransactions();
+    } catch (err) {
+      console.error('[CRON MASTER] Error in per-minute recurring transaction daemon:', err);
+    }
+  });
+
+  // 1. Midnight Engine (00:00 AM daily) — Auto-Debit Loan EMIs, Auto-Execute SIPs, Run Proactive Guardian
   cron.schedule('0 0 * * *', async () => {
     console.log('[CRON MASTER] Running Daily Midnight Financial Automation Daemon...');
     try {
-      await processRecurringTransactions();
       await processScheduledLoanEMIs();
       await processScheduledSIPs();
       await runProactiveGuardianDaemon();

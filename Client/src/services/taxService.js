@@ -1,7 +1,7 @@
-import axios from 'axios';
-const API = `${import.meta.env.VITE_API_URL}/taxes`;
+import api from './api';
 
-export const fetchTaxRecords = () => axios.get(API, { withCredentials: true });
-export const fetchTaxRecordByYear = (year) => axios.get(`${API}/${year}`, { withCredentials: true });
-export const updateTaxRecord = (year, data) => axios.put(`${API}/${year}`, data, { withCredentials: true });
-export const deleteTaxRecord = (id) => axios.delete(`${API}/record/${id}`, { withCredentials: true });
+export const fetchTaxRecords = () => api.get('/taxes');
+export const fetchTaxRecordByYear = (year) => api.get(`/taxes/${year}`);
+export const fetchTaxAutoSummary = (year) => api.get(`/taxes/auto-summary/${year}`);
+export const updateTaxRecord = (year, data) => api.put(`/taxes/${year}`, data);
+export const deleteTaxRecord = (id) => api.delete(`/taxes/record/${id}`);

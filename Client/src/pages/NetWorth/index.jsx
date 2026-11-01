@@ -140,22 +140,22 @@ const NetWorth = () => {
       )}
 
       {/* Autonomous Tracking Status Banner */}
-      <div className="mb-6 p-4 bg-gradient-to-r from-indigo-50 via-purple-50 to-blue-50 border border-indigo-100 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
+      <div className="mb-6 p-4 bg-gradient-to-r from-indigo-50 via-purple-50 to-blue-50 dark:from-slate-900 dark:via-indigo-950/60 dark:to-slate-900 border border-indigo-100 dark:border-indigo-900/40 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
         <div className="flex items-center space-x-3">
           <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-xs flex-shrink-0">
             <Zap className="w-5 h-5 fill-white text-white" />
           </div>
           <div>
             <div className="flex items-center space-x-2">
-              <p className="text-sm font-bold text-indigo-950">Autonomous Net Worth Tracking Active</p>
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">Daemon Running</span>
+              <p className="text-sm font-bold text-indigo-950 dark:text-white">Autonomous Net Worth Tracking Active</p>
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 dark:border dark:border-emerald-800/60">Daemon Running</span>
             </div>
-            <p className="text-xs text-indigo-800/80 mt-0.5">
+            <p className="text-xs text-indigo-800/80 dark:text-slate-300 mt-0.5">
               Capise automatically captures a permanent monthly snapshot on the 1st of every month at midnight, building your lifelong wealth graph effortlessly.
             </p>
           </div>
         </div>
-        <div className="flex items-center space-x-1.5 text-xs text-indigo-700 font-medium whitespace-nowrap bg-white/80 px-3 py-1.5 rounded-lg border border-indigo-100/80">
+        <div className="flex items-center space-x-1.5 text-xs text-indigo-700 dark:text-indigo-300 font-medium whitespace-nowrap bg-white/80 dark:bg-slate-800/80 px-3 py-1.5 rounded-lg border border-indigo-100/80 dark:border-slate-700">
           <Clock className="w-3.5 h-3.5" />
           <span>Next Auto-Capture: 1st of next month</span>
         </div>

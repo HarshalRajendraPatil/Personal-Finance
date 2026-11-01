@@ -6,15 +6,18 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { Award, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function HealthScoreGaugeChart({
   score = 75,
   grade = 'B+',
   status = 'Good',
   size = 200,
-  dark = false,
+  dark: forceDark,
   className = '',
 }) {
+  const { isDark } = useTheme();
+  const dark = forceDark !== undefined ? forceDark : isDark;
   const normalizedScore = Math.min(100, Math.max(0, Number(score) || 0));
 
   const { color, badgeClasses, icon: Icon } = useMemo(() => {

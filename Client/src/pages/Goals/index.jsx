@@ -35,7 +35,7 @@ const CircularProgress = ({ percentage, color, size = 100 }) => {
   const dash = (percentage / 100) * circ;
   return (
     <svg width={size} height={size} viewBox="0 0 100 100">
-      <circle cx="50" cy="50" r={r} fill="none" stroke="#f3f4f6" strokeWidth="10" />
+      <circle cx="50" cy="50" r={r} fill="none" stroke="currentColor" className="text-gray-100 dark:text-slate-800" strokeWidth="10" />
       <circle cx="50" cy="50" r={r} fill="none" stroke={color} strokeWidth="10"
         strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"
         transform="rotate(-90 50 50)" style={{ transition: 'stroke-dasharray 0.6s ease' }} />
@@ -382,30 +382,30 @@ const Goals = () => {
 
                     <div className="mt-4">
                       <div className="flex justify-between text-sm mb-1">
-                        <span className="font-bold text-gray-900">{fmt(goal.currentAmount || 0)}</span>
-                        <span className="text-gray-400">of {fmt(goal.targetAmount)}</span>
+                        <span className="font-bold text-gray-900 dark:text-white">{fmt(goal.currentAmount || 0)}</span>
+                        <span className="text-gray-400 dark:text-slate-400">of {fmt(goal.targetAmount)}</span>
                       </div>
-                      <div className="w-full bg-gray-100 rounded-full h-2">
+                      <div className="w-full bg-gray-100 dark:bg-slate-800 rounded-full h-2">
                         <div className="h-2 rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: goal.color || '#3b82f6' }} />
                       </div>
-                      <p className="text-xs text-gray-400 mt-1">{fmt(Math.max(0, goal.targetAmount - (goal.currentAmount || 0)))} remaining</p>
+                      <p className="text-xs text-gray-400 dark:text-slate-400 mt-1">{fmt(Math.max(0, goal.targetAmount - (goal.currentAmount || 0)))} remaining</p>
                     </div>
 
-                    {goal.notes && <p className="mt-2 text-xs text-gray-400 italic">"{goal.notes}"</p>}
+                    {goal.notes && <p className="mt-2 text-xs text-gray-400 dark:text-slate-400 italic">"{goal.notes}"</p>}
 
                     <div className="mt-4 flex space-x-2">
-                      <button onClick={() => openContribute(goal)} className="flex-1 text-xs py-1.5 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 font-medium flex items-center justify-center">
+                      <button onClick={() => openContribute(goal)} className="flex-1 text-xs py-1.5 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/40 font-medium flex items-center justify-center transition-colors">
                         <Plus className="w-3.5 h-3.5 mr-1" />Add Contribution
                       </button>
-                      <button onClick={() => openEdit(goal)} className="p-1.5 text-gray-400 hover:text-blue-600"><Edit2 className="w-4 h-4" /></button>
-                      <button onClick={() => handleDelete(goal._id)} className="p-1.5 text-gray-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
+                      <button onClick={() => openEdit(goal)} className="p-1.5 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"><Edit2 className="w-4 h-4" /></button>
+                      <button onClick={() => handleDelete(goal._id)} className="p-1.5 text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors"><Trash2 className="w-4 h-4" /></button>
                     </div>
                   </div>
                 );
               })}
             </div>
             <Pagination
-              className="rounded-xl border border-gray-100"
+              className="rounded-xl border border-gray-100 dark:border-slate-800"
               currentPage={activePage}
               totalItems={activeGoals.length}
               pageSize={activePageSize}
@@ -418,27 +418,27 @@ const Goals = () => {
 
           {completedGoals.length > 0 && (
             <div className="mt-10 space-y-4">
-              <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-4 flex items-center">
+              <h2 className="text-sm font-semibold text-gray-400 dark:text-slate-400 uppercase tracking-wide mb-4 flex items-center">
                 <Sparkles className="w-4 h-4 mr-2 text-yellow-500" />Completed ({completedGoals.length})
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {pagedCompletedGoals.map(goal => (
-                  <div key={goal._id} className="bg-green-50 rounded-xl border border-green-200 p-4 opacity-80">
+                  <div key={goal._id} className="bg-emerald-50/80 dark:bg-emerald-950/40 rounded-xl border border-emerald-200 dark:border-emerald-800/50 p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
-                        <span className="text-green-500 text-xl">🎉</span>
+                        <span className="text-emerald-500 text-xl">🎉</span>
                         <div>
-                          <h3 className="text-sm font-semibold text-gray-800">{goal.name}</h3>
-                          <p className="text-xs text-gray-500">{fmt(goal.targetAmount)} · Completed {goal.completedAt ? new Date(goal.completedAt).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }) : ''}</p>
+                          <h3 className="text-sm font-semibold text-gray-800 dark:text-slate-100">{goal.name}</h3>
+                          <p className="text-xs text-gray-500 dark:text-slate-400">{fmt(goal.targetAmount)} · Completed {goal.completedAt ? new Date(goal.completedAt).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }) : ''}</p>
                         </div>
                       </div>
-                      <button onClick={() => handleDelete(goal._id)} className="p-1 text-gray-400 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
+                      <button onClick={() => handleDelete(goal._id)} className="p-1 text-gray-400 hover:text-rose-500 dark:hover:text-rose-400 transition-colors"><Trash2 className="w-4 h-4" /></button>
                     </div>
                   </div>
                 ))}
               </div>
               <Pagination
-                className="rounded-xl border border-green-200"
+                className="rounded-xl border border-emerald-200 dark:border-emerald-800/50"
                 currentPage={completedPage}
                 totalItems={completedGoals.length}
                 pageSize={completedPageSize}

@@ -32,6 +32,7 @@
 26. [Enterprise Error Handling & Offline Architecture](#26-enterprise-error-handling--offline-architecture)
 27. [Custom Branded Motion Spinner System](#27-custom-branded-motion-spinner-system)
 28. [Pre-Deployment Verification & System Diagnostics](#28-pre-deployment-verification--system-diagnostics)
+29. [Theme Engine (Futuristic Dual Dark & Light Mode)](#29-theme-engine-futuristic-dual-dark--light-mode)
 
 ---
 
@@ -380,7 +381,7 @@ The Budget module enables spending limits per category with progress tracking.
 
 ## 9. Bills & Recurring Transactions
 
-The Recurring module automates repeating financial events.
+The Recurring module automates repeating financial events (subscriptions, rent, salaries, utilities, EMIs).
 
 ### 9.1 Recurring Rule Fields
 
@@ -390,18 +391,27 @@ The Recurring module automates repeating financial events.
 | `type` | Income / Expense / Transfer |
 | `amount` | Fixed amount per occurrence |
 | `frequency` | `daily`, `weekly`, `monthly`, or `yearly` |
-| `nextRunDate` | When the rule next triggers |
+| `time` | Exact scheduled execution time in `HH:mm` format (e.g. `'09:00'`, `'14:30'`) |
+| `nextRunDate` | When the rule next triggers (combines date and exact time) |
 | `endDate` | Optional expiry date for the rule |
-| `autoPost` | If `true`, transactions are auto-created by cron. If `false`, user manually confirms. |
+| `autoPost` | If `true` (default), transactions are automatically created by the cron daemon at the exact scheduled date and time. If `false`, user manually confirms. |
 | `account` | Source account |
 | `toAccount` | Destination account (Transfers) |
 | `category` / `merchant` | Classification |
 
-### 9.2 Auto-Posting (Cron)
-When `autoPost` is enabled, the **Recurring Cron Job** (runs at midnight daily) automatically creates the transaction and advances `nextRunDate` to the next occurrence.
+### 9.2 Exact-Time Auto-Posting Engine (Per-Minute Cron Daemon)
+When `autoPost` is enabled, the **Per-Minute Recurring Execution Daemon** (`* * * * *`) checks for rules where `nextRunDate <= now`. At the exact scheduled date and time:
+1. An atomic `Transaction` is created with notes tag `[Auto-posted at HH:mm]`.
+2. The linked `Account` balance is updated atomically (`$inc: { currentBalance: ... }`).
+3. The rule's `nextRunDate` is advanced to the next cycle (daily, weekly, monthly, yearly) **preserving the exact scheduled time (`HH:mm`)**.
+4. If an `endDate` was configured and has been passed, the rule is automatically marked `isActive: false`.
 
-### 9.3 Dashboard Integration
-Upcoming recurring bills within the next 30 days are surfaced on the Dashboard as "Upcoming Bills & EMIs."
+### 9.3 Manual Fallback Override ("Pay Now")
+For rules where `autoPost` is disabled, or as a manual override if the user wants to settle a bill early, each rule features an explicit **Pay Now** button (`POST /api/recurring/:id/pay`). Clicking this creates the transaction immediately, updates the account balance, and advances `nextRunDate` while preserving the configured execution time.
+
+### 9.4 Dashboard & Zombie Subscription Clean-Up
+- Upcoming recurring bills within the next 30 days are surfaced on the Dashboard as "Upcoming Bills & EMIs."
+- The **Zombie Subscription & Price-Hike Detector** scans for unused subscriptions and price increases, offering 1-click pause and cancellation.
 
 ---
 
@@ -599,50 +609,97 @@ The **Net Worth Cron Job** runs every night and saves a `NetWorthSnapshot` docum
 
 ---
 
-## 15. Tax Planner
+## 15. Tax Planner & Intelligence
 
-An India-centric tax planning tool for the current financial year (New Tax Regime).
+A comprehensive India-centric tax planner and liability estimator supporting both **New Tax Regime (Section 115BAC)** and **Old Tax Regime**, with live comparison, automatic transaction synchronization, slab breakdowns, and advance tax scheduling.
 
 ### 15.1 Tax Record Fields
 
 | Field | Description |
 |-------|-------------|
-| `financialYear` | E.g., `"2025-26"` |
-| `salaryIncome` | Employment income |
-| `businessIncome` | Business/freelance income |
-| `capitalGains` | Gains from investments |
-| `otherIncome` | Dividends, interest, etc. |
-| `standardDeduction` | Default ₹50,000 |
-| `deduction80C` | ELSS, PPF, LIC, etc. |
-| `deduction80D` | Health insurance premium |
-| `otherDeductions` | NPS, HRA, etc. |
-| `tdsPaid` | TDS already deducted |
-| `advanceTaxPaid` | Advance tax payments |
-| `calculatedTaxLiability` | Computed tax due |
+| `financialYear` | Selected financial year (e.g., `"2025-2026"`, `"2024-2025"`, `"2023-2024"`) |
+| `regime` | Selected regime: `'new'` (Default) or `'old'` |
+| `salaryIncome` | Employment income (from Form 16) |
+| `businessIncome` | Freelance / business profits |
+| `capitalGains` | Equity, mutual fund, crypto, or real estate capital gains |
+| `otherIncome` | Bank interest, dividends, rental income |
+| `standardDeduction` | ₹75,000 for FY 2024-25 / FY 2025-26 under New Regime; ₹50,000 for FY 2023-24 and Old Regime |
+| `deduction80C` | EPF, PPF, ELSS, Life Insurance (capped at ₹1,50,000 under Old Regime) |
+| `deduction80D` | Health insurance / Mediclaim premiums (up to ₹1,00,000 under Old Regime) |
+| `deduction80CCD` | National Pension Scheme (NPS Section 80CCD(1B) — up to ₹50,000 under Old Regime) |
+| `homeLoanInterest` | Section 24(b) home loan interest for self-occupied property (up to ₹2,00,000 under Old Regime) |
+| `hraExemption` | House Rent Allowance exemption under Section 10(13A) |
+| `otherDeductions` | Donations (80G), education loan interest (80E), savings interest (80TTA) |
+| `tdsPaid` | Tax deducted at source (from Form 26AS / AIS) |
+| `advanceTaxPaid` | Advance tax paid via Challan 280 |
+| `calculatedNewRegimeTax` | Tax computed under New Regime |
+| `calculatedOldRegimeTax` | Tax computed under Old Regime |
+| `recommendedRegime` | Optimal regime recommendation (`'new'` or `'old'`) |
+| `taxSavings` | Amount saved by choosing the optimal regime |
+| `calculatedTaxLiability` | Final calculated tax liability according to chosen regime |
 
-### 15.2 Tax Brackets (New Regime — Configurable via .env)
+### 15.2 New Tax Regime Slabs (Finance Act 2024)
+Applicable for FY 2024-25 & FY 2025-26:
+
+| Income Slab | Rate | Tax in Slab |
+|-------------|------|-------------|
+| Up to ₹3,00,000 | 0% | Nil |
+| ₹3,00,001 – ₹7,00,000 | 5% | ₹20,000 |
+| ₹7,00,001 – ₹10,00,000 | 10% | ₹30,000 |
+| ₹10,00,001 – ₹12,00,000 | 15% | ₹30,000 |
+| ₹12,00,001 – ₹15,00,000 | 20% | ₹60,000 |
+| Above ₹15,00,000 | 30% | 30% of excess |
+
+- **Section 87A Full Rebate**: Taxable income up to ₹7,00,000 incurs **₹0 tax** (rebate covers up to ₹25,000).
+- **Section 87A Marginal Relief**: For taxable income slightly above ₹7,00,000, tax liability before cess is legally capped to `(Taxable Income − ₹7,00,000)`, preventing punitive spikes.
+- **Health & Education Cess**: 4% applied to tax after rebate and marginal relief.
+
+### 15.3 Old Tax Regime Slabs & Deductions
 | Income Slab | Rate |
 |-------------|------|
-| Up to ₹3,00,000 | 0% |
-| ₹3,00,001 – ₹6,00,000 | 5% |
-| ₹6,00,001 – ₹9,00,000 | 10% |
-| ₹9,00,001 – ₹12,00,000 | 15% |
-| ₹12,00,001 – ₹15,00,000 | 20% |
-| Above ₹15,00,000 | 30% |
+| Up to ₹2,50,000 | 0% |
+| ₹2,50,001 – ₹5,00,000 | 5% |
+| ₹5,00,001 – ₹10,00,000 | 20% |
+| Above ₹10,00,000 | 30% |
 
-Tax rebate of up to ₹7,00,000 applies under Section 87A.
+- **Section 87A Rebate**: Taxable income up to ₹5,00,000 incurs **₹0 tax** (rebate up to ₹12,500).
+- Standard Deduction of ₹50,000 + deductions for Sections 80C, 80D, 80CCD, 24(b), and HRA.
+- Health & Education Cess: 4%.
+
+### 15.4 Automatic Transaction Synchronization (1-Click Sync)
+- **Endpoint**: `GET /api/taxes/auto-summary/:year`
+- Automatically scans user transactions between 1 April and 31 March of the financial year.
+- Aggregates salary credits, business/freelance income, dividend/investment gains, TDS deductions, and advance tax payments.
+- Pre-fills the tax form in 1 click, eliminating manual tallying.
+
+### 15.5 Advance Tax Quarterly Schedule
+If net tax liability after TDS exceeds **₹10,000**, Capise automatically computes and displays the mandatory quarterly payment schedule:
+- **15%** by 15 June
+- **45%** by 15 September
+- **75%** by 15 December
+- **100%** by 15 March
 
 ---
 
 ## 16. Reports & Analytics
 
-The Reports module provides deeper analytical views beyond the Dashboard.
+The Reports module provides deeper analytical views beyond the Dashboard, complete with CSV export and an **Institutional-Grade PDF Print Engine**.
 
 ### 16.1 Report Types
 - **Income vs. Expense Report** — Period-based income/expense comparison
 - **Category Report** — Spending breakdown by category with charts
 - **Account Report** — Activity per account
 - **Custom Date Ranges** — Fully configurable time periods
+
+### 16.2 Executive PDF & Print Dossier Engine
+When printing or exporting to PDF via the **Print / Export PDF** button (`window.print()`):
+- **Curated Letterhead**: Displays the official Capise Private Wealth emblem, document title, client identity (name & email), audit timeframe, scope, generation timestamp, and unique cryptographic audit reference (e.g. `CPS-REP-YYYYMMDD-XXXX`).
+- **High-Contrast KPI Summaries**: Total Inflow, Total Outflow, Net Retained Capital, and Capital Retention % formatted with high-contrast borders and exact print colors (`print-color-adjust: exact`).
+- **Unpaginated Category Ledger Matrix**: Bypasses screen pagination to print the **complete** category breakdown table with transaction counts, amounts, percentage shares, and colored indicators.
+- **Multi-Month Trajectory Table**: 6-month historical trajectory table with alternating rows and period aggregate totals.
+- **Liquid Reserves & Balances Snapshot**: Audit table of all active accounts and liquid cash reserves.
+- **Institutional Certification & Sign-off**: Audit certification block with signature line and confidentiality legal disclaimer.
+- **Clean Page Architecture**: Automatic reset of desktop sidebar indents (`md:pl-64`), omission of all navigation chrome, buttons, and floating widgets, with strict page-break avoidance (`break-inside: avoid`).
 
 ---
 
@@ -708,6 +765,14 @@ An AI-generated narrative digest of the previous month's finances (powered by Ge
 - **Net Worth Change** — Month-over-month net worth delta
 - **Largest Transactions** — Top 5 biggest expense events
 - **Personalized Insights & Recommendations** — AI-generated actionable advice
+
+#### Executive PDF Dossier Export
+The Monthly Review includes an **Executive Print / PDF Export Engine**:
+- **Official Dossier Letterhead**: Branded header with client name, email, review cycle, health assessment grade, and reference ID.
+- **Health & Wealth Scorecard**: High-contrast, publication-grade print representation of the Health Score Gauge, Cashflow velocity, and Wealth Trajectory.
+- **AI Executive Briefing**: Formatted insights and actionable recommendations that print cleanly without screen artifacts.
+- **Budget Compliance Audit Table**: Full printable table showing Category, Budget Limit, Actual Spend, Variance (Headroom or Overspend), and Compliance Status.
+- **Certification & Sign-Off**: Verification seal and confidentiality statement.
 
 > Monthly reviews are auto-generated by the **Monthly Review Cron Job** on the 3rd of each month and cached in the `MonthlyReviewDigest` collection.
 
@@ -836,8 +901,43 @@ Before calling Gemini, the service builds a comprehensive financial context obje
 - Recurring rules (scheduled bills)
 - Tax record summary, Monthly review digest, Safe-to-Spend figure
 
-### 20.3 Action Execution
-When the Copilot identifies an action request, it returns a structured JSON action object. The client sends this to `POST /api/proactive/copilot/execute-action`, which routes to the **Copilot Action Execution Service** to write the change to the database.
+### 20.3 1-Click Action Proposals & Generative Tool Execution
+When the Copilot identifies a financial action or optimization, it generates a structured JSON action proposal block rendered as interactive buttons inside the chat interface. Clicking a proposal dispatches `POST /api/proactive/copilot/execute-action` to the **Copilot Action Execution Service**, which performs atomic database updates and immediately invalidates cached data.
+
+#### Full Catalog of Supported 1-Click Actions:
+1. **Goals**:
+   - `CREATE_GOAL` / `CREATE_SINKING_FUND` — Create a new goal with target amount, deadline, and optional initial funding deposit.
+   - `CONTRIBUTE_TO_GOAL` — Allocate surplus liquidity towards a goal, debiting the funding account and creating a transfer transaction.
+   - `UPDATE_GOAL` — Modify goal target amounts or completion dates.
+2. **Budgets**:
+   - `CREATE_BUDGET` / `BUDGET_GUARD` — Establish a new monthly spending guardrail for any category.
+   - `UPDATE_BUDGET_LIMIT` — Dynamically calibrate an overspent or tight category limit.
+3. **Transactions & Cash Flow**:
+   - `LOG_TRANSACTION` — Quick-log income or expense with automatic ledger account balance adjustment.
+   - `TRANSFER_MONEY` — Transfer funds between accounts with atomic source debit and destination credit.
+4. **Investments & Wealth Compounding**:
+   - `CREATE_INVESTMENT` — Record new mutual fund, stock, or ETF holding positions.
+   - `LOG_INVESTMENT_TOPUP` — Deploy idle cash into an existing holding.
+   - `UPDATE_INVESTMENT_SIP` / `ADJUST_SIP` — Set up or increase systematic monthly SIP amounts.
+5. **Loans & Debt Reduction**:
+   - `CREATE_LOAN` — Record new loans with automatic amortization EMI computation.
+   - `PREPAY_LOAN_PRINCIPAL` — Reduce loan principal debt with immediate interest savings.
+   - `RECORD_LOAN_EMI_PAYMENT` — Record monthly EMI installment with interest/principal split.
+6. **People & Lending**:
+   - `CREATE_LENDING` — Record money lent or borrowed with auto-linked ledger transactions.
+   - `RECORD_LENDING_REPAYMENT` — Record partial or full repayment with bank balance sync.
+   - `SETTLE_LENDING` — Mark debt as completely cleared with final settlement transaction.
+   - `GENERATE_WHATSAPP_REMINDER` — Open pre-filled WhatsApp reminder with 1 click.
+7. **Bills & Subscriptions**:
+   - `CREATE_RECURRING_RULE` — Schedule recurring bills with automated cron auto-posting.
+   - `CANCEL_SUBSCRIPTION` — Deactivate unwanted zombie subscriptions.
+   - `ACKNOWLEDGE_PRICE_HIKE` — Update subscription record to acknowledge new pricing.
+8. **Accounts & Emergency Shields**:
+   - `CREATE_ACCOUNT` — Add new bank, credit card, cash wallet, or FD account.
+   - `EXECUTE_AUTO_REBALANCE` — Prevent overdraft fees by rebalancing funds between accounts.
+   - `BUFFER_RESERVE` — Cordon off liquid funds into dedicated emergency reserves.
+
+Action schemas can be queried programmatically via `GET /api/proactive/copilot/actions`.
 
 ### 20.4 AI Model & Resilience
 Uses **Google Gemini** (`gemini-2.5-flash` with automatic fallback to `gemini-2.0-flash`) with:
@@ -952,6 +1052,7 @@ Six cron jobs run autonomously in the background, forming the automation layer o
 | GET | `/nudges` | Get active proactive nudges |
 | POST | `/nudges/:id/dismiss` | Dismiss a nudge |
 | GET | `/safe-to-spend` | Daily discretionary budget |
+| GET | `/copilot/actions` | Manifest of all supported 1-click action proposals |
 | POST | `/copilot/chat` | Chat with AI Copilot |
 | POST | `/copilot/execute-action` | Execute a Copilot action |
 | GET | `/salary-distribution/latest` | Latest salary plan |
@@ -1177,5 +1278,113 @@ Prior to production deployment, a master automated test suite was executed again
 
 ---
 
+## 29. Theme Engine (Futuristic Dual Dark & Light Mode)
+
+Capise features a native, high-contrast, futuristic theme engine that empowers users to transition seamlessly between a vibrant light workspace and a deep, low-eye-strain dark terminal aesthetic.
+
+### 29.1 Architecture & Modern Web Standards Compliance
+- **Anti-FOUC (Flash of Unstyled Content) Hydration**: An inline script in `<head>` executes prior to DOM rendering, checking `localStorage.getItem('capise_theme')` and OS `prefers-color-scheme`. It immediately applies the `.dark` class to `document.documentElement` to prevent white flicker upon page load.
+- **Native Color-Scheme Metadata**: Declares `<meta name="color-scheme" content="light dark" />` in HTML and dynamically keeps `document.documentElement.style.colorScheme` aligned with the active theme mode to optimize browser-native scrollbars, form controls, and selection highlights.
+- **Dynamic OS Listener**: Subscribes to `window.matchMedia('(prefers-color-scheme: dark)')` to react in real-time when the host operating system switches between daytime and nighttime schedules without requiring a browser refresh.
+- **Synchronized Material UI Theme**: Custom `ThemeContext` automatically updates the Material UI `createTheme` instance, cascading dark backgrounds (`#0f172a`), borders (`#1e293b`), and sort arrows across MUI Table containers, headers, and pagination cells.
+
+### 29.2 Futuristic Palette Specification
+
+| Token | Light Mode Value | Dark Mode Value | Aesthetic Purpose |
+| :--- | :--- | :--- | :--- |
+| **Canvas Background** | `#f9fafb` (gray-50) | `#090d16` (deep space) | Eliminates blinding eye strain while avoiding dull grey |
+| **Elevated Surfaces** | `#ffffff` (pure white) | `#0f172a` (slate-900) | Provides crisp card elevation and layered depth |
+| **Structural Borders** | `#e5e7eb` (gray-200) | `#1e293b` (slate-800) | Sharp component delineations with zero visual noise |
+| **Primary Typography** | `#111827` (gray-900) | `#f8fafc` (slate-50) | Maximum contrast ratio exceeding WCAG AAA standards |
+| **Secondary Typography** | `#4b5563` (gray-600) | `#cbd5e1` (slate-300) | Highly legible secondary metrics, timestamps, and badges |
+| **Muted Captions** | `#9ca3af` (gray-400) | `#94a3b8` (slate-400) | Subtitle text, axis labels, and placeholder hints |
+| **Form Inputs** | `#ffffff` on `#d1d5db` | `#0b1120` on `#334155` | Deep recessed inputs with luminous `#6366f1` focus rings |
+| **Accent Glows** | Neutral shadows | Subtle 5% indigo aura | Luminous futuristic floating effect on cards & modals |
+
+### 29.3 User Controls & Navigation Integration
+- **Desktop Sidebar Brand Header**: High-contrast icon toggle with animated Sun/Moon transitions positioned alongside the Action Center bell.
+- **Mobile Top Header**: Direct-access theme toggle button in the sticky mobile navigation bar.
+- **Profile Preferences**: Dedicated "Appearance & Theme" settings section featuring a 3-state segmented controller (`Light`, `Dark`, `System`).
+- **Reactive Visual Charts**: All Recharts visualizations (`CashFlowChart`, `CategoryDonutChart`, `BudgetComparisonChart`, `NetWorthTrendChart`, `SpendingBurnChart`, `HealthScoreGaugeChart`) leverage the `useTheme()` hook to dynamically re-color axis ticks, grid lines, slice cuts, and center metrics.
+
+---
+
+## 30. Progressive Web App (PWA) Architecture & Offline Engine
+
+Capise is built as an installable, high-performance Progressive Web App (PWA). It conforms strictly to modern W3C Web App Manifest specifications and Chromium / Safari PWA standards, allowing users to run Capise as a native desktop or mobile application directly from their operating system's dock, taskbar, or home screen.
+
+### 30.1 Web App Manifest Specification (`manifest.webmanifest`)
+The manifest configures the installation metadata, standalone UI windowing, themes, and native application shortcuts:
+
+- **Application Identity**:
+  - `name`: `Capise — Autonomous Personal Finance`
+  - `short_name`: `Capise`
+  - `description`: Autonomous personal finance platform with real-time proactive intelligence, automated wealth tracking, and multi-tier budget optimization.
+  - `start_url`: `/`
+  - `scope`: `/`
+  - `id`: `/`
+- **Display & Color Framing**:
+  - `display`: `standalone` (removes browser URL bar, navigation buttons, and tabs for an immersive native software experience).
+  - `orientation`: `any` (responsive rotation support across phone, tablet, and desktop displays).
+  - `theme_color`: `#4f46e5` (vibrant Capise Indigo system titlebar and status bar color).
+  - `background_color`: `#090d16` (Capise deep space dark splash screen background).
+- **Multi-Resolution & Maskable Icons**:
+  - Standard square PNG icons: `48x48`, `96x96`, `144x144`, `192x192`, `512x512` (`purpose: "any"`).
+  - Adaptive Android maskable icons: `192x192`, `512x512` (`purpose: "maskable"`) with 10% safe zone margins to prevent clipping on circular or squircle icon shapes.
+  - Apple Touch Icons: `180x180` high-density iOS icon with black-translucent status bar styling.
+- **Quick-Access Application Shortcuts**:
+  - `Dashboard`: Direct leap to high-level wealth breakdown and cashflow metrics (`/dashboard`).
+  - `Transactions Feed`: Quick entry to transaction logger and filter list (`/transactions`).
+  - `Budgets & Guardrails`: Real-time budget tracking and spending headroom (`/budgets`).
+  - `Net Worth`: Real-time asset and liability balance sheet inspection (`/networth`).
+
+### 30.2 Production Service Worker Architecture (`public/sw.js`)
+Capise employs an asynchronous Service Worker with a multi-tiered caching strategy tailored for financial data security and instant offline availability:
+
+1. **Pre-Cached Application Shell**:
+   - During the `install` lifecycle event, the service worker immediately fetches and caches critical assets (`/`, `/index.html`, `/manifest.webmanifest`, `/favicon.png`, and high-res icon assets).
+   - Calls `self.skipWaiting()` to immediately activate without waiting for existing tabs to close.
+2. **Immediate Activation & Cache Invalidation**:
+   - During the `activate` event, obsolete cache buckets (`capise-v...`) are pruned automatically, and `self.clients.claim()` binds the worker to all open browser tabs simultaneously.
+3. **Smart Tiered Caching Strategy**:
+   - **Navigation Requests (`request.mode === 'navigate'`)**: Network-First strategy. The service worker attempts to load fresh content from the server; if the user is offline or experiences packet drop, it transparently serves the cached App Shell (`/index.html`), allowing client-side React Router 7 to boot without an error screen.
+   - **Static Assets (JS / CSS / Fonts / Images / SVGs)**: Cache-First with Background Revalidation (Stale-While-Revalidate). Cached assets load instantaneously within milliseconds, while a background fetch updates the cache if updated bundles are deployed.
+   - **API & Financial Data Security Passthrough (`/api/*`)**: To strictly adhere to personal financial data privacy (avoiding storing sensitive bank balances or transactions in plaintext browser CacheStorage) and prevent stale data bugs, all `/api/` traffic bypasses the Service Worker cache. Real-time API communication, offline guards, and automatic 401 session expiration are handled natively by Axios and Capise's `api.js` interceptor stack, ensuring 100% exact feature and data parity between browser and PWA standalone mode.
+
+### 30.3 In-App Install Banners & Native Integration (`usePwaInstall`)
+- **Reactive Install Hook (`usePwaInstall.js`)**:
+  - Intercepts and holds the Chromium `beforeinstallprompt` event so the app can present customized, non-intrusive install triggers.
+  - Automatically detects when running inside standalone mode (`display-mode: standalone` or `navigator.standalone === true`) to hide redundant prompts.
+  - Detects Apple iOS Safari browsers to present specific step-by-step guidance.
+- **Visual In-App Triggers**:
+  - **Floating Install Banner (`PwaInstallBanner.jsx`)**: Sleek, glassmorphic floating prompt at the bottom corner with 1-click install button, dismiss countdown, and app preview icon.
+  - **Desktop Sidebar & Mobile Drawer Button (`PwaInstallButton.jsx`)**: Permanent install button located in navigation footers, showing "Installed ✓" once added.
+  - **Profile Settings Card**: "Progressive Web App" card in user settings with offline-readiness badge and installation controls.
+
+### 30.4 End-User Installation Guide
+
+#### A. Google Chrome / Brave / Microsoft Edge (Desktop: macOS, Windows, Linux)
+1. Open Capise in your browser (`http://localhost:5173` or your production domain).
+2. Click the **"Install Capise App"** button located in the desktop sidebar or click the floating prompt in the bottom corner.
+3. *Alternatively*, click the **Install icon** (monitor with a down arrow) in the browser's URL address bar, or open the browser menu (**⋮**) and choose **"Install Capise..."**.
+4. Confirm by clicking **"Install"**.
+5. Capise will immediately open in its own dedicated, native borderless window and place a shortcut in your Applications folder, Launchpad, or Windows Start Menu.
+
+#### B. Android (Google Chrome / Brave)
+1. Navigate to the Capise URL in Chrome on your Android smartphone or tablet.
+2. An **"Install Capise App"** floating card will appear automatically at the bottom of the screen. Tap **"Install Now"**.
+3. *Alternatively*, tap Chrome's three dots menu (**⋮**) in the top-right corner and select **"Add to Home screen"** or **"Install app"**.
+4. Tap **"Install"** in the native dialog.
+5. The Capise icon will appear on your device's home screen and app drawer, launching fullscreen with no browser address bar.
+
+#### C. Apple iOS / iPadOS (Safari)
+1. Open the Capise URL in **Safari** on your iPhone or iPad.
+2. Tap the **Share** button (the square with an arrow pointing upward: `⎋`) in the bottom navigation bar.
+3. Scroll down in the share sheet and tap **"Add to Home Screen"** (`⊞`).
+4. Tap **"Add"** in the top-right corner.
+5. Capise will be installed onto your home screen with its high-resolution retina icon and will launch in standalone native mode.
+
+---
+
 *Document updated and verified based on full codebase analysis of Capise — Personal Finance App.*
-*Last Updated: October 2026*
+*Last Updated: November 2026*
